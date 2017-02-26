@@ -14,7 +14,7 @@ Android NodeJS Platform to Build Sharable Application
 
 #### Screenshots
 
-<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/file_download_upload.png" style="width:150px" />
-<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/werewolf_host.png" style="width:150px" />
-<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/werewolf_player.png" style="width:150px" />
-<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/nodepad.png" style="width:150px" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/file_download_upload.png" width="200" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/werewolf_host.png" width="200" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/werewolf_player.png" width="200" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/nodepad.png" width="200" />

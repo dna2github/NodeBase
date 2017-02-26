@@ -60,7 +60,7 @@ public class NodeBaseApp extends LinearLayout {
       Context context = getContext();
       TextView label;
       label = new TextView(context);
-      label.setText(String.format("=============== App: %s ===", _appdir.getName()));
+      label.setText(String.format("\n=============== App: %s ===", _appdir.getName()));
       addView(label);
       label = new TextView(context);
       label.setText(_readme);

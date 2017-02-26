@@ -8,4 +8,4 @@ Android NodeJS Platform to Build Sharable Application
 - build to generate apk
 - install the apk on Android phone
 - do `npm install` in `modules` folder
-- adb push entire `modules` to `/sdcard/.nodebase`
+- adb push entire `modules` as `/sdcard/.nodebase`

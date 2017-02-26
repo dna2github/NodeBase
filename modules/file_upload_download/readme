@@ -1,0 +1,6 @@
+# Directory Index Service
+- https://github.com/expressjs/multer
+- https://github.com/expressjs/serve-index
+- file server (download / upload)
+running: 9090
+params:  directory path for sharing

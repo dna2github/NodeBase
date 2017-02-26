@@ -1,0 +1,128 @@
+<!doctype>
+<html>
+  <head>
+    <meta charset='utf-8'> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Notepad</title>
+    <link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+  </head>
+  <body>
+    <div class="well well-sm" id="view_file_list">
+       <div class="input-group">
+          <input id="txt_dir" type="text" class="form-control" placeholder="dirictory path" />
+          <span class="input-group-btn">
+             <button id="btn_list" class="btn btn-default">List</button>
+          </span>
+       </div>
+       <div id="view_list" class="alert alert-default">(No Files)</div>
+    </div>
+    <div class="well well-sm" id="view_notepad">
+       <div class="input-group">
+          <input id="txt_file" type="text" class="form-control" placeholder="file name" />
+          <span class="input-group-btn">
+             <button id="btn_open" class="btn btn-default">Open</button>
+          </span>
+       </div>
+       <div>
+          <textarea id="txt_text" rows="10" class="form-control" style="font-family:courier,monospace;"></textarea>
+       </div>
+       <div><button id="btn_save" class="btn btn-default">Save</button></div>
+    </div>
+    <div class="well well-sm">
+       <a class="btn btn-default" id="btn_dquote">"</a>
+       <a class="btn btn-default" id="btn_squote">'</a>
+       <a class="btn btn-default" id="btn_xbra">()</a>
+       <a class="btn btn-default" id="btn_ybra">{}</a>
+       <a class="btn btn-default" id="btn_zbra">&lt;&gt;</a>
+    </div>
+    <script type="text/javascript" src="common.js"></script>
+    <script>
+    function factory_pair_insert(str, cur) {
+       return function (evt) {
+          var c = document.getElementById('txt_text'),
+              s = c.selectionStart,
+              e = c.selectionEnd;
+          c.value = c.value.substring(0, s) + str + c.value.substring(e);
+          c.selectionStart = s + cur;
+          c.selectionEnd = s + cur;
+          c.focus();
+       };
+    }
+    $('btn_dquote').on('click', factory_pair_insert('""', 1));
+    $('btn_squote').on('click', factory_pair_insert('\'\'', 1));
+    $('btn_xbra').on('click', factory_pair_insert('()', 1));
+    $('btn_ybra').on('click', factory_pair_insert('{}', 1));
+    $('btn_zbra').on('click', factory_pair_insert('<>', 1));
+    $('view_list').on('click', function (evt) {
+       if (evt.target.tagName.toLowerCase() !== 'button') return;
+       var txt_dir = document.getElementById('txt_dir'),
+           view_list = document.getElementById('view_list'),
+           one = evt.target.textContent,
+           sp = txt_dir.value.charAt(txt_dir.value.length - 1) === '/'?'':'/';
+       if (one.charAt(one.length - 1) === '/') {
+          txt_dir.value = txt_dir.value + sp + one;
+          clear_element(view_list);
+          view_list.appendChild(document.createTextNode('(No Files)'));
+       } else {
+          document.getElementById('txt_file').value = txt_dir.value + sp + one;
+       }
+    });
+    $('btn_list').on('click', function (evt) {
+       ajax({
+          url: '/api/nodebase/nodtepad/v1/list',
+          json: {
+             path: document.getElementById('txt_dir').value
+          }
+       }, function (data) {
+          var x = document.getElementById('view_list');
+          green_border(document.getElementById('btn_open'));
+          clear_element(x);
+          if (data.files.length + data.dirs.length > 0) {
+             data.files.forEach(function (f) {
+                var c = document.createElement('button');
+                c.className = 'btn btn-default';
+                c.appendChild(document.createTextNode(f));
+                x.appendChild(c);
+             });
+             data.dirs.forEach(function (d) {
+                var c = document.createElement('button');
+                c.className = 'btn btn-info';
+                c.appendChild(document.createTextNode(d + '/'));
+                x.appendChild(c);
+             });
+          } else {
+             x.appendChild(document.createTextNode('(No Files)'));
+          }
+       }, function () {
+          red_border(document.getElementById('btn_open'));
+       });
+    });
+    $('btn_open').on('click', function (evt) {
+       ajax({
+          url: '/api/nodebase/nodtepad/v1/open',
+          json: {
+             path: document.getElementById('txt_file').value
+          }
+       }, function (data) {
+          green_border(document.getElementById('btn_open'));
+          document.getElementById('txt_text').value = data.text;
+       }, function () {
+          red_border(document.getElementById('btn_open'));
+       });
+    });
+    $('btn_save').on('click', function (evt) {
+       ajax({
+          url: '/api/nodebase/nodtepad/v1/save',
+          json: {
+             path: document.getElementById('txt_file').value,
+             text: document.getElementById('txt_text').value
+          }
+       }, function (data) {
+          green_border(document.getElementById('btn_save'));
+       }, function () {
+          red_border(document.getElementById('btn_save'));
+       });
+    });
+    </script>
+  </body>
+</html>

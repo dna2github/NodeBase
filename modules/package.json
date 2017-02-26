@@ -1,0 +1,40 @@
+{
+  "name": "nodebase_modules",
+  "version": "0.0.1",
+  "description": "NodeBase modules; JavaScript app on Android",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo no test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dna2github/dna2mtgol.git"
+  },
+  "keywords": [
+    "innocent"
+  ],
+  "author": "Seven Lju",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/dna2github/dna2mtgol/issues"
+  },
+  "homepage": "https://github.com/dna2github/dna2mtgol/tree/master/nodeBase/modules",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "bootstrap": "^3.3.7",
+    "express": "^4.14.0",
+    "jquery": "^3.1.1",
+    "lodash": "^4.17.2",
+    "uuid": "^3.0.1",
+    "multer": "^1.2.1",
+    "serve-index": "^1.8.0",
+    "ws": "^1.1.1"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-clean": "^0.3.2",
+    "gulp-concat": "^2.6.1",
+    "gulp-connect": "^5.0.0",
+    "http-proxy-middleware": "^0.17.3"
+  }
+}

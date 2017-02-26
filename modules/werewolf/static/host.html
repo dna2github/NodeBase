@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Werewolf Host</title>
+    <link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+  </head>
+  <body>
+    <div class="panel panel-default hide" id="view_config">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>平民</label>
+          <select class="form-control" id="n_o" />
+            <option>1</option>
+            <option>2</option>
+            <option>3</option>
+            <option>4</option>
+            <option>5</option>
+            <option>6</option>
+            <option>7</option>
+            <option>8</option>
+            <option>9</option>
+            <option>10</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>狼人</label>
+          <select class="form-control" id="n_x" />
+            <option>1</option>
+            <option>2</option>
+            <option>3</option>
+            <option>4</option>
+            <option>5</option>
+            <option>6</option>
+            <option>7</option>
+            <option>8</option>
+            <option>9</option>
+            <option>10</option>
+          </select>
+        </div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_S"/>预言家</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_W"/>女巫</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_H"/>猎人</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_F"/>白痴</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_G"/>守卫</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_B"/>熊</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_U"/>野孩子</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_O"/>长老</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_C"/>乌鸦</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_P"/>锈剑骑士</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_Q"/>丘比特</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_T"/>盗贼</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_E"/>替罪羊</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_g"/>大野狼</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_i"/>祖狼</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_s"/>贪睡狼</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_f"/>吹笛者</label></div>
+        <div class="checkbox"><label><input type="checkbox" id="ch_D"/>两姐妹 (2人)</label></div>
+        <div class="form-group">
+          <label>其他</label>
+          <div class="checkbox"><label><input type="checkbox" id="ch_r_1"/>未知村规</label></div>
+        </div>
+        <button class="btn btn-default" id="btn_config">配置</button>
+      </div>
+    </div>
+    <div class="panel panel-default" id="view_game_control">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>参加人员</label>
+          <div><table class="table table-striped">
+            <thead><th>IP</th><th>代号</th><th>&nbsp;</th></thead>
+            <tbody id="tbl_players"></tbody>
+          </table></div>
+        </div>
+        <div>
+          <button class="btn btn-default" id="btn_refresh">刷新</button>
+          <div class="btn-group">
+            <button class="btn btn-default" id="btn_init">开始</button>
+            <button class="btn btn-default hide" id="btn_night">黑夜</button>
+            <button class="btn btn-default hide" id="btn_daylight">白天</button>
+            <button class="btn btn-default hide" id="btn_stop">结束</button>
+          </div>
+        </div>
+        <br/>
+        <div class="form-group">
+          <label>第一夜</label>
+          <div><div class="btn-group">
+            <button class="btn btn-default hide" id="btn_theif">盗贼</button>
+            <button class="btn btn-default" id="btn_cupid">丘比特</button>
+            <button class="btn btn-default" id="btn_wildchild">野孩子</button>
+          </div></div>
+        </div>
+        <div class="form-group">
+          <label>黑夜</label>
+          <div><div class="btn-group">
+            <button class="btn btn-default" id="btn_werewolf">狼人</button>
+            <button class="btn btn-default hide" id="btn_greedywolf">大野狼</button>
+            <button class="btn btn-default hide" id="btn_infectwolf">祖狼</button>
+            <button class="btn btn-default" id="btn_seer">预言家</button>
+            <button class="btn btn-default" id="btn_witch">女巫</button>
+            <button class="btn btn-default" id="btn_guard">守卫</button>
+            <button class="btn btn-default" id="btn_crow">乌鸦</button>
+            <button class="btn btn-default" id="btn_sisters">两姐妹</button>
+            <button class="btn btn-default hide" id="btn_fluteman">吹笛者</button>
+          </div></div>
+        </div>
+        <div class="form-group">
+          <label>白天</label>
+          <div><div class="btn-group">
+            <button class="btn btn-default" id="btn_vote">投票</button>
+            <button class="btn btn-default" id="btn_result">伤亡</button>
+            <button class="btn btn-default" id="btn_test_play">音效</button>
+          </div></div>
+        </div>
+        <div class="form-group">
+          <label>信息</label>
+          <div class="form-control-static" id="txt_info">
+            ____
+          </div>
+        </div>
+        <div class="form-group hide" id="view_vote">
+          <label>投票</label>
+          <div>
+            <select class="form-control" id="sel_from"></select> 投票给
+            <select class="form-control" id="sel_to"></select>
+            <div class="btn-group">
+              <button class="btn btn-default" id="btn_vote_one">投票</button>
+              <button class="btn btn-default" id="btn_vote_calc">结算</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hide" ><audio id="sound_bar" src="play.wav"></div>
+    <script type="text/javascript" src="common.js"></script>
+    <script>
+       var component = null,
+           env = {};
+
+       function state_set_factory(state, callback) {
+          return function (evt) {
+             ajax({
+                url: '/api/werewolf/state',
+                data: { state: state }
+             }, function () {
+                green_border(evt.target);
+                if (state !== ' ') setTimeout(start_one_role_monitor, 1000);
+                if(callback) callback();
+             }, function () {
+                red_border(evt.target);
+             });
+          }
+       }
+
+       function generate_tbl_players(players) {
+          var component = document.getElementById('tbl_players');
+          clear_element(component);
+          players.forEach(function (p) {
+             var tr = document.createElement('tr'),
+                 td, btn;
+             tr._data = p.ip;
+             td = document.createElement('td');
+             td.appendChild(document.createTextNode(p.ip));
+             tr.appendChild(td);
+             td = document.createElement('td');
+             td.appendChild(document.createTextNode(p.name));
+             tr.appendChild(td);
+             td = document.createElement('td');
+             btn = document.createElement('button');
+             btn.appendChild(document.createTextNode('注销'));
+             btn.className = 'btn btn-default btn_unregister';
+             td.appendChild(btn);
+             btn = document.createElement('button');
+             btn.appendChild(document.createTextNode('复活'));
+             btn.className = 'btn btn-default btn_live';
+             td.appendChild(btn);
+             btn = document.createElement('button');
+             btn.appendChild(document.createTextNode('死亡'));
+             btn.className = 'btn btn-default btn_die';
+             td.appendChild(btn);
+             tr.appendChild(td);
+             component.appendChild(tr);
+          });
+       }
+
+       /*ajax({
+          url: '/api/werewolf/config'
+       }, function(info) {
+          Object.keys(info.roles).forEach(function (x) {
+             if (x === 'o' || x === 'x') {
+                document.querySelector('#n_' + x).value = '' + info.roles[x];
+             } else {
+                document.querySelector('#th_' + x).checked = info.roles[x]!==0;
+             }
+          });
+       });*/
+
+       $('btn_config').on('click', function (evt) {
+          var data = {
+             'o': parseInt(document.querySelector('#n_o').value, 10),
+             'x': parseInt(document.querySelector('#n_x').value, 10),
+          };
+          ajax({
+             url: '/api/werewolf/config',
+             data: data
+          }, function () {
+          }, function () {
+          });
+       });
+
+       var cache_players = {};
+       $('btn_refresh').on('click', function (evt) {
+          ajax({
+             url: '/api/werewolf/info'
+          }, function (info) {
+             info.players.forEach(function (x) {cache_players[x.ip] = x;});
+             green_border(evt.target);
+             generate_tbl_players(info.players);
+             generate_players(false, info.players, document.getElementById('sel_from'));
+             generate_players(true, info.players, document.getElementById('sel_to'));
+          }, function () {
+             red_border(evt.target);
+          });
+       });
+
+       $('tbl_players').on('click', function (evt) {
+          var klass = evt.target.classList,
+              component = evt.target.parentNode;
+          if (klass.contains('btn_die')) {
+             ajax({
+                url: '/api/player/alive',
+                data: {ip: ip_encode(component.parentNode._data), alive: 0}
+             }, function () {
+                green_border(evt.target);
+             }, function () {
+                red_border(evt.target);
+             });
+          } else if (klass.contains('btn_live')) {
+             ajax({
+                url: '/api/player/alive',
+                data: {ip: ip_encode(component.parentNode._data), alive: 1}
+             }, function () {
+                green_border(evt.target);
+             }, function () {
+                red_border(evt.target);
+             });
+          } else if (klass.contains('btn_unregister')) {
+             ajax({
+                url: '/api/player/unregister',
+                data: { ip: ip_encode(component.parentNode._data) }
+             }, function () {
+                green_border(evt.target);
+                component.parentNode.parentNode.removeChild(component.parentNode);
+             }, function () {
+                red_border(evt.target);
+             });
+          }
+       });
+
+       $('btn_result').on('click', function (evt) {
+          ajax({
+             url: '/api/werewolf/night'
+          }, function (info) {
+             green_border(evt.target);
+             component = document.getElementById('txt_info');
+             clear_element(component);
+             component.appendChild(document.createTextNode(info.info));
+          }, function () {
+             red_border(evt.target);
+          });
+       });
+
+       var vote = {}, bigvote = null;
+       $('btn_vote').on('click', function (evt) {
+          ajax({url: '/api/werewolf/bigvote'}, function (info) {
+             green_border(evt.target);
+             bigvote = info.bigvote;
+             component = document.getElementById('view_vote');
+             component.classList.remove('hide');
+          }, function () {
+             red_border(evt.target);
+          });
+          vote = {};
+       });
+       $('btn_vote_one').on('click', function () {
+          var f, t;
+          f = document.getElementById('sel_from').value;
+          t = document.getElementById('sel_to').value;
+          if (!vote[t]) vote[t] = 1; else vote[t] ++;
+          if (bigvote === f) vote[t] ++;
+       });
+       $('btn_vote_calc').on('click', function () {
+          var m = '';
+          Object.keys(vote).forEach(function (x) {
+             m += cache_players[x].name + ' 有 ' + vote[x] + ' 票;';
+          });
+          component = document.getElementById('txt_info');
+          clear_element(component);
+          component.appendChild(document.createTextNode(m));
+          component = document.getElementById('view_vote');
+          component.classList.add('hide');
+       });
+
+       $('btn_test_play').on('click', function () {
+          play_sound(document.getElementById('sound_bar'));
+       });
+
+       function start_one_role_monitor() {
+          ajax({
+             url: '/api/werewolf/acting'
+          }, function (state) {
+             if (state.cur === 'x') {
+                component = document.getElementById('btn_werewolf');
+                component.innerHTML = '狼人(' + state.werewolf_count + ')';
+             }
+             if (state.start_one_role === 0) {
+                play_sound(document.getElementById('sound_bar'), 'play.wav');
+             } else {
+                setTimeout(start_one_role_monitor, 1000);
+             }
+          }, function () {
+             setTimeout(start_one_role_monitor, 3000);
+          });
+       }
+
+       $('btn_init').on('click', state_set_factory(' '));
+       $('btn_stop').on('click', state_set_factory(' '));
+       $('btn_theif').on('click', state_set_factory('T'));
+       $('btn_cupid').on('click', state_set_factory('Q'));
+       $('btn_wildchild').on('click', state_set_factory('U'));
+       $('btn_werewolf').on('click', state_set_factory('x'));
+       $('btn_greedywolf').on('click', state_set_factory('g'));
+       $('btn_infectwolf').on('click', state_set_factory('i'));
+       $('btn_seer').on('click', state_set_factory('S'));
+       $('btn_witch').on('click', state_set_factory('W'));
+       $('btn_guard').on('click', state_set_factory('G'));
+       $('btn_crow').on('click', state_set_factory('C'));
+       $('btn_fluteman').on('click', state_set_factory('f'));
+       $('btn_sisters').on('click', state_set_factory('D'));
+    </script>
+  </body>
+</html>

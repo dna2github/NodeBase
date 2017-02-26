@@ -1,0 +1,306 @@
+<!doctype>
+<html>
+  <head>
+    <meta charset='utf-8'> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Werewolf</title>
+    <link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+  </head>
+  <body>
+    <div class="well well-sm" id="view_loading">加载中……</div>
+    <div class="panel-default hide" id="view_name">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>编号</label>
+          <div class="input-group">
+            <input class="form-control" id="txt_name" placeholder="e.g. 7 Seven" />
+            <span class="input-group-btn">
+              <button class="btn btn-default" id="btn_name_update">更新</button>
+            </span>
+          </div>
+        </div>
+        <button class="btn btn-default" id="btn_act">行动</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_T">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>盗贼 - 选择角色</label>
+          <select class="form-control" id="sel_T_role"></select>
+        </div>
+        <button class="btn btn-default" id="btn_T">确定</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_Q">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>丘比特 - 牵红线</label>
+          <select class="form-control" id="sel_Q_lover_1"></select>
+          <select class="form-control" id="sel_Q_lover_2"></select>
+        </div>
+        <button class="btn btn-default" id="btn_Q">确定</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_U">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>野孩子 - 崇拜</label>
+          <select class="form-control" id="sel_U_admire"></select>
+        </div>
+        <button class="btn btn-default" id="btn_U">确定</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_x">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>狼人 - 猎杀</label>
+          <select class="form-control" id="sel_x_kill"></select>
+        </div>
+        <button class="btn btn-default" id="btn_x">确定</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_g">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>大野狼 - 二次猎杀</label>
+          <select class="form-control" id="sel_g_kill"></select>
+        </div>
+        <button class="btn btn-default" id="btn_g">确定</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_i">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>祖狼 - 感染</label>
+          <select class="form-control" id="sel_i_infect"></select>
+        </div>
+        <button class="btn btn-default" id="btn_i">确定</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_S">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>预言家 - 查验</label>
+          <select class="form-control" id="sel_S_see"></select>
+        </div>
+        <button class="btn btn-default" id="btn_S">确定</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_W">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>女巫 - 解药</label>
+          <select class="form-control" id="sel_W_heal"></select>
+        </div>
+        <div class="form-group">
+          <label>女巫 - 毒药</label>
+          <select class="form-control" id="sel_W_poison"></select>
+        </div>
+        <button class="btn btn-default" id="btn_W">确定</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_G">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>守卫 - 保护</label>
+          <select class="form-control" id="sel_G_protect"></select>
+        </div>
+        <button class="btn btn-default" id="btn_G">确定</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_C">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>乌鸦 - 加票</label>
+          <select class="form-control" id="sel_C_bigvote"></select>
+        </div>
+        <button class="btn btn-default" id="btn_C">确定</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_f">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>吹笛者 - 施法</label>
+          <select class="form-control" id="sel_f_listen_1"></select>
+          <select class="form-control" id="sel_f_listen_2"></select>
+        </div>
+        <button class="btn btn-default" id="btn_f">确定</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_D">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>两姐妹 - 决定</label>
+          <select class="form-control" id="sel_D_deal"></select>
+        </div>
+        <button class="btn btn-default" id="btn_D">确定</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_vote">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>投票</label>
+          <select class="form-control" id="sel_vote" /></select>
+        </div>
+        <button class="btn btn-default" id="btn_vote">确定</button>
+      </div>
+    </div>
+
+    <div class="panel-default hide" id="view_info">
+      <div class="panel-body">
+        <div class="form-group">
+          <label>额外信息</label>
+          <p class="form-control-static" id="txt_info"/>____</p>
+        </div>
+      </div>
+    </div>
+
+    <script type="text/javascript" src="common.js"></script>
+    <script>
+       var component = null,
+           env = {},
+           all_view = ['T', 'Q', 'U', 'x', 'g', 'i', 'S', 'W', 'G', 'C' , 'f', 'D'];
+
+       function show_message(message) {
+          component = document.getElementById('txt_info');
+          clear_element(component);
+          component.appendChild(document.createTextNode(message));
+       }
+
+       function switch_tab(state) {
+          all_view.forEach(function (x) {
+             component = document.getElementById('view_' + x);
+             component.classList.add('hide');
+          });
+          component = document.getElementById('view_' + state.cur);
+          if (component) component.classList.remove('hide');
+       }
+
+       function show_view(state) {
+          if (state.cur === ' ') {
+             show_message('欢迎来到狼人杀');
+             return;
+          }
+          switch_tab(state);
+          show_message(state.info || '____');
+          switch(state.cur) {
+          case 'U':
+             generate_players(false, state.i_alive, document.getElementById('sel_U_admire'));
+             break;
+          case 'x':
+             generate_players(true, state.i_alive, document.getElementById('sel_x_kill'));
+             break;
+          case 'G':
+             generate_players(true, state.i_alive, document.getElementById('sel_G_protect'));
+             break;
+          case 'S':
+             generate_players(true, state.i_alive, document.getElementById('sel_S_see'));
+             break;
+          case 'C':
+             generate_players(true, state.i_alive, document.getElementById('sel_C_bigvote'));
+             break;
+          case 'Q':
+             generate_players(true, state.i_alive, document.getElementById('sel_Q_lover_1'));
+             generate_players(true, state.i_alive, document.getElementById('sel_Q_lover_2'));
+             break;
+          case 'W':
+             generate_players(true, state.i_alive, document.getElementById('sel_W_poison'));
+             generate_players(true, state.i_healable, document.getElementById('sel_W_heal'));
+             break;
+          case 'D':
+             generate_players(true, state.i_alive, document.getElementById('sel_D_deal'));
+             break;
+          default:
+          }
+       }
+
+       function act_factory(keyval, callback) {
+          return function (evt) {
+             var data = {id: env.id};
+             Object.keys(keyval).forEach(function (key) {
+                data[key] = document.getElementById(keyval[key]).value;
+                if (data[key]) data[key] = ip_encode(data[key]);
+             });
+             ajax({
+                url: '/api/werewolf/act', data: data
+             }, function (state) {
+                green_border(evt.target);
+                switch_tab('<>');
+                if (callback) callback(state);
+                show_message('已操作成功！');
+             }, function () {
+                red_border(evt.target);
+                show_message('操作失败，请重新尝试！');
+             });
+          };
+       }
+
+       ajax({
+          url: '/api/info'
+       }, function(info) {
+          component = document.getElementById('view_loading');
+          component.classList.add('hide');
+          component = document.getElementById('view_info');
+          component.classList.remove('hide');
+          component = document.getElementById('txt_info');
+          clear_element(component);
+          component.appendChild(document.createTextNode(info.info || '____'));
+          component.classList.remove('hide');
+          component = document.getElementById('txt_name');
+          component.value = info.name || '';
+          component = document.getElementById('view_name');
+          component.classList.remove('hide');
+       }, function (err) {
+       });
+
+       $('btn_name_update').on('click', function (evt) {
+          ajax({
+             url: '/api/player/register',
+             data: {name: document.getElementById('txt_name').value}
+          }, function () {
+             green_border(evt.target);
+             show_message('编号更新已成功，欢迎加入游戏！');
+          }, function () {
+             red_border(evt.target);
+             show_message('更新编号失败，请重新尝试！');
+          });
+       });
+
+       $('btn_act').on('click', function (evt) {
+          ajax({
+             url: '/api/werewolf/state'
+          }, function (state) {
+             green_border(evt.target);
+             env.id = state.id;
+             show_view(state);
+          }, function () {
+             red_border(evt.target);
+          });
+       });
+
+       $('btn_S').on('click', act_factory({see: 'sel_S_see'}, function (state) {
+          show_message(state?state.info:'___');
+       }));
+       $('btn_G').on('click', act_factory({protect: 'sel_G_protect'}));
+       $('btn_Q').on('click', act_factory({lover_1: 'sel_Q_lover_1', lover_2: 'sel_Q_lover_2'}));
+       $('btn_U').on('click', act_factory({admire: 'sel_U_admire'}));
+       $('btn_x').on('click', act_factory({kill: 'sel_x_kill'}));
+       $('btn_C').on('click', act_factory({bigvote: 'sel_C_bigvote'}));
+       $('btn_W').on('click', act_factory({poison: 'sel_W_poison', heal: 'sel_W_heal'}));
+       $('btn_D').on('click', act_factory({deal: 'sel_D_deal'}));
+    </script>
+  </body>
+</html>

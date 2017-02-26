@@ -9,3 +9,12 @@ Android NodeJS Platform to Build Sharable Application
 - install the apk on Android phone
 - do `npm install` in `modules` folder
 - adb push entire `modules` as `/sdcard/.nodebase`
+
+# Modules
+
+#### Screenshots
+
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/file_download_upload.png" style="width:150px" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/werewolf_host.png" style="width:150px" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/werewolf_player.png" style="width:150px" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/nodepad.png" style="width:150px" />

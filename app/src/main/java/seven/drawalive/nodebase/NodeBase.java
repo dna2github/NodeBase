@@ -182,7 +182,7 @@ public class NodeBase extends AppCompatActivity {
          File[] files = approot.listFiles();
          for (File f : files) {
             if (!f.isDirectory()) continue;
-            if ("node_modules".compareTo(f.getFileName()) == 0) continue;
+            if ("node_modules".compareTo(f.getName()) == 0) continue;
             Log.i("UI:AppList", f.getAbsolutePath());
             _panelAppList.addView(
                   new NodeBaseApp(this, new AppAction(this), f));

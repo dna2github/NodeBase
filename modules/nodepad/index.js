@@ -38,10 +38,14 @@ app.post('/api/nodebase/nodtepad/v1/list', (req, res) => {
        files = [],
        dirs = [];
    symbols.forEach((x) => {
-      if (fs.lstatSync(path.join(parent, x)).isDirectory()) {
-         dirs.push(x);
-      } else {
-         files.push(x);
+      try {
+         if (fs.lstatSync(path.join(parent, x)).isDirectory()) {
+            dirs.push(x);
+         } else {
+            files.push(x);
+         }
+      } catch (e) {
+         // no permission
       }
    });
    send_json(res, { dirs, files });

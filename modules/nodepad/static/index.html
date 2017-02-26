@@ -29,11 +29,11 @@
        <div><button id="btn_save" class="btn btn-default">Save</button></div>
     </div>
     <div class="well well-sm">
-       <a class="btn btn-default" id="btn_dquote">"</a>
-       <a class="btn btn-default" id="btn_squote">'</a>
-       <a class="btn btn-default" id="btn_xbra">()</a>
-       <a class="btn btn-default" id="btn_ybra">{}</a>
-       <a class="btn btn-default" id="btn_zbra">&lt;&gt;</a>
+       <a class="btn btn-default" id="btn_dquote">" "</a>
+       <a class="btn btn-default" id="btn_squote">' '</a>
+       <a class="btn btn-default" id="btn_xbra">( )</a>
+       <a class="btn btn-default" id="btn_ybra">{ }</a>
+       <a class="btn btn-default" id="btn_zbra">&lt; &gt;</a>
     </div>
     <script type="text/javascript" src="common.js"></script>
     <script>
@@ -75,7 +75,7 @@
           }
        }, function (data) {
           var x = document.getElementById('view_list');
-          green_border(document.getElementById('btn_open'));
+          green_border(document.getElementById('btn_list'));
           clear_element(x);
           if (data.files.length + data.dirs.length > 0) {
              data.files.forEach(function (f) {
@@ -94,7 +94,7 @@
              x.appendChild(document.createTextNode('(No Files)'));
           }
        }, function () {
-          red_border(document.getElementById('btn_open'));
+          red_border(document.getElementById('btn_list'));
        });
     });
     $('btn_open').on('click', function (evt) {

@@ -13,13 +13,37 @@
         <div class="form-group">
           <label>编号</label>
           <div class="input-group">
-            <input class="form-control" id="txt_name" placeholder="e.g. 7 Seven" />
+            <input class="form-control" id="txt_name" placeholder="e.g. 7 Seven" style="width:50%;" />
+            <select class="form-control" id="sel_role" style="width:50%">
+              <option value="o">平民 Common</option>
+              <option value="x">狼人 Werewolf</option>
+              <option value="S">预言家 Seer</option>
+              <option value="W">女巫 Witch</option>
+              <option value="H">猎人 Hunter</option>
+              <option value="F">白痴 Foolish</option>
+              <option value="G">守卫 Guard</option>
+              <option value="B">熊 Bear</option>
+              <option value="U">野孩子 WildChild</option>
+              <option value="O">长老 Elder</option>
+              <option value="C">乌鸦 Crow</option>
+              <option value="P">锈剑骑士 RustySwordPaladin</option>
+              <option value="Q">丘比特 Cupid</option>
+              <option disabled value="T">盗贼 Theif</option>
+              <option value="E">替罪羊 Scapegoat</option>
+              <option disabled value="g">大野狼 GreedyWolf</option>
+              <option disabled value="i">祖狼 InfectWolf</option>
+              <option disabled value="s">贪睡狼 SleepyWolf</option>
+              <option disabled value="f">吹笛者 FluteMan</option>
+              <option value="D">两姐妹 TwoSisters</option>
+            </select>
             <span class="input-group-btn">
+              <button class="btn btn-default" id="btn_secret">&gt;</button>
               <button class="btn btn-default" id="btn_name_update">更新</button>
             </span>
           </div>
         </div>
-        <button class="btn btn-default" id="btn_act">行动</button>
+        <button class="btn btn-default" id="btn_act">开始行动</button>
+        <button class="btn btn-default" id="btn_quite">收起行动面板</button>
       </div>
     </div>
 
@@ -239,8 +263,8 @@
              }, function (state) {
                 green_border(evt.target);
                 switch_tab('<>');
-                if (callback) callback(state);
                 show_message('已操作成功！');
+                if (callback) callback(state);
              }, function () {
                 red_border(evt.target);
                 show_message('操作失败，请重新尝试！');
@@ -261,15 +285,37 @@
           component.classList.remove('hide');
           component = document.getElementById('txt_name');
           component.value = info.name || '';
+          component = document.getElementById('sel_role');
+          component.value = info.role || 'o';
           component = document.getElementById('view_name');
           component.classList.remove('hide');
        }, function (err) {
        });
 
+       $('btn_secret').on('click', function (evt) {
+          component = document.getElementById('sel_role');
+          if (component.classList.contains('hide')) {
+             component.classList.remove('hide');
+             component.style.width = '50%';
+             component = document.getElementById('txt_name');
+             component.style.width = '50%';
+             evt.target.innerHTML = '&gt;';
+          } else {
+             component.classList.add('hide');
+             component.style.width = null;
+             component = document.getElementById('txt_name');
+             component.style.width = null;
+             evt.target.innerHTML = '&lt;';
+          }
+       });
+
        $('btn_name_update').on('click', function (evt) {
           ajax({
              url: '/api/player/register',
-             data: {name: document.getElementById('txt_name').value}
+             data: {
+                name: document.getElementById('txt_name').value,
+                role: document.getElementById('sel_role').value
+             }
           }, function () {
              green_border(evt.target);
              show_message('编号更新已成功，欢迎加入游戏！');
@@ -277,6 +323,12 @@
              red_border(evt.target);
              show_message('更新编号失败，请重新尝试！');
           });
+       });
+
+       $('btn_quite').on('click', function (evt) {
+          switch_tab('<>');
+          show_message('____');
+          clear_border(document.getElementById('btn_act'));
        });
 
        $('btn_act').on('click', function (evt) {

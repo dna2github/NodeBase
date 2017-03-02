@@ -92,6 +92,9 @@ function green_border(element) {
 function red_border(element) {
    element.style.border = '1px solid red';
 }
+function clear_border(element) {
+   element.style.border = null;
+}
 
 function clear_element(element) {
    while (element.hasChildNodes()) {
@@ -125,4 +128,48 @@ function play_sound(element, soundfile) {
 
 function ip_encode(ip) {
    return ip.split('.').join('-');
+}
+
+function player_role_name(role) {
+   switch (role) {
+   case 'S':
+      return '预言家';
+   case 'W':
+      return '女巫';
+   case 'H':
+      return '猎人';
+   case 'F':
+      return '白痴';
+   case 'G':
+      return '守卫';
+   case 'B':
+      return '熊';
+   case 'U':
+      return '野孩子';
+   case 'O':
+      return '长老';
+   case 'C':
+      return '乌鸦';
+   case 'P':
+      return '锈剑骑士';
+   case 'Q':
+      return '丘比特';
+   case 'T':
+      return '盗贼';
+   case 'E':
+      return '替罪羊';
+   case 'f':
+      return '吹笛者';
+   case 's':
+      return '贪睡狼';
+   case 'g':
+      return '大野狼';
+   case 'i':
+      return '祖狼';
+   case 'x':
+      return '狼人';
+   case 'o':
+   default:
+      return '村民';
+   }
 }

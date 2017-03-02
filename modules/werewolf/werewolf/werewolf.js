@@ -10,6 +10,13 @@ let state = {
    id: uuid.v4()
 };
 
+function find_player(key, value) {
+   for (var ip in players) {
+      if (players[ip][key] === value) return ip;
+   }
+   return null;
+}
+
 function player_all() {
    return players;
 }
@@ -18,19 +25,34 @@ function player_get_obj(ip) {
    return players[ip];
 }
 
-function player_register(ip, name) {
+function player_register(ip, name, role) {
    let p = players[ip];
    if (!p) {
-      p = { ip, name, alive: true, init_role: ' ', real_role: ' ' };
+      p = { ip, name, alive: true, init_role: role, role: role };
       players[ip] = p;
+      players_order.push(ip);
    } else {
       p.name = name;
+      p.init_role = role;
+      p.role = role;
    }
    return p;
 }
 
 function player_unregister(ip) {
    delete players[ip];
+   if (players_order) {
+      let index = players_order.indexOf(ip);
+      if (index >= 0) players_order.splice(index, 1);
+   }
+}
+
+function player_reorder(seq) {
+   players_order = seq;
+}
+
+function player_get_order() {
+   return players_order;
 }
 
 function player_get_info(ip) {
@@ -43,13 +65,18 @@ function player_get_info(ip) {
       }
    }
    if (!p.alive) {
-      m += (actions.poison?('女巫毒药使用给了 ' + players[actions.poison[0]].name +';'):'') +
-           (actions.heal?('女巫解药使用给了 ' + players[actions.heal[0]].name +';'):'') +
-           (actions.admire?('野孩子崇拜了 ' + players[actions.admire[0]].name + ';'):'') +
-           ((actions.kill && actions.kill.length > 0)?('狼人猎杀了 ' + players[actions.kill[0]].name + ';'):'') +
-           (actions.bigvote?('乌鸦把增加票的权利给了 ' + players[actions.kill[0]].name + ';'):'') +
-           (actions.deal?('两姐妹协商投票给 ' + players[actions.deal[0]].name + ';'):'') +
-           (actions.lovers?(players[actions.lovers[0]].name + ' 和 ' + players[actions.lovers[1]].name +' 是情侣;'):'');
+      m += (actions.poison?('女巫毒药使用给了 ' + players[actions.poison[0]].name +';'):'');
+      m += (actions.heal?('女巫解药使用给了 ' + players[actions.heal[0]].name +';'):'');
+      m += (actions.admire?('野孩子崇拜了 ' + players[actions.admire[0]].name + ';'):'');
+      m += ((actions.kill && actions.kill.length > 0)?('狼人猎杀了 ' + players[actions.kill[0]].name + ';'):'');
+      m += (actions.bigvote?('乌鸦把增加票的权利给了 ' + players[actions.kill[0]].name + ';'):'');
+      m += (actions.deal?('两姐妹协商投票给 ' + players[actions.deal[0]].name + ';'):'');
+      m += (actions.lovers?(players[actions.lovers[0]].name + ' 和 ' + players[actions.lovers[1]].name +' 是情侣;'):'');
+      m += '[ ';
+      Object.keys(players).forEach((x) => {
+         m += players[x].name + ' 是 ' + player_role_name(players[x].init_role) + '; ';
+      });
+      m += ']'
    }
    return m;
 }
@@ -74,7 +101,9 @@ function state_set(val) {
          if (!p) return;
          p = players[p];
          if (!p) return;
-         delete p.role
+         p.alive = true;
+         delete p.init_role;
+         delete p.role;
       });
       break;
    default:
@@ -96,9 +125,124 @@ function actions_set(key, value) {
 }
 
 function night_result() {
+   let died = actions.kill || [],
+       i, heal, protect;
+   if (actions.heal) {
+      heal = actions.heal[0];
+      i = died.indexOf(heal);
+      if (i >= 0) died.splice(i, 1);
+   }
+   if (actions.protect) {
+      protect = actions.protect[0];
+      i = died.indexOf(protect);
+      if (heal === protect) {
+         died.push(heal);
+      } else if (i >= 0) {
+         died.splice(i, 1);
+      }
+   }
+   if (actions.poison) {
+      died = died.concat(actions.poison);
+   }
+   if (actions.lovers) {
+      let love_die = [];
+      died.forEach((x) => {
+         i = actions.lovers.indexOf(x);
+         if (i === 0 && died.indexOf(actions.lovers[1]) < 0) love_die.push(actions.lovers[1]);
+         else if (i === 1 && died.indexOf(actions.lovers[0]) < 0) love_die.push(actions.lovers[0]);
+      });
+      died = died.concat(love_die);
+   }
+   let m;
+   if (died.length) {
+      m = '昨晚死亡的人员有 ' + died.map((x) => players[x].name).join(', ') + ';';
+      died.forEach((x) => {
+         let p = players[x];
+         p.alive = false;
+      });
+      actions.died = died;
+   } else {
+      m = '昨晚平安夜;';
+      actions.died = [];
+   }
+   return m;
 }
 
-function vote_result(vote) {
+function next_player(ip) {
+   var i = players_order.indexOf(ip),
+       j = i + 1;
+   while (j !== i) {
+      if (j >= players_order.length) j = 0;
+      if (players[players_order[j]].alive === true) {
+         return players_order[j];
+      }
+      j ++;
+   }
+   return ip;
+}
+
+function prev_player(ip) {
+   var i = players_order.indexOf(ip),
+       j = i - 1;
+   while (j !== i) {
+      if (j < 0) j = players_order.length - 1;
+      if (players[players_order[j]].alive === true) {
+         return players_order[j];
+      }
+      j --;
+   }
+   return ip;
+}
+
+function is_werewolf(role) {
+   return ['x', 'i', 'g', 's'].indexOf(role) >= 0;
+}
+
+function info_hunter() {
+   let hunter_ip = find_player('init_role', 'H'), m;
+   if (!hunter_ip) return '';
+   // @require: night_result
+   if (actions.died.indexOf(hunter_ip)) {
+      m = '猎人' + ((~~(Math.random()*2))?'可以':'不能') + '发动技能;';
+   } else {
+      if (actions.poison && actions.poison.indexOf(hunter_ip) >= 0) {
+         m = '猎人不能发动技能;';
+      } else if (actions.infect && actions.infect.indexOf(hunter_ip) >= 0) {
+         m = '猎人不能发动技能;';
+      } else if (actions.heal && actions.heal.indexOf(hunter_ip) >= 0) {
+         // heal but die, should heal == protect
+         m = '猎人不能发动技能;';
+      } else if (actions.kill && actions.kill.indexOf(hunter_ip) >= 0) {
+         m = '猎人可以发动技能;';
+      } else if (actions.kill2 && actions.kill2.indexOf(hunter_ip) >= 0) {
+         m = '猎人可以发动技能;';
+      } else {
+         // should die for love
+         m += '猎人不能发动技能;';
+      }
+   }
+   return m;
+}
+
+function info_bear() {
+   let bear_ip = find_player('init_role', 'B');
+   if (!bear_ip) return '';
+   let next_ip = next_player(bear_ip),
+       prev_ip = prev_player(bear_ip),
+       pbear = players[bear_ip],
+       pnext = players[next_ip],
+       pprev = players[prev_ip];
+   if (pbear.alive) {
+      if (pbear.role === 'x') {
+         return '熊在咆哮;';
+      } else if (is_werewolf(pnext.role) || is_werewolf(pprev.role)) {
+         return '熊在咆哮;';
+      } else {
+         return '熊很安静;';
+      }
+   } else {
+      return '熊很安静;';
+   }
 }
 
 function player_role_name(role) {
@@ -151,10 +295,13 @@ module.exports = {
    player_register,
    player_unregister,
    player_get_info,
+   player_reorder,
+   player_get_order,
    actions_get,
    actions_set,
    state_get,
    state_set,
    night_result,
-   vote_result
+   info_hunter,
+   info_bear
 };

@@ -48,14 +48,14 @@ app.post('/api/info', (req, res) => {
    } else {
       m = werewolf.player_get_info(ip);
    }
-   send_json(res, {name: p?p.name: '', info: m});
+   send_json(res, {name: p?p.name:'', role: p?p.role:null, info: m});
 });
 
 app.post('/api/player/register', (req, res) => {
    let ip = get_ip(req),
        p = werewolf.player_get_obj(ip);
    if (p) {
-      werewolf.player_register(ip, req.query.name);
+      werewolf.player_register(ip, req.query.name, req.query.role);
       send_json(res, {});
    } else {
       res.sendStatus(400);
@@ -91,11 +91,19 @@ app.post('/api/werewolf/state', (req, res) => {
    } else {
       let ip = get_ip(req),
           p = werewolf.player_get_obj(ip),
-          info = werewolf.player_get_info(ip);
-      s = Object.assign({info}, werewolf.state_get());
-      if (['x', 'i', 'g'].indexOf(s.cur) >= 0) {
-         if (werewolf_role.indexOf(ip) < 0) werewolf_role.push(ip);
-         p.role = 'x';
+          info = werewolf.player_get_info(ip),
+          state = werewolf.state_get();
+      if (!p) {
+         s = {info: '____', cur: '-'};
+      } else if (p.role !== state.cur && state.cur !== ' ') {
+         s = {info: '你想干嘛 :)', cur: '-'};
+      } else if (!p.alive) {
+         s = {info: '僵尸再见 :)', cur: '-'};
+      } else {
+         s = Object.assign({info}, state);
+         if (['x', 'i', 'g', 's'].indexOf(s.cur) >= 0) {
+            if (werewolf_role.indexOf(ip) < 0) werewolf_role.push(ip);
+         }
       }
    }
    send_json(res, s);
@@ -110,13 +118,18 @@ app.post('/api/werewolf/acting', (req, res) => {
 
 app.post('/api/werewolf/act', (req, res) => {
    let id = req.query.id;
+       ip = get_ip(req),
+       pact = werewolf.player_get_obj(ip),
+       state = werewolf.state_get();
    delete req.query.id;
    if (!id) {
       res.sendStatus(400);
-   } else if (id !== werewolf.state_get().id) {
+   } else if (id !== state.id) {
       res.sendStatus(400);
+   } else if (state.cur !== pact.role) {
+      res.sendStatus(403);
    } else {
-      let s = Object.assign({}, werewolf.state_get()), p;
+      let s = Object.assign({}, state), p;
       Object.keys(req.query).forEach((x) => {
          req.query[x] = ip_decode(req.query[x]);
          werewolf.actions_set(x, req.query[x]);
@@ -124,7 +137,8 @@ app.post('/api/werewolf/act', (req, res) => {
          case 'see':
             if (req.query[x]) {
                p = werewolf.player_get_obj(req.query[x]);
-               s.info = p.name + ' 是' + (p.role === 'x'?'狼人':'好人');
+               // first night, wild child (U) should not be werewolf
+               s.info = p.name + ' 是' + (['x', 'g', 'i', 's'].indexOf(p.role)>=0?'狼人':'好人');
             }
             break;
          case 'lover_1':
@@ -136,15 +150,32 @@ app.post('/api/werewolf/act', (req, res) => {
             break;
          }
       });
+      werewolf.state_set('-');
       start_one_role = 0;
       send_json(res, s);
    }
 });
 
 app.post('/api/werewolf/info', (req, res) => {
-   let ps = werewolf.player_all();
-   ps = Object.keys(ps).map((x) => ps[x]);
+   let ps = werewolf.player_all(),
+       order = werewolf.player_get_order(),
+       ips = Object.keys(ps);
+   if (order.length === ips.length) {
+      ips = order;
+   }
+   ps = ips.map((x) => ps[x]);
    send_json(res, {players: ps});
+});
+
+app.post('/api/werewolf/reorder', (req, res) => {
+   let seq = req.query.seq;
+   if (!seq) {
+      res.sendStatus(400);
+      return;
+   }
+   seq = seq.split(',').map(ip_decode);
+   werewolf.player_reorder(seq);
+   send_json(res, {});
 });
 
 app.post('/api/werewolf/bigvote', (req, res) => {
@@ -155,35 +186,9 @@ app.post('/api/werewolf/bigvote', (req, res) => {
 
 app.post('/api/werewolf/night', (req, res) => {
    let actions = werewolf.actions_get(),
-       died = actions.kill || [],
-       i, heal, protect;
-   if (actions.heal) {
-      heal = actions.heal[0];
-      i = died.indexOf(heal);
-      if (i >= 0) died.splice(i, 1);
-   }
-   if (actions.protect) {
-      protect = actions.protect[0];
-      i = died.indexOf(protect);
-      if (heal === protect) died.push(heal);
-      else if (i >= 0) died.splice(i, 1);
-   }
-   if (actions.poison) died = died.concat(actions.poison);
-   if (actions.lovers) {
-      let love_die = [];
-      died.forEach((x) => {
-         i = actions.lovers.indexOf(x);
-         if (i === 0 && died.indexOf(actions.lovers[1]) < 0) love_die.push(actions.lovers[1]);
-         else if (i === 1 && died.indexOf(actions.lovers[0]) < 0) love_die.push(actions.lovers[0]);
-      });
-      died = died.concat(love_die);
-   }
-   let m;
-   if (died.length) {
-      m = '昨晚死亡的人员有 ' + died.map((x) => werewolf.player_get_obj(x).name).join(', ');
-   } else {
-      m = '昨晚平安夜;';
-   }
+       m = werewolf.night_result();
+   m += werewolf.info_hunter();
+   m += werewolf.info_bear();
    werewolf.state_set('-');
    send_json(res, {info: m});
 });

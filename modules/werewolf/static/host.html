@@ -72,13 +72,17 @@
             <thead><th>IP</th><th>代号</th><th>&nbsp;</th></thead>
             <tbody id="tbl_players"></tbody>
           </table></div>
+          <div id="txt_roles">
+             <button class="btn btn-default" id="btn_confirm_config">显示角色统计</button>
+             <span class="hide" id="txt_roles"></span>
+          </div>
         </div>
         <div>
           <button class="btn btn-default" id="btn_refresh">刷新</button>
           <div class="btn-group">
             <button class="btn btn-default" id="btn_init">开始</button>
             <button class="btn btn-default hide" id="btn_night">黑夜</button>
-            <button class="btn btn-default hide" id="btn_daylight">白天</button>
+            <button class="btn btn-default" id="btn_daylight">白天</button>
             <button class="btn btn-default hide" id="btn_stop">结束</button>
           </div>
         </div>
@@ -179,22 +183,20 @@
              btn.appendChild(document.createTextNode('死亡'));
              btn.className = 'btn btn-default btn_die';
              td.appendChild(btn);
+
+             btn = document.createElement('button');
+             btn.appendChild(document.createTextNode('上移'));
+             btn.className = 'btn btn-default btn_up';
+             td.appendChild(btn);
+             btn = document.createElement('button');
+             btn.appendChild(document.createTextNode('下移'));
+             btn.className = 'btn btn-default btn_down';
+             td.appendChild(btn);
+
              tr.appendChild(td);
              component.appendChild(tr);
           });
        }
-
-       /*ajax({
-          url: '/api/werewolf/config'
-       }, function(info) {
-          Object.keys(info.roles).forEach(function (x) {
-             if (x === 'o' || x === 'x') {
-                document.querySelector('#n_' + x).value = '' + info.roles[x];
-             } else {
-                document.querySelector('#th_' + x).checked = info.roles[x]!==0;
-             }
-          });
-       });*/
 
        $('btn_config').on('click', function (evt) {
           var data = {
@@ -214,23 +216,110 @@
           ajax({
              url: '/api/werewolf/info'
           }, function (info) {
+             cache_players = {};
+             cache_players.order = info.players.map(function (x) {return x.ip;});
              info.players.forEach(function (x) {cache_players[x.ip] = x;});
              green_border(evt.target);
              generate_tbl_players(info.players);
              generate_players(false, info.players, document.getElementById('sel_from'));
              generate_players(true, info.players, document.getElementById('sel_to'));
+             component = document.getElementById('txt_roles');
+             component.classList.add('hide');
+             aggregate_roles();
           }, function () {
              red_border(evt.target);
           });
        });
 
+       $('btn_confirm_config').on('click', function (evt) {
+          component = document.getElementById('txt_roles');
+          component.classList.remove('hide');
+       });
+
+       function aggregate_roles() {
+          var roles = {}, count = 0, str = null;
+          for (var ip in cache_players) {
+             if (ip === 'order') continue;
+             var p = cache_players[ip];
+             if (!p) continue;
+             if (roles[p.role]) {
+                roles[p.role] ++;
+             } else {
+                roles[p.role] = 1;
+             }
+             count ++;
+          }
+          str = '目前共有' + count + '人加入; ';
+          for (var role in roles) {
+             str += player_role_name(role) + ': ' + roles[role] + '; ';
+          }
+          component = document.getElementById('txt_roles');
+          component.innerHTML = str;
+       }
+
+       function player_move_up(btn) {
+          var tr = btn.parentNode.parentNode,
+              tbody = tr.parentNode,
+              trup = tr.previousSibling,
+              ip = tr._data,
+              order = cache_players.order,
+              i = order.indexOf(ip), t;
+          if (i <= 0 || i >= order.length) return;
+          t = order[i];
+          order[i] = order[i-1];
+          order[i-1] = t;
+          ajax({
+             url: '/api/werewolf/reorder',
+             data: {'seq': order.map(ip_encode).join(',')}
+          }, function () {
+             green_border(btn);
+          }, function () {
+             red_border(btn);
+          });
+          tbody.removeChild(tr);
+          tbody.insertBefore(tr, trup);
+       }
+
+       function player_move_down(btn) {
+          var tr = btn.parentNode.parentNode,
+              tbody = tr.parentNode,
+              trdw = tr.nextSibling,
+              ip = tr._data,
+              order = cache_players.order,
+              i = order.indexOf(ip), t;
+          if (i < 0 || i >= order.length - 1) return;
+          t = order[i];
+          order[i] = order[i+1];
+          order[i+1] = t;
+          ajax({
+             url: '/api/werewolf/reorder',
+             data: {'seq': order.map(ip_encode).join(',')}
+          }, function () {
+             green_border(btn);
+          }, function () {
+             red_border(btn);
+          });
+          tbody.removeChild(tr);
+          trdw = trdw.nextSibling;
+          if (trdw) {
+             tbody.insertAfter(tr, trdw);
+          } else {
+             tbody.appendChild(tr);
+          }
+       }
+
        $('tbl_players').on('click', function (evt) {
           var klass = evt.target.classList,
-              component = evt.target.parentNode;
-          if (klass.contains('btn_die')) {
+              component = evt.target.parentNode,
+              ip = component.parentNode._data;
+          if (klass.contains('btn_up')) {
+             player_move_up(evt.target);
+          } else if (klass.contains('btn_down')) {
+             player_move_down(evt.target);
+          } else if (klass.contains('btn_die')) {
              ajax({
                 url: '/api/player/alive',
-                data: {ip: ip_encode(component.parentNode._data), alive: 0}
+                data: {ip: ip_encode(ip), alive: 0}
              }, function () {
                 green_border(evt.target);
              }, function () {
@@ -239,7 +328,7 @@
           } else if (klass.contains('btn_live')) {
              ajax({
                 url: '/api/player/alive',
-                data: {ip: ip_encode(component.parentNode._data), alive: 1}
+                data: {ip: ip_encode(ip), alive: 1}
              }, function () {
                 green_border(evt.target);
              }, function () {
@@ -248,10 +337,18 @@
           } else if (klass.contains('btn_unregister')) {
              ajax({
                 url: '/api/player/unregister',
-                data: { ip: ip_encode(component.parentNode._data) }
+                data: { ip: ip_encode(ip) }
              }, function () {
                 green_border(evt.target);
                 component.parentNode.parentNode.removeChild(component.parentNode);
+                delete cache_players[ip];
+                var index = cache_players.order.indexOf(ip);
+                if (index >= 0) {
+                   cache_players.order.splice(index, 1);
+                }
+                component = document.getElementById('txt_roles');
+                component.classList.add('hide');
+                aggregate_roles();
              }, function () {
                 red_border(evt.target);
              });
@@ -293,6 +390,7 @@
        $('btn_vote_calc').on('click', function () {
           var m = '';
           Object.keys(vote).forEach(function (x) {
+             m += '（请自行增加警长的票）';
              m += cache_players[x].name + ' 有 ' + vote[x] + ' 票;';
           });
           component = document.getElementById('txt_info');
@@ -325,6 +423,7 @@
        }
 
        $('btn_init').on('click', state_set_factory(' '));
+       $('btn_daylight').on('click', state_set_factory('-'));
        $('btn_stop').on('click', state_set_factory(' '));
        $('btn_theif').on('click', state_set_factory('T'));
        $('btn_cupid').on('click', state_set_factory('Q'));

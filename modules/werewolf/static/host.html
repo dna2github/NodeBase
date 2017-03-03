@@ -72,7 +72,7 @@
             <thead><th>IP</th><th>代号</th><th>&nbsp;</th></thead>
             <tbody id="tbl_players"></tbody>
           </table></div>
-          <div id="txt_roles">
+          <div class="hide">
              <button class="btn btn-default" id="btn_confirm_config">显示角色统计</button>
              <span class="hide" id="txt_roles"></span>
           </div>
@@ -225,6 +225,7 @@
              generate_players(true, info.players, document.getElementById('sel_to'));
              component = document.getElementById('txt_roles');
              component.classList.add('hide');
+             component.parentNode.classList.remove('hide');
              aggregate_roles();
           }, function () {
              red_border(evt.target);

@@ -29,14 +29,27 @@
        <div><button id="btn_save" class="btn btn-default">Save</button></div>
     </div>
     <div class="well well-sm">
-       <a class="btn btn-default" id="btn_dquote">" "</a>
-       <a class="btn btn-default" id="btn_squote">' '</a>
-       <a class="btn btn-default" id="btn_xbra">( )</a>
-       <a class="btn btn-default" id="btn_ybra">{ }</a>
-       <a class="btn btn-default" id="btn_zbra">&lt; &gt;</a>
+       <div class="btn-group">
+          <a class="btn btn-default" id="btn_dquote">" "</a>
+          <a class="btn btn-default" id="btn_squote">' '</a>
+          <a class="btn btn-default" id="btn_xbra">( )</a>
+          <a class="btn btn-default" id="btn_ybra">{ }</a>
+          <a class="btn btn-default" id="btn_zbra">&lt; &gt;</a>
+       </div>
+       <div class="btn-group">
+          <a class="btn btn-default" id="btn_sel_prev_word">&lt;</a>
+          <a class="btn btn-default" id="btn_sel_word">SelectWord</a>
+          <a class="btn btn-default" id="btn_sel_next_word">&gt;</a>
+       </div>
     </div>
     <script type="text/javascript" src="common.js"></script>
     <script>
+    var word_stop = [
+       ' ', '\t', '\n', '~', '`', '!', '@', '#', '$', '%', '^', '&', '*',
+       '(', ')', '-', '+', '=', '[', ']', '{', '}', '|', '\\', ':', ';',
+       '"', '\'', '<', '>', ',', '.', '/', '?'
+    ];
+
     function factory_pair_insert(str, cur) {
        return function (evt) {
           var c = document.getElementById('txt_text'),
@@ -53,6 +66,59 @@
     $('btn_xbra').on('click', factory_pair_insert('()', 1));
     $('btn_ybra').on('click', factory_pair_insert('{}', 1));
     $('btn_zbra').on('click', factory_pair_insert('<>', 1));
+
+    function select_word(direction) {
+       var c = document.getElementById('txt_text'),
+           s = c.selectionStart,
+           e = c.selectionEnd,
+           n = c.value.length,
+           forward = false,
+           backward = false;
+       switch (direction) {
+       case 0:
+          if (word_stop.indexOf(c.value.charAt(s)) < 0) {
+             backward = true;
+          }
+          if (word_stop.indexOf(c.value.charAt(e)) < 0) {
+             forward = true;
+          }
+          break;
+       case -1:
+          backward = true;
+          break;
+       case 1:
+          forward = true;
+          break;
+       }
+       if (backward) {
+          if (word_stop.indexOf(c.value.charAt(s-1)) >= 0) {
+             s --;
+          } else {
+             while (s > 0) {
+                if (word_stop.indexOf(c.value.charAt(s-1)) >= 0) break;
+                s --;
+             }
+          }
+          if (s < 0) s = 0;
+       }
+       if (forward) {
+          if (word_stop.indexOf(c.value.charAt(e)) >= 0) {
+             e ++;
+          } else {
+             while (e < n) {
+                e ++;
+                if (word_stop.indexOf(c.value.charAt(e)) >= 0) break;
+             }
+          }
+          if (e > n) e = n;
+       }
+       c.selectionStart = s;
+       c.selectionEnd = e;
+       c.focus();
+    }
+    $('btn_sel_prev_word').on('click', function () { select_word(-1); });
+    $('btn_sel_word').on('click', function () { select_word(0); });
+    $('btn_sel_next_word').on('click', function () { select_word(1); });
     $('view_list').on('click', function (evt) {
        if (evt.target.tagName.toLowerCase() !== 'button') return;
        var txt_dir = document.getElementById('txt_dir'),
@@ -69,7 +135,7 @@
     });
     $('btn_list').on('click', function (evt) {
        ajax({
-          url: '/api/nodebase/nodtepad/v1/list',
+          url: '/api/nodebase/nodepad/v1/list',
           json: {
              path: document.getElementById('txt_dir').value
           }
@@ -99,7 +165,7 @@
     });
     $('btn_open').on('click', function (evt) {
        ajax({
-          url: '/api/nodebase/nodtepad/v1/open',
+          url: '/api/nodebase/nodepad/v1/open',
           json: {
              path: document.getElementById('txt_file').value
           }
@@ -112,7 +178,7 @@
     });
     $('btn_save').on('click', function (evt) {
        ajax({
-          url: '/api/nodebase/nodtepad/v1/save',
+          url: '/api/nodebase/nodepad/v1/save',
           json: {
              path: document.getElementById('txt_file').value,
              text: document.getElementById('txt_text').value

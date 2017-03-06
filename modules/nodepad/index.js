@@ -30,7 +30,7 @@ app.get('/test', (req, res) => {
    res.send('hello world! ' + get_ip(req));
 });
 
-app.post('/api/nodebase/nodtepad/v1/list', (req, res) => {
+app.post('/api/nodebase/nodepad/v1/list', (req, res) => {
    if (!req.body) return res.sendStatus(400);
    if (!req.body.path) return res.sendStatus(400);
    let parent = req.body.path,
@@ -51,7 +51,7 @@ app.post('/api/nodebase/nodtepad/v1/list', (req, res) => {
    send_json(res, { dirs, files });
 });
 
-app.post('/api/nodebase/nodtepad/v1/open', (req, res) => {
+app.post('/api/nodebase/nodepad/v1/open', (req, res) => {
    let file = req.body.path;
    send_json(res, {
       path: file,
@@ -59,7 +59,7 @@ app.post('/api/nodebase/nodtepad/v1/open', (req, res) => {
    });
 });
 
-app.post('/api/nodebase/nodtepad/v1/save', (req, res) => {
+app.post('/api/nodebase/nodepad/v1/save', (req, res) => {
    let file = req.body.path,
        text = req.body.text;
    fs.writeFileSync(file, text);

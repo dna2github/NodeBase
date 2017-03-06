@@ -55,9 +55,18 @@
           var c = document.getElementById('txt_text'),
               s = c.selectionStart,
               e = c.selectionEnd;
-          c.value = c.value.substring(0, s) + str + c.value.substring(e);
-          c.selectionStart = s + cur;
-          c.selectionEnd = s + cur;
+          console.log(s, e);
+          if (s === e) {
+             c.value = c.value.substring(0, s) + str + c.value.substring(e);
+             c.selectionStart = s + cur;
+             c.selectionEnd = s + cur;
+          } else {
+             c.value = c.value.substring(0, s) +
+                str.substring(0, cur) + c.value.substring(s, e) + str.substring(cur) +
+                c.value.substring(e);
+             c.selectionStart = s - cur + 1;
+             c.selectionEnd = e + str.length - cur + 1;
+          }
           c.focus();
        };
     }

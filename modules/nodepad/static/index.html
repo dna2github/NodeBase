@@ -42,7 +42,19 @@
           <a class="btn btn-default" id="btn_sel_next_word">&gt;</a>
        </div>
     </div>
+    <div class="well well-sm">
+       <div class="input-group">
+          <select id="sel_plugin" type="text" class="form-control" placeholder="plugin name">
+          </select>
+          <span class="input-group-btn">
+             <button id="btn_plugin_run" class="btn btn-default">Load</button>
+             <button id="btn_plugin_refresh" class="btn btn-default">Refresh</button>
+          </span>
+       </div>
+       <div class="container-fluid" id="view_plugin" style="margin-top:10px;"></div>
+    </div>
     <script type="text/javascript" src="common.js"></script>
+    <script type="text/javascript" src="plugin.js"></script>
     <script>
     var word_stop = [
        ' ', '\t', '\n', '~', '`', '!', '@', '#', '$', '%', '^', '&', '*',
@@ -197,6 +209,27 @@
        }, function () {
           red_border(document.getElementById('btn_save'));
        });
+    });
+
+    var plugin_subsys = plugin();
+    $('btn_plugin_refresh').on('click', function (evt) {
+       ajax({
+          url: '/api/nodebase/nodepad/v1/plugins'
+       }, function (data) {
+          plugin_subsys.path = data.path;
+          document.getElementById('sel_plugin').innerHTML =
+             data.plugins.map(function (x) {
+                return '<option>' + x + '</option>';
+             }).join('');
+          green_border(evt.target);
+       }, function () {
+          red_border(evt.target);
+       });
+    });
+    $('btn_plugin_run').on('click', function (evt) {
+       var val = document.getElementById('sel_plugin').value;
+       if (!val) return;
+       plugin_subsys.load('__plugin__', '/plugin/' + val + '/index.js', null, true);
     });
     </script>
   </body>

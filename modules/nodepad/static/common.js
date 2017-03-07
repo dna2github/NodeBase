@@ -90,6 +90,21 @@ function ajax (options, done_fn, fail_fn) {
   }
   xhr.send(payload);
 }
+function html (url, done_fn, fail_fn) {
+  var xhr = new XMLHttpRequest(),
+      payload = null;
+  xhr.open('GET', url, true);
+  xhr.addEventListener('readystatechange', function (evt) {
+     if (evt.target.readyState === 4 /*XMLHttpRequest.DONE*/) {
+        if (~~(evt.target.status/100) === 2) {
+           done_fn && done_fn(evt.target.response || '<!-- empty -->');
+        } else {
+           fail_fn && fail_fn(evt.target.status);
+        }
+     }
+  });
+  xhr.send(null);
+}
 
 function green_border(element) {
    element.style.border = '1px solid green';

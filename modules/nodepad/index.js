@@ -66,6 +66,22 @@ app.post('/api/nodebase/nodepad/v1/save', (req, res) => {
    send_json(res, { path: file });
 });
 
+app.post('/api/nodebase/nodepad/v1/plugins', (req, res) => {
+   let parent = path.join(static_dir, 'plugin'),
+       symbols = fs.readdirSync(parent),
+       plugins = [];
+   symbols.forEach((x) => {
+      try {
+         if (fs.lstatSync(path.join(parent, x)).isDirectory()) {
+            plugins.push(x);
+         }
+      } catch (e) {
+         // no permission
+      }
+   });
+   send_json(res, { plugins, path: parent });
+});
+
 app.use('/', express.static(static_dir));
 
 app.listen(9090, '0.0.0.0', () => {

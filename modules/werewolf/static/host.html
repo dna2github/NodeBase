@@ -7,60 +7,65 @@
     <link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
   </head>
   <body>
-    <div class="panel panel-default hide" id="view_config">
+    <div class="panel panel-default" id="view_config">
       <div class="panel-body">
-        <div class="form-group">
-          <label>平民</label>
-          <select class="form-control" id="n_o" />
-            <option>1</option>
-            <option>2</option>
-            <option>3</option>
-            <option>4</option>
-            <option>5</option>
-            <option>6</option>
-            <option>7</option>
-            <option>8</option>
-            <option>9</option>
-            <option>10</option>
-          </select>
+        <div id="view_config_detail" class="hide">
+          <div class="form-group">
+            <label>平民</label>
+            <select class="form-control" id="n_o" />
+              <option>0</option>
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+              <option>4</option>
+              <option>5</option>
+              <option>6</option>
+              <option>7</option>
+              <option>8</option>
+              <option>9</option>
+              <option>10</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>狼人</label>
+            <select class="form-control" id="n_x" />
+              <option>0</option>
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+              <option>4</option>
+              <option>5</option>
+              <option>6</option>
+              <option>7</option>
+              <option>8</option>
+              <option>9</option>
+              <option>10</option>
+            </select>
+          </div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_S"/>预言家</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_W"/>女巫</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_H"/>猎人</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_F"/>白痴</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_G"/>守卫</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_B"/>熊</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_U"/>野孩子</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_O"/>长老</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_C"/>乌鸦</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_P"/>锈剑骑士</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_D"/>两姐妹 (2人)</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_Q"/>丘比特</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_T"/>盗贼</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_E"/>替罪羊</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_s"/>贪睡狼</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_g" disabled />大野狼</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_i" disabled />祖狼</label></div>
+          <div class="checkbox"><label><input type="checkbox" id="ch_f" disabled/>吹笛者</label></div>
+          <div class="form-group">
+            <label>其他</label>
+            <div class="checkbox"><label><input type="checkbox" id="ch_r_1"/>未知村规</label></div>
+          </div>
         </div>
-        <div class="form-group">
-          <label>狼人</label>
-          <select class="form-control" id="n_x" />
-            <option>1</option>
-            <option>2</option>
-            <option>3</option>
-            <option>4</option>
-            <option>5</option>
-            <option>6</option>
-            <option>7</option>
-            <option>8</option>
-            <option>9</option>
-            <option>10</option>
-          </select>
-        </div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_S"/>预言家</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_W"/>女巫</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_H"/>猎人</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_F"/>白痴</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_G"/>守卫</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_B"/>熊</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_U"/>野孩子</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_O"/>长老</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_C"/>乌鸦</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_P"/>锈剑骑士</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_Q"/>丘比特</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_T"/>盗贼</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_E"/>替罪羊</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_g"/>大野狼</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_i"/>祖狼</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_s"/>贪睡狼</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_f"/>吹笛者</label></div>
-        <div class="checkbox"><label><input type="checkbox" id="ch_D"/>两姐妹 (2人)</label></div>
-        <div class="form-group">
-          <label>其他</label>
-          <div class="checkbox"><label><input type="checkbox" id="ch_r_1"/>未知村规</label></div>
-        </div>
+        <button class="btn btn-default" id="btn_config_switch">显示</button>
         <button class="btn btn-default" id="btn_config">配置</button>
       </div>
     </div>
@@ -80,17 +85,15 @@
         <div>
           <button class="btn btn-default" id="btn_refresh">刷新</button>
           <div class="btn-group">
-            <button class="btn btn-default" id="btn_init">开始</button>
-            <button class="btn btn-default hide" id="btn_night">黑夜</button>
+            <button class="btn btn-default" id="btn_init">重新开始</button>
             <button class="btn btn-default" id="btn_daylight">白天</button>
-            <button class="btn btn-default hide" id="btn_stop">结束</button>
           </div>
         </div>
         <br/>
         <div class="form-group">
           <label>第一夜</label>
           <div><div class="btn-group">
-            <button class="btn btn-default hide" id="btn_theif">盗贼</button>
+            <button class="btn btn-default" id="btn_theif">盗贼</button>
             <button class="btn btn-default" id="btn_cupid">丘比特</button>
             <button class="btn btn-default" id="btn_wildchild">野孩子</button>
           </div></div>
@@ -198,16 +201,46 @@
           });
        }
 
+       $('btn_config_switch').on('click', function (evt) {
+          var c = document.getElementById('view_config_detail');
+          if (c.classList.contains('hide')) {
+             c.classList.remove('hide');
+             evt.target.innerHTML = '隐藏';
+          } else {
+             c.classList.add('hide');
+             evt.target.innerHTML = '显示';
+          }
+       });
        $('btn_config').on('click', function (evt) {
           var data = {
-             'o': parseInt(document.querySelector('#n_o').value, 10),
-             'x': parseInt(document.querySelector('#n_x').value, 10),
+             o: parseInt(document.getElementById('n_o').value, 10),
+             x: parseInt(document.getElementById('n_x').value, 10),
+             S: document.getElementById('ch_S').checked?1:0,
+             H: document.getElementById('ch_H').checked?1:0,
+             F: document.getElementById('ch_F').checked?1:0,
+             G: document.getElementById('ch_G').checked?1:0,
+             B: document.getElementById('ch_B').checked?1:0,
+             U: document.getElementById('ch_U').checked?1:0,
+             O: document.getElementById('ch_O').checked?1:0,
+             C: document.getElementById('ch_C').checked?1:0,
+             P: document.getElementById('ch_P').checked?1:0,
+             Q: document.getElementById('ch_Q').checked?1:0,
+             T: document.getElementById('ch_T').checked?1:0,
+             E: document.getElementById('ch_E').checked?1:0,
+             g: document.getElementById('ch_g').checked?1:0,
+             i: document.getElementById('ch_i').checked?1:0,
+             s: document.getElementById('ch_s').checked?1:0,
+             f: document.getElementById('ch_f').checked?1:0,
+             D: document.getElementById('ch_D').checked?2:0
           };
+          env.config = data;
           ajax({
              url: '/api/werewolf/config',
              data: data
           }, function () {
+             green_border(evt.target);
           }, function () {
+             red_border(evt.target);
           });
        });
 
@@ -226,6 +259,7 @@
              component = document.getElementById('txt_roles');
              component.classList.add('hide');
              component.parentNode.classList.remove('hide');
+             env.config = info.config;
              aggregate_roles();
           }, function () {
              red_border(evt.target);
@@ -238,7 +272,8 @@
        });
 
        function aggregate_roles() {
-          var roles = {}, count = 0, str = null;
+          var roles = {}, count = 0, str = null,
+              match_diff = {}, match = false;
           for (var ip in cache_players) {
              if (ip === 'order') continue;
              var p = cache_players[ip];
@@ -251,8 +286,38 @@
              count ++;
           }
           str = '目前共有' + count + '人加入; ';
-          for (var role in roles) {
-             str += player_role_name(role) + ': ' + roles[role] + '; ';
+          if (!env.config.T) {
+             for (var role in env.config) {
+                if (roles[role]) {
+                   str += player_role_name(role) + ': ' + roles[role] + '; ';
+                }
+             }
+          }
+          for (var role in env.config) {
+             if (env.config[role] !== roles[role]) {
+                match_diff[role] = Math.abs(env.config[role] - (roles[role] || 0));
+             }
+          }
+          if (!env.config) {
+             str += '没有初始配置;';
+          } else {
+             var diff_count =
+                match = Object.keys(match_diff).map(function (x) {
+                   return match_diff[x];
+                }).reduce(function (x,y) {
+                   return x + y;
+                });
+             if (env.config.T) {
+                // probably but not exact
+                match = diff_count === 2;
+             } else {
+                match = diff_count === 0;
+             }
+             if (match) {
+                str += '所有人准备就绪;';
+             } else {
+                str += '角色人数和配置不匹配;';
+             }
           }
           component = document.getElementById('txt_roles');
           component.innerHTML = str;
@@ -411,7 +476,11 @@
           }, function (state) {
              if (state.cur === 'x') {
                 component = document.getElementById('btn_werewolf');
-                component.innerHTML = '狼人(' + state.werewolf_count + ')';
+                if (env.config.T) {
+                   component.innerHTML = '狼人';
+                } else {
+                   component.innerHTML = '狼人(' + state.werewolf_count + ')';
+                }
              }
              if (state.start_one_role === 0) {
                 play_sound(document.getElementById('sound_bar'), 'play.wav');
@@ -425,7 +494,6 @@
 
        $('btn_init').on('click', state_set_factory(' '));
        $('btn_daylight').on('click', state_set_factory('-'));
-       $('btn_stop').on('click', state_set_factory(' '));
        $('btn_theif').on('click', state_set_factory('T'));
        $('btn_cupid').on('click', state_set_factory('Q'));
        $('btn_wildchild').on('click', state_set_factory('U'));

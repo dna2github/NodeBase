@@ -3,14 +3,16 @@ const uuid = require('uuid');
 let players = { /* ip: obj */ };
 let players_order = [ /* ip */ ];
 let actions = {/*
-   lovers: [], kill, heal, poison, protect, bigvote, admire, see, deal
+   lovers, kill, heal, poison, protect, bigvote, admire, see, deal,
+   infect, theif
 */};
 let state = {
    cur: ' ',
+   config: null,
    id: uuid.v4()
 };
 
-function find_player(key, value) {
+function player_find(key, value) {
    for (var ip in players) {
       if (players[ip][key] === value) return ip;
    }
@@ -89,6 +91,21 @@ function state_get() {
    if (s.cur === 'W' && !actions.heal && actions.kill) {
       s.i_healable = actions.kill.map((x) => x?players[x]:null);
    }
+   if (s.cur === 'T') {
+      s.i_roles = [];
+      if (state.config) {
+         let roles = Object.assign({}, state.config);
+         for(let ip in players) {
+            roles[players[ip].init_role] --;
+         }
+         for(let role in roles) {
+            if (roles[role] > 0) s.i_roles.push({
+               ip: role,
+               name: player_role_name(role)
+            });
+         }
+      }
+   }
    return s;
 }
 
@@ -111,6 +128,14 @@ function state_set(val) {
    state.cur = val;
 }
 
+function config_get() {
+   return state.config;
+}
+
+function config_set(config) {
+   state.config = config;
+}
+
 function actions_get() {
    return actions;
 }
@@ -120,8 +145,20 @@ function actions_set(key, value) {
       delete actions[key];
       return;
    }
+   // e.g. 1,2,3 => [1,2,3]
+   // e.g. +1,2  => [x,y] + [1,2] = [x,y,1,2]
    value = value.split(',');
-   actions[key] = value;
+   if (value[0].charAt(0) === '+') {
+      value[0] = value[0].substring(1);
+      if (!actions[key]) actions[key] = [];
+      actions[key] = actions[key].concat(value);
+   } else {
+      actions[key] = value;
+   }
+   if (key === 'role') {
+      let ip = player_find('init_role', 'T');
+      players[ip].role = value[0];
+   }
 }
 
 function night_result() {
@@ -199,7 +236,7 @@ function is_werewolf(role) {
 }
 
 function info_hunter() {
-   let hunter_ip = find_player('init_role', 'H'), m;
+   let hunter_ip = player_find('init_role', 'H'), m;
    if (!hunter_ip) return '';
    // @require: night_result
    if (actions.died.indexOf(hunter_ip)) {
@@ -225,7 +262,7 @@ function info_hunter() {
 }
 
 function info_bear() {
-   let bear_ip = find_player('init_role', 'B');
+   let bear_ip = player_find('init_role', 'B');
    if (!bear_ip) return '';
    let next_ip = next_player(bear_ip),
        prev_ip = prev_player(bear_ip),
@@ -291,6 +328,7 @@ function player_role_name(role) {
 
 module.exports = {
    player_all,
+   player_find,
    player_get_obj,
    player_register,
    player_unregister,
@@ -301,6 +339,8 @@ module.exports = {
    actions_set,
    state_get,
    state_set,
+   config_get,
+   config_set,
    night_result,
    info_hunter,
    info_bear

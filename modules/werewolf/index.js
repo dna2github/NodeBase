@@ -13,6 +13,12 @@ function ip_decode(ip) {
    return ip?ip.split('-').join('.'):ip;
 }
 
+function fake_act(delay) {
+   setTimeout(() => {
+      start_one_role = 0;
+   }, delay);
+}
+
 function send_json(res, obj) {
    res.setHeader('Content-Type', 'application/json');
    res.send(JSON.stringify(obj));
@@ -53,8 +59,13 @@ app.post('/api/info', (req, res) => {
 
 app.post('/api/player/register', (req, res) => {
    let ip = get_ip(req),
-       p = werewolf.player_get_obj(ip);
+       p = werewolf.player_get_obj(ip),
+       s = werewolf.state_get();
    if (p) {
+      if (s.cur !== ' ') {
+         // should not change role after game starting
+         req.query.role = p.role;
+      }
       werewolf.player_register(ip, req.query.name, req.query.role);
       send_json(res, {});
    } else {
@@ -78,11 +89,23 @@ app.post('/api/player/alive', (req, res) => {
    send_json(res, {});
 });
 
+app.post('/api/werewolf/config', (req, res) => {
+   let config = req.query;
+   for (let role in config) {
+      config[role] = parseInt(config[role], 10);
+   }
+   werewolf.config_set(Object.assign({}, config));
+   send_json(res, {});
+});
+
 app.post('/api/werewolf/state', (req, res) => {
    let state = req.query.state || null,
        s = null;
    if (state) {
       werewolf.state_set(state);
+      if (!werewolf.player_find('role', state)) {
+         fake_act(~~(Math.random()*7000+3000)); // 3~10s
+      }
       start_one_role = 1;
       s = Object.assign({}, werewolf.state_get());
       if (state === ' ') {
@@ -164,7 +187,7 @@ app.post('/api/werewolf/info', (req, res) => {
       ips = order;
    }
    ps = ips.map((x) => ps[x]);
-   send_json(res, {players: ps});
+   send_json(res, {players: ps, config: werewolf.config_get()});
 });
 
 app.post('/api/werewolf/reorder', (req, res) => {

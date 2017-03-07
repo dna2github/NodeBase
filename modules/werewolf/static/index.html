@@ -27,14 +27,14 @@
               <option value="O">长老 Elder</option>
               <option value="C">乌鸦 Crow</option>
               <option value="P">锈剑骑士 RustySwordPaladin</option>
+              <option value="D">两姐妹 TwoSisters</option>
               <option value="Q">丘比特 Cupid</option>
-              <option disabled value="T">盗贼 Theif</option>
+              <option value="T">盗贼 Theif</option>
               <option value="E">替罪羊 Scapegoat</option>
+              <option value="s">贪睡狼 SleepyWolf</option>
               <option disabled value="g">大野狼 GreedyWolf</option>
               <option disabled value="i">祖狼 InfectWolf</option>
-              <option disabled value="s">贪睡狼 SleepyWolf</option>
               <option disabled value="f">吹笛者 FluteMan</option>
-              <option value="D">两姐妹 TwoSisters</option>
             </select>
             <span class="input-group-btn">
               <button class="btn btn-default" id="btn_secret">&gt;</button>
@@ -121,12 +121,8 @@
     <div class="panel-default hide" id="view_W">
       <div class="panel-body">
         <div class="form-group">
-          <label>女巫 - 解药</label>
-          <select class="form-control" id="sel_W_heal"></select>
-        </div>
-        <div class="form-group">
-          <label>女巫 - 毒药</label>
-          <select class="form-control" id="sel_W_poison"></select>
+          <label>女巫 - 解药/毒药</label>
+          <select class="form-control" id="sel_W"></select>
         </div>
         <button class="btn btn-default" id="btn_W">确定</button>
       </div>
@@ -241,16 +237,48 @@
              generate_players(true, state.i_alive, document.getElementById('sel_Q_lover_2'));
              break;
           case 'W':
-             generate_players(true, state.i_alive, document.getElementById('sel_W_poison'));
-             generate_players(true, state.i_healable, document.getElementById('sel_W_heal'));
+             var group_poison = document.createElement('optgroup'),
+                 group_heal = document.createElement('optgroup'),
+                 no_act = document.createElement('option'),
+                 sel_W = document.getElementById('sel_W');
+             generate_players(false, (state.i_alive || []).map(function (x) {
+                var t = Object.assign({}, x); t.ip = '-' + t.ip; return t;
+             }), group_poison);
+             generate_players(false, (state.i_healable || []).map(function(x) {
+                var t = Object.assign({}, x); t.ip = '+' + t.ip; return t;
+             }), group_heal);
+             clear_element(sel_W);
+             no_act.value = '';
+             no_act.appendChild(document.createTextNode('<弃权>'));
+             sel_W.appendChild(no_act);
+             group_heal.label = '解药';
+             sel_W.appendChild(group_heal);
+             group_poison.label = '毒药';
+             sel_W.appendChild(group_poison);
              break;
           case 'D':
              generate_players(true, state.i_alive, document.getElementById('sel_D_deal'));
+             break;
+          case 'T':
+             generate_players(false, state.i_roles, document.getElementById('sel_T_role'));
              break;
           default:
           }
        }
 
+       function act_ajax(evt, data, callback) {
+          ajax({
+             url: '/api/werewolf/act', data: data
+          }, function (state) {
+             green_border(evt.target);
+             switch_tab('<>');
+             show_message('已操作成功！');
+             if (callback) callback(state);
+          }, function () {
+             red_border(evt.target);
+             show_message('操作失败，请重新尝试！');
+          });
+       }
        function act_factory(keyval, callback) {
           return function (evt) {
              var data = {id: env.id};
@@ -258,19 +286,24 @@
                 data[key] = document.getElementById(keyval[key]).value;
                 if (data[key]) data[key] = ip_encode(data[key]);
              });
-             ajax({
-                url: '/api/werewolf/act', data: data
-             }, function (state) {
-                green_border(evt.target);
-                switch_tab('<>');
-                show_message('已操作成功！');
-                if (callback) callback(state);
-             }, function () {
-                red_border(evt.target);
-                show_message('操作失败，请重新尝试！');
-             });
+             act_ajax(evt, data, callback);
           };
        }
+       function special_act_witch(evt) {
+          var data = {id: env.id},
+              c = document.getElementById('sel_W');
+          if (!c.value) {
+             data.poison = '';
+             data.heal = '';
+          } else if (c.value.charAt(0) === '-') {
+             data.poison = c.value.substring(1);
+             data.heal = '';
+          } else {
+             data.poison = '';
+             data.heal = c.value.substring(1);
+          }
+          act_ajax(evt, data, null);
+       };
 
        ajax({
           url: '/api/info'
@@ -351,8 +384,9 @@
        $('btn_U').on('click', act_factory({admire: 'sel_U_admire'}));
        $('btn_x').on('click', act_factory({kill: 'sel_x_kill'}));
        $('btn_C').on('click', act_factory({bigvote: 'sel_C_bigvote'}));
-       $('btn_W').on('click', act_factory({poison: 'sel_W_poison', heal: 'sel_W_heal'}));
        $('btn_D').on('click', act_factory({deal: 'sel_D_deal'}));
+       $('btn_T').on('click', act_factory({role: 'sel_T_role'}));
+       $('btn_W').on('click', special_act_witch);
     </script>
   </body>
 </html>

@@ -8,6 +8,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 
 import java.io.File;
@@ -66,19 +68,29 @@ public class NodeBaseApp extends LinearLayout {
       label.setText(_readme);
       _readme = null; // release memory
       addView(label);
+
+      TableLayout tbl = new TableLayout(context);
+      TableRow tbl_r_t = null;
+      tbl_r_t = new TableRow(context);
       label = new TextView(context);
       label.setText("Entry");
-      addView(label);
+      tbl_r_t.addView(label);
+      label = new TextView(context);
+      label.setText("Params");
+      tbl_r_t.addView(label);
+      tbl.addView(tbl_r_t);
+      tbl_r_t = new TableRow(context);
       _listEntries = new Spinner(context);
       _listEntries.setAdapter(
             new ArrayAdapter<String>(
-                  context, android.R.layout.simple_dropdown_item_1line, _appentries));
-      addView(_listEntries);
-      label = new TextView(context);
-      label.setText("Params");
-      addView(label);
+                  context, android.R.layout.simple_spinner_dropdown_item, _appentries));
+      tbl_r_t.addView(_listEntries);
       _txtParams = new EditText(context);
-      addView(_txtParams);
+      tbl_r_t.addView(_txtParams);
+      tbl.addView(tbl_r_t);
+      tbl.setStretchAllColumns(true);
+      addView(tbl);
+
 
       LinearLayout subview = new LinearLayout(context);
       subview.setOrientation(LinearLayout.HORIZONTAL);

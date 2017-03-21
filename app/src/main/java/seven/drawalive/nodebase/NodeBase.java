@@ -8,6 +8,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -17,7 +19,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.InputStream;
 
 
 public class NodeBase extends AppCompatActivity {
@@ -42,9 +43,36 @@ public class NodeBase extends AppCompatActivity {
       super.onDestroy();
    }
 
+   @Override
+   public boolean onCreateOptionsMenu(Menu menu) {
+      menu.add(Menu.NONE, 101, Menu.NONE, "Share");
+      menu.add(Menu.NONE, 102, Menu.NONE, "Reset");
+      return true;
+   }
+
+   @Override
+   public boolean onOptionsItemSelected(MenuItem item) {
+      switch (item.getItemId()) {
+         case 101: // share
+            Utils.shareInformation(
+                  NodeBase.this, "Share", "NodeBase",
+                  "Service is running at: " + _labelIp.getText(), null);
+            break;
+         case 102: // reset
+            Log.i("UI:Button", "Update node js binary ...");
+            Utils.resetNodeJS(NodeBase.this, getApplicationInfo().dataDir);
+            refreshAppList();
+            break;
+         default:
+            return super.onOptionsItemSelected(item);
+      }
+      return true;
+   }
+
    protected LinearLayout prepareLayout() {
       LinearLayout view, subview;
       TextView label;
+      LinearLayout.LayoutParams param;
 
       view = new LinearLayout(this);
       view.setOrientation(LinearLayout.VERTICAL);
@@ -57,21 +85,16 @@ public class NodeBase extends AppCompatActivity {
       label.setText("App Root Dir:");
       view.addView(label);
 
-      _txtAppRootDir = new EditText(this);
-      _txtAppRootDir.setText("/sdcard/.nodebase");
-      view.addView(_txtAppRootDir);
-
       subview = new LinearLayout(this);
       subview.setOrientation(LinearLayout.HORIZONTAL);
-      _btnShare = new Button(this);
-      _btnShare.setText("Share");
-      subview.addView(_btnShare);
+      _txtAppRootDir = new EditText(this);
+      _txtAppRootDir.setText("/sdcard/.nodebase");
+      param = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+      _txtAppRootDir.setLayoutParams(param);
+      subview.addView(_txtAppRootDir);
       _btnRefreshAppList = new Button(this);
       _btnRefreshAppList.setText("Refresh");
       subview.addView(_btnRefreshAppList);
-      _btnBinaryReset = new Button(this);
-      _btnBinaryReset.setText("Update");
-      subview.addView(_btnBinaryReset);
       view.addView(subview);
 
       ScrollView scroll = new ScrollView(this);
@@ -84,15 +107,6 @@ public class NodeBase extends AppCompatActivity {
    }
 
    protected void prepareEvents() {
-      _btnBinaryReset.setOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View view) {
-            Log.i("UI:Button", "Update node js binary ...");
-            Utils.resetNodeJS(NodeBase.this, getApplicationInfo().dataDir);
-            refreshAppList();
-         }
-      });
-
       _btnRefreshAppList.setOnClickListener(new View.OnClickListener() {
          @Override
          public void onClick(View view) {
@@ -100,15 +114,6 @@ public class NodeBase extends AppCompatActivity {
             String appdir = _txtAppRootDir.getText().toString();
             Utils.prepareNodeDirectory("", appdir);
             refreshAppList();
-         }
-      });
-
-      _btnShare.setOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View view) {
-            Utils.shareInformation(
-                  NodeBase.this, "Share", "NodeBase",
-                  "Service is running at: " + _labelIp.getText(), null);
          }
       });
    }
@@ -149,7 +154,6 @@ public class NodeBase extends AppCompatActivity {
             }
             return;
       }
-
    }
 
    protected void nodeSignal(String[] args) {
@@ -212,6 +216,6 @@ public class NodeBase extends AppCompatActivity {
 
    private TextView _labelIp;
    private EditText _txtAppRootDir;
-   private Button _btnShare, _btnRefreshAppList, _btnBinaryReset;
+   private Button _btnRefreshAppList;
    private LinearLayout _panelAppList;
 }

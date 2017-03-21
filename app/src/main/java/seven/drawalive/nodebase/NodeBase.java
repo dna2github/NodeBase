@@ -45,20 +45,14 @@ public class NodeBase extends AppCompatActivity {
 
    @Override
    public boolean onCreateOptionsMenu(Menu menu) {
-      menu.add(Menu.NONE, 101, Menu.NONE, "Share");
-      menu.add(Menu.NONE, 102, Menu.NONE, "Reset");
+      menu.add(Menu.NONE, 101, Menu.NONE, "Reset");
       return true;
    }
 
    @Override
    public boolean onOptionsItemSelected(MenuItem item) {
       switch (item.getItemId()) {
-         case 101: // share
-            Utils.shareInformation(
-                  NodeBase.this, "Share", "NodeBase",
-                  "Service is running at: " + _labelIp.getText(), null);
-            break;
-         case 102: // reset
+         case 101: // reset
             Log.i("UI:Button", "Update node js binary ...");
             Utils.resetNodeJS(NodeBase.this, getApplicationInfo().dataDir);
             refreshAppList();

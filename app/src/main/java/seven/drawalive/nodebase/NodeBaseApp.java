@@ -44,6 +44,8 @@ public class NodeBaseApp extends LinearLayout {
                count ++;
             } else if (name.toLowerCase().compareTo("readme") == 0) {
                _readme = Utils.readSmallFile(fentry.getAbsolutePath());
+            } else if (name.toLowerCase().compareTo("config") == 0) {
+               _config = new NodeBaseAppConfigFile(Utils.readSmallFile(fentry.getAbsolutePath()));
             }
          }
 
@@ -101,6 +103,10 @@ public class NodeBaseApp extends LinearLayout {
       _btnStop.setText("Stop");
       _btnStop.setEnabled(false);
       subview.addView(_btnStop);
+      _btnShare = new Button(context);
+      _btnShare.setText("Share");
+      _btnShare.setEnabled(false);
+      subview.addView(_btnShare);
       addView(subview);
    }
 
@@ -110,6 +116,7 @@ public class NodeBaseApp extends LinearLayout {
          public void onClick(View view) {
             _btnStart.setEnabled(false);
             _btnStop.setEnabled(true);
+            _btnShare.setEnabled(true);
             _delegate.signal(
                   new String[]{
                         "start",
@@ -125,7 +132,31 @@ public class NodeBaseApp extends LinearLayout {
          public void onClick(View view) {
             _btnStart.setEnabled(true);
             _btnStop.setEnabled(false);
+            _btnShare.setEnabled(false);
             _delegate.signal(new String[]{"stop"});
+         }
+      });
+
+      _btnShare.setOnClickListener(new View.OnClickListener() {
+         @Override
+         public void onClick(View view) {
+            String name = null, protocol = null, port = null, index = null;
+            if (_config != null) {
+               name = _config.get(null, "name");
+               port = _config.get(null, "port");
+               protocol = _config.get(null, "protocol");
+               index = _config.get(null, "index");
+            }
+            if (name == null) name = "NodeBase Service";
+            if (port == null) port = ""; else port = ":" + port;
+            if (protocol == null) protocol = "http";
+            if (index == null) index = "";
+            Utils.shareInformation(
+                  getContext(), "Share", "NodeBase",
+                  String.format(
+                        "[%s] is running at %s://%s%s%s",
+                        name, protocol, Utils.getIPv4(getContext()), port, index
+                  ), null);
          }
       });
    }
@@ -133,8 +164,9 @@ public class NodeBaseApp extends LinearLayout {
    private NodeBase.AppAction _delegate;
    private File _appdir;
    private String[] _appentries;
-   private Button _btnStart, _btnStop;
+   private Button _btnStart, _btnStop, _btnShare;
    private Spinner _listEntries;
    private EditText _txtParams;
    private String _readme;
+   private NodeBaseAppConfigFile _config;
 }

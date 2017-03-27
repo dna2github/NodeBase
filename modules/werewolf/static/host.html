@@ -259,7 +259,7 @@
              component = document.getElementById('txt_roles');
              component.classList.add('hide');
              component.parentNode.classList.remove('hide');
-             env.config = info.config;
+             env.config = info.config || {};
              aggregate_roles();
           }, function () {
              red_border(evt.target);
@@ -274,6 +274,7 @@
        function aggregate_roles() {
           var roles = {}, count = 0, str = null,
               match_diff = {}, match = false;
+          if (!env.config) env.config = {};
           for (var ip in cache_players) {
              if (ip === 'order') continue;
              var p = cache_players[ip];
@@ -476,6 +477,7 @@
           }, function (state) {
              if (state.cur === 'x') {
                 component = document.getElementById('btn_werewolf');
+                if (!env.config) env.config = {};
                 if (env.config.T) {
                    component.innerHTML = '狼人';
                 } else {

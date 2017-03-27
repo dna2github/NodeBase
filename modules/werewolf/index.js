@@ -155,6 +155,8 @@ app.post('/api/werewolf/act', (req, res) => {
       let s = Object.assign({}, state), p;
       Object.keys(req.query).forEach((x) => {
          req.query[x] = ip_decode(req.query[x]);
+      });
+      Object.keys(req.query).forEach((x) => {
          werewolf.actions_set(x, req.query[x]);
          switch(x) {
          case 'see':

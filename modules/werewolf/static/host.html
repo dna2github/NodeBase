@@ -299,7 +299,7 @@
                 match_diff[role] = Math.abs(env.config[role] - (roles[role] || 0));
              }
           }
-          if (!env.config) {
+          if (!env.config || !Object.keys(match_diff).length) {
              str += '没有初始配置;';
           } else {
              var diff_count =

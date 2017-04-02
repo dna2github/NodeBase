@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,6 +20,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.util.Collections;
+import java.util.List;
 
 
 public class NodeBase extends AppCompatActivity {
@@ -45,15 +50,48 @@ public class NodeBase extends AppCompatActivity {
 
    @Override
    public boolean onCreateOptionsMenu(Menu menu) {
-      menu.add(Menu.NONE, 101, Menu.NONE, "Reset");
+      menu.add(Menu.NONE, 101, Menu.NONE, "NICs");
+      menu.add(Menu.NONE, 102, Menu.NONE, "Reset");
       return true;
    }
 
    @Override
    public boolean onOptionsItemSelected(MenuItem item) {
       switch (item.getItemId()) {
-         case 101: // reset
-            Log.i("UI:Button", "Update node js binary ...");
+         case 101:
+            Log.i("UI:ActionButton", "Show NIC IP ...");
+            StringBuffer nic_list = new StringBuffer();
+            try {
+               for (NetworkInterface nic :
+                     Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                  List<InterfaceAddress> nic_addr = nic.getInterfaceAddresses();
+                  if (nic_addr.size() == 0) continue;
+                  StringBuffer nic_one = new StringBuffer();
+                  nic_one.append(nic.getName());
+                  nic_one.append(':');
+                  for (InterfaceAddress ia : nic_addr) {
+                     nic_one.append(' ');
+                     nic_one.append('[');
+                     String addr = ia.getAddress().getHostAddress();
+                     if (addr.indexOf('%') >= 0) {
+                        addr = addr.split("%")[0];
+                     }
+                     nic_one.append(addr);
+                     nic_one.append(']');
+                  }
+                  nic_list.append('\n');
+                  nic_list.append(nic_one);
+               }
+            } catch (Exception e) {
+               nic_list.append(String.format("\nError: %s", e.getMessage()));
+            }
+            CharSequence text = new String(nic_list);
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage(text).setTitle("NetworkInterface(s)");
+            builder.create().show();
+            break;
+         case 102: // reset
+            Log.i("UI:ActionButton", "Update node js binary ...");
             Utils.resetNodeJS(NodeBase.this, getApplicationInfo().dataDir);
             refreshAppList();
             break;

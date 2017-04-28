@@ -1,0 +1,256 @@
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+<title>ChineseCheese</title>
+</head>
+<body>
+<canvas id="paper" style="border:1px solid black;"></canvas>
+<div id="cache" style="display:none;">
+   <img id="cache_panel" src="panel.jpg" />
+   <img id="cache_item_r_shuai" src="r_shuai.png" />
+   <img id="cache_item_r_shi" src="r_shi.png" />
+   <img id="cache_item_r_xiang" src="r_xiang.png" />
+   <img id="cache_item_r_ma" src="r_ma.png" />
+   <img id="cache_item_r_ju" src="r_ju.png" />
+   <img id="cache_item_r_pao" src="r_pao.png" />
+   <img id="cache_item_r_bing" src="r_bing.png" />
+   <img id="cache_item_b_jiang" src="b_jiang.png" />
+   <img id="cache_item_b_shi" src="b_shi.png" />
+   <img id="cache_item_b_xiang" src="b_xiang.png" />
+   <img id="cache_item_b_ma" src="b_ma.png" />
+   <img id="cache_item_b_ju" src="b_ju.png" />
+   <img id="cache_item_b_pao" src="b_pao.png" />
+   <img id="cache_item_b_zu" src="b_zu.png" />
+</div>
+<script type="text/javascript" src="common.js"></script>
+<script type="text/javascript">
+function dom(id) {
+  return document.getElementById(id);
+}
+
+function on(elem, event, func) {
+  elem.addEventListener(event, func, false);
+  return on;
+}
+
+var paper = dom('paper'), pen = paper.getContext('2d');
+var ww = window.innerWidth*0.95, wh = window.innerHeight*0.95
+    pw = ww<wh?ww:wh, cr = pw/20, ir = 50;
+paper.setAttribute('width', ww);
+paper.setAttribute('height', wh);
+pen.save();
+var cache = {
+   panel: dom('cache_panel'),
+   item: {
+      r_shuai: dom('cache_item_r_shuai'),
+      r_shi: dom('cache_item_r_shi'),
+      r_xiang: dom('cache_item_r_xiang'),
+      r_ma: dom('cache_item_r_ma'),
+      r_ju: dom('cache_item_r_ju'),
+      r_pao: dom('cache_item_r_pao'),
+      r_bing: dom('cache_item_r_bing'),
+      b_jiang: dom('cache_item_b_jiang'),
+      b_shi: dom('cache_item_b_shi'),
+      b_xiang: dom('cache_item_b_xiang'),
+      b_ma: dom('cache_item_b_ma'),
+      b_ju: dom('cache_item_b_ju'),
+      b_pao: dom('cache_item_b_pao'),
+      b_zu: dom('cache_item_b_zu')
+   }
+};
+
+var base_objxy = [0, pw];
+if (ww>wh) base_objxy = [pw, 0];
+var objs = [
+   [base_objxy[0] + 0, base_objxy[1] + 0, 'r_shuai'],
+   [base_objxy[0] + cr, base_objxy[1] + 0, 'r_shi'],
+   [base_objxy[0] + cr*2, base_objxy[1] + 0, 'r_xiang'],
+   [base_objxy[0] + cr*3, base_objxy[1] + 0, 'r_ma'],
+   [base_objxy[0] + cr*4, base_objxy[1] + 0, 'r_ju'],
+   [base_objxy[0] + cr*5, base_objxy[1] + 0, 'r_pao'],
+   [base_objxy[0] + cr*6, base_objxy[1] + 0, 'r_bing'],
+   [base_objxy[0] + cr*7, base_objxy[1] + 0, 'r_bing'],
+   [base_objxy[0] + 0, base_objxy[1] + cr*2, 'r_bing'],
+   [base_objxy[0] + cr, base_objxy[1] + cr*2, 'r_shi'],
+   [base_objxy[0] + cr*2, base_objxy[1] + cr*2, 'r_xiang'],
+   [base_objxy[0] + cr*3, base_objxy[1] + cr*2, 'r_ma'],
+   [base_objxy[0] + cr*4, base_objxy[1] + cr*2, 'r_ju'],
+   [base_objxy[0] + cr*5, base_objxy[1] + cr*2, 'r_pao'],
+   [base_objxy[0] + cr*6, base_objxy[1] + cr*2, 'r_bing'],
+   [base_objxy[0] + cr*7, base_objxy[1] + cr*2, 'r_bing'],
+   [base_objxy[0] + 0, base_objxy[1] + cr*4, 'b_jiang'],
+   [base_objxy[0] + cr, base_objxy[1] + cr*4, 'b_shi'],
+   [base_objxy[0] + cr*2, base_objxy[1] + cr*4, 'b_xiang'],
+   [base_objxy[0] + cr*3, base_objxy[1] + cr*4, 'b_ma'],
+   [base_objxy[0] + cr*4, base_objxy[1] + cr*4, 'b_ju'],
+   [base_objxy[0] + cr*5, base_objxy[1] + cr*4, 'b_pao'],
+   [base_objxy[0] + cr*6, base_objxy[1] + cr*4, 'b_zu'],
+   [base_objxy[0] + cr*7, base_objxy[1] + cr*4, 'b_zu'],
+   [base_objxy[0] + 0, base_objxy[1] + cr*6, 'b_zu'],
+   [base_objxy[0] + cr, base_objxy[1] + cr*6, 'b_shi'],
+   [base_objxy[0] + cr*2, base_objxy[1] + cr*6, 'b_xiang'],
+   [base_objxy[0] + cr*3, base_objxy[1] + cr*6, 'b_ma'],
+   [base_objxy[0] + cr*4, base_objxy[1] + cr*6, 'b_ju'],
+   [base_objxy[0] + cr*5, base_objxy[1] + cr*6, 'b_pao'],
+   [base_objxy[0] + cr*6, base_objxy[1] + cr*6, 'b_zu'],
+   [base_objxy[0] + cr*7, base_objxy[1] + cr*6, 'b_zu']
+];
+
+function hit(x, y) {
+  var objx, objy, index, part;
+  index = -1;
+  for(var n=objs.length,i=0;i<n;i++){
+    objx = objs[i][0] - x + cr; objy = objs[i][1] - y + cr;
+    if (cr*cr>objx*objx+objy*objy) {
+      index = i;
+      break;
+    }
+  }
+  return {index: index};
+}
+
+function draw(obj) {
+  if (!obj) return;
+  // [x, y, r/b]
+  pen.save();
+  pen.beginPath();
+  pen.arc(obj[0]+cr, obj[1]+cr, cr, 0, 2*Math.PI);
+  pen.clip();
+  pen.drawImage(cache.item[obj[2]], obj[0], obj[1], cr*2, cr*2);
+  pen.restore();
+}
+
+function paint(time) {
+  pen.restore(); pen.save();
+  pen.clearRect(0, 0, paper.width, paper.height);
+  pen.translate(win_offset[0], win_offset[1]);
+  pen.drawImage(cache.panel, 0, 0, pw, pw);
+  for(var n=objs.length,i=0;i<n;i++) {
+    draw(objs[i]);
+  }
+  if (obj_select) {
+//    if (mouse_holding)
+       pen.strokeStyle = 'black';
+//    else
+//       pen.strokeStyle = 'grey';
+    pen.beginPath();
+    pen.arc(objs[obj_select[0]][0]+cr, objs[obj_select[0]][1]+cr, cr, 0, 2*Math.PI);
+    pen.stroke();
+  }
+}
+
+var obj_moving = null;
+var obj_select = null;
+var win_moving = null;
+var win_offset = [0, 0];
+//var mouse_holding = false;
+on(paper, 'mousedown', function (e) {
+  var mix = hit(e.offsetX-win_offset[0], e.offsetY-win_offset[1]);
+  if (mix.index < 0) {
+    win_moving = [e.offsetX-win_offset[0], e.offsetY-win_offset[1]];
+    obj_moving = null;
+    obj_select = null;
+  } else {
+    win_moving = null;
+    obj_moving = [mix.index, objs[mix.index][0]-e.offsetX+win_offset[0], objs[mix.index][1]-e.offsetY+win_offset[1]];
+    obj_select = [mix.index, objs[mix.index][3]];
+  }
+  window.requestAnimationFrame(paint);
+})(paper, 'mousemove', function (e) {
+//  if (!mouse_holding) return;
+  if (!obj_moving) return;
+  objs[obj_moving[0]][0] = e.offsetX + obj_moving[1] -win_offset[0];
+  objs[obj_moving[0]][1] = e.offsetY + obj_moving[2] -win_offset[1];
+  window.requestAnimationFrame(paint);
+})(paper, 'mouseup', function (e) {
+//  mouse_holding = false;
+  if (win_moving) {
+     var win_moved = [e.offsetX -win_offset[0], e.offsetY -win_offset[1]];
+     var win_delta = [win_moved[0] - win_moving[0], win_moved[1] - win_moving[1]];
+     pen.translate(win_delta[0], win_delta[1]);
+     win_offset[0] = win_offset[0] + win_delta[0];
+     win_offset[1] = win_offset[1] + win_delta[1];
+     win_moving = null;
+     window.requestAnimationFrame(paint);
+     return;
+  }
+  if (!obj_moving) return;
+  window.requestAnimationFrame(paint);
+  act();
+  obj_moving = null;
+})(paper, 'dblclick', function (e) {
+  var mix = hit(e.offsetX -win_offset[0], e.offsetY -win_offset[1]);
+  if (mix.index < 0) {
+    objs.push([e.offsetX -win_offset[0], e.offsetY -win_offset[1], 'f', null]);
+    obj_select = [objs.length-1, null];
+    window.requestAnimationFrame(paint);
+    return;
+  }
+  if (mix.part === 'h') {
+    obj_moving = null;
+    obj_select = null;
+    objs.splice(mix.index, 1);
+  }
+  window.requestAnimationFrame(paint);
+});
+
+var timestamp = 0, next_timestamp = 0;
+
+function act() {
+   var payload = [];
+   objs.forEach(function (x) {
+      payload.push([
+         x[0]/pw,
+         x[1]/pw,
+         x[2]
+      ]);
+   });
+   ajax({
+      url: '/api/set',
+      method: 'POST',
+      json: {objs: payload}
+   });
+   timestamp = next_timestamp;
+}
+
+function syncup() {
+   ajax({
+      url: '/api/get',
+      method: 'POST'
+   }, function(data) {
+      if (data.timestamp > timestamp) {
+         timestamp = data.timestamp;
+         objs = data.objs;
+         objs.forEach(function (x) {
+            x[0] = x[0]*pw;
+            x[1] = x[1]*pw;
+         });
+         window.requestAnimationFrame(paint);
+      }
+      next_timestamp = data.now;
+      setTimeout(syncup, 1000);
+   });
+}
+
+syncup();
+
+</script>
+<script type="text/javascript" src="petal-interactions.js"></script>
+<script type="text/javascript">
+var mob = new PetalMobileInteraction();
+/*var mouse_ext = new PetalInteraction({
+   mousehold: function (target, positoin, extra) {
+      mouse_holding = true;
+      window.requestAnimationFrame(paint);
+   }
+});*/
+mob.bind(paper);
+//mouse_ext.bind(paper);
+//mouse_ext.config().last = 200;
+
+document.addEventListener('DOMContentLoaded', function () {
+   paint();
+}, false);
+</script>
+</body>
+</html>

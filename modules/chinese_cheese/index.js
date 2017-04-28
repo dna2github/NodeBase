@@ -3,8 +3,6 @@ const path = require('path');
 const express = require('express');
 const app = express();
 
-const carddeck = require('./carddeck/carddeck');
-
 const static_dir = path.join(__dirname, 'static');
 
 const addr = '0.0.0.0';
@@ -62,5 +60,5 @@ app.post('/api/get', (req, res) => {
 app.use('/', express.static(static_dir));
 
 app.listen(port, addr, () => {
-   console.log(`CardDeck is listening at ${addr}:${port}`);
+   console.log(`Chinese Cheese is listening at ${addr}:${port}`);
 });

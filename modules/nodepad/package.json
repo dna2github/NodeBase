@@ -1,7 +1,7 @@
 {
-  "name": "werewolf",
+  "name": "nodepad",
   "version": "0.1.0",
-  "description": "Werewolf app for Android NodeBase",
+  "description": "Simple Notepad for Android NodeBase",
   "main": "index.js",
   "dependencies": {
     "body-parser": "^1.16.0",
@@ -17,8 +17,8 @@
     "module",
     "nodebase",
     "android",
-    "boardgame",
-    "werewolf"
+    "editor",
+    "notepad"
   ],
   "author": "Seven Lju",
   "license": "MIT"

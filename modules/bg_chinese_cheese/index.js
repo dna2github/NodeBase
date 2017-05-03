@@ -48,7 +48,7 @@ let objs = [], timestamp = 0;
 app.post('/api/set', (req, res) => {
    body(req, (reqbody) => {
       objs = reqbody.objs;
-      timestamp = new Date().getTime()
+      timestamp = new Date().getTime();
       send_json(res, { ip: get_ip(req), timestamp });
    });
 });

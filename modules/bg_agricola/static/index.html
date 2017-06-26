@@ -1,0 +1,275 @@
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+<title>Agricola</title>
+</head>
+<body>
+<canvas id="paper" style="border:1px solid black;"></canvas>
+<div id="cache" style="display:none;">
+   <img id="cache_panel" src="panel.jpg" />
+   <img id="cache_item_brick" src="brick.png" />
+   <img id="cache_item_brickhouse" src="brickhouse.png" />
+   <img id="cache_item_cattle" src="cattle.png" />
+   <img id="cache_item_food" src="food.png" />
+   <img id="cache_item_pig" src="pig.png" />
+   <img id="cache_item_sheep" src="sheep.png" />
+   <img id="cache_item_stone" src="stone.png" />
+   <img id="cache_item_stonehouse" src="stonehouse.png" />
+   <img id="cache_item_vege" src="vege.png" />
+   <img id="cache_item_watergrass" src="watergrass.png" />
+   <img id="cache_item_wheat" src="wheat.png" />
+   <img id="cache_item_wood" src="wood.png" />
+   <img id="cache_item_woodhouse" src="woodhouse.png" />
+   <img id="cache_item_field" src="field.png" />
+   <img id="cache_item_pence_vec" src="pence_vec.png" />
+   <img id="cache_item_pence_hon" src="pence_hon.png" />
+   <img id="cache_item_majiu" src="majiu.png" />
+   <img id="cache_item_x4" src="x4.png" />
+</div>
+<script type="text/javascript" src="common.js"></script>
+<script type="text/javascript" src="paper.js"></script>
+<script type="text/javascript">
+var paper = dom('paper'), pen = paper.getContext('2d');
+var ww = window.innerWidth*0.95, wh = window.innerHeight*0.95,
+    pw = ww<wh?ww:wh, cr = pw/20, ir = 50;
+paper.setAttribute('width', ww);
+paper.setAttribute('height', wh);
+pen.save();
+var cache = {
+   brick: null,
+   brickhouse: null,
+   cattle: null,
+   food: null,
+   pig: null,
+   sheep: null,
+   stone: null,
+   stonehouse: null,
+   vege: null,
+   watergrass: null,
+   wheat: null,
+   wood: null,
+   woodhouse: null,
+   field: null,
+   x4: null,
+   pence_vec: null,
+   pence_hon: null,
+   majiu: null
+};
+Object.keys(cache).forEach(function (x) {
+   cache[x] = dom('cache_item_' + x);
+});
+cache.panel = dom('cache_panel');
+
+var panel_w = cache.panel.naturalWidth,
+    panel_h = cache.panel.naturalHeight,
+    plw = pw, plh = panel_h*plw/panel_w;
+
+var windows = new Box(0, 0, ww, wh);
+var view = new Box(0, 0, ww, cr*2.5);
+var view_2 = new Box(0, cr*2.5, ww, wh-cr*2.5);
+windows.objs = [view.as_obj, view_2.as_obj];
+
+//if (ww>wh) base_objxy = [pw, 0];
+view.objs = view.objs.concat([
+   ['c', cr*0, cr/4, 1, cr*2, cr*2, 0, 'wood'],
+   ['c', cr*1, cr/4, 1, cr*2, cr*2, 0, 'brick'],
+   ['c', cr*2, cr/4, 1, cr*2, cr*2, 0, 'stone'],
+   ['c', cr*3, cr/4, 1, cr*2, cr*2, 0, 'watergrass'],
+   ['c', cr*4, cr/4, 1, cr*2, cr*2, 0, 'wheat'],
+   ['c', cr*5, cr/4, 1, cr*2, cr*2, 0, 'vege'],
+   ['c', cr*6, cr/4, 1, cr*2, cr*2, 0, 'sheep'],
+   ['c', cr*7, cr/4, 1, cr*2, cr*2, 0, 'pig'],
+   ['c', cr*8, cr/4, 1, cr*2, cr*2, 0, 'cattle'],
+   ['c', cr*9, cr/4, 1, cr*2, cr*2, 0, 'woodhouse'],
+   ['c', cr*10, cr/4, 1, cr*2, cr*2, 0, 'brickhouse'],
+   ['c', cr*11, cr/4, 1, cr*2, cr*2, 0, 'stonehouse'],
+   ['c', cr*12, cr/4, 1, cr*2, cr*2, 0, 'field'],
+   ['c', cr*13, cr/4, 1, cr*2, cr*2, 0, 'pence_vec'],
+   ['c', cr*14, cr/4, 1, cr*2, cr*2, 0, 'pence_hon'],
+   ['c', cr*15, cr/4, 1, cr*2, cr*2, 0, 'majiu'],
+   ['c', cr*16, cr/4, 1, cr*2, cr*2, 0, 'food'],
+   ['c', cr*17, cr/4, 1, cr*2, cr*2, 0, 'x4']
+]);
+view_2.objs = view_2.objs.concat([
+   ['r', 0, 0, 1, plw, plh, -1, 'panel']
+]);
+
+view.draw_fn = draw;
+view_2.draw_fn = draw;
+
+function draw(pen, obj) {
+  if (!obj) return;
+  pen.save();
+  if (obj[0] === 'c') {
+     pen.beginPath();
+     pen.arc(obj[1]+cr, obj[2]+cr, cr, 0, 2*Math.PI);
+     pen.clip();
+     pen.drawImage(cache[obj[7]], obj[1], obj[2], cr*2, cr*2);
+  } else if (obj[7] === 'field' || ['woodhouse', 'brickhouse', 'stonehouse'].indexOf(obj[7]) >= 0) {
+     pen.drawImage(cache[obj[7]], obj[1], obj[2], obj[4], obj[5]);
+  } else if (['pence_vec', 'pence_hon'].indexOf(obj[7]) >= 0) {
+     pen.fillStyle = 'black';
+     pen.fillRect(obj[1], obj[2], obj[4], obj[5]);
+  } else {
+     pen.drawImage(cache.panel, obj[1], obj[2], obj[4], obj[5]);
+  }
+  pen.restore();
+}
+
+function paint(time) {
+  pen.restore(); pen.save();
+  pen.clearRect(0, 0, paper.width, paper.height);
+  windows.objs.forEach(function (viewobj) {
+     var viewbox = viewobj[7];
+     viewbox.paint(pen, viewobj[1], viewobj[2], false);
+  });
+  if (obj_select) {
+//    if (mouse_holding)
+       pen.strokeStyle = 'black';
+//    else
+//       pen.strokeStyle = 'grey';
+    var viewobj = windows.objs[obj_select[2]],
+        viewbox = viewobj[7];
+    pen.beginPath();
+    if (viewobj[0] === 'c') {
+       pen.arc(
+          viewbox.objs[obj_select[0]][1]-viewbox.viewport[0]+cr+viewobj[1],
+          viewbox.objs[obj_select[0]][2]-viewbox.viewport[1]+cr+viewobj[2],
+          cr, 0, 2*Math.PI);
+    } else if (viewobj[7] === 'field' || ['woodhouse', 'brickhouse', 'stonehouse'].indexOf(viewobj[7]) >= 0) {
+       pen.rect(
+          viewbox.objs[obj_select[0]][1]-viewbox.viewport[0]+cr+viewobj[1],
+          viewbox.objs[obj_select[0]][2]-viewbox.viewport[1]+cr+viewobj[2],
+          viewobj[4], viewobj[5]
+       );
+    }
+    pen.stroke();
+  }
+}
+
+var obj_moving = null;
+var obj_select = null;
+var win_moving = null;
+//var mouse_holding = false;
+on(paper, 'mousedown', function (e) {
+  var x = e.offsetX, y = e.offsetY;
+  var windex = windows.hit(x, y);
+  var viewobj = windows.objs[windex];
+  if (!viewobj) return;
+  var viewbox = viewobj[7];
+  var mix = viewbox.hit(x-viewobj[1]+viewbox.viewport[0], y-viewobj[2]+viewbox.viewport[1], function (x) {
+     return x[6] >= 0;
+  });
+  if (mix < 0) {
+    win_moving = [e.offsetX, e.offsetY, windex];
+    obj_moving = null;
+    obj_select = null;
+  } else {
+    win_moving = null;
+    obj_moving = [mix, viewbox.objs[mix][1], viewbox.objs[mix][2], x, y, windex];
+    obj_select = [mix, viewbox.objs[mix][7], windex];
+  }
+  window.requestAnimationFrame(paint);
+})(paper, 'mousemove', function (e) {
+//  if (!mouse_holding) return;
+  if (!obj_moving) return;
+  var viewbox = windows.objs[obj_moving[5]][7];
+  viewbox.objs[obj_moving[0]][1] = e.offsetX+obj_moving[1]-obj_moving[3];
+  viewbox.objs[obj_moving[0]][2] = e.offsetY+obj_moving[2]-obj_moving[4];
+  window.requestAnimationFrame(paint);
+})(paper, 'mouseup', function (e) {
+//  mouse_holding = false;
+  if (win_moving) {
+     var win_moved = [e.offsetX, e.offsetY];
+     var win_delta = [win_moved[0]-win_moving[0], win_moved[1]-win_moving[1]];
+     var viewbox = windows.objs[win_moving[2]][7]
+     viewbox.translate(-win_delta[0], -win_delta[1]);
+     win_moving = null;
+     window.requestAnimationFrame(paint);
+     return;
+  }
+  if (!obj_moving) return;
+  window.requestAnimationFrame(paint);
+  var windex = windows.hit(e.offsetX, e.offsetY);
+  var viewfrom = windows.objs[obj_moving[5]];
+  var viewto = windows.objs[windex];
+  if (viewfrom && viewto) {
+     drag_drop_event_fn(
+        obj_moving[0],
+        [obj_moving[5], viewfrom, obj_moving[1], obj_moving[2], obj_moving[3], obj_moving[4]],
+        [
+           windex, viewto,
+           e.offsetX-viewto[1]+viewto[7].viewport[0]-(obj_moving[3]+viewfrom[7].viewport[0]-viewfrom[1]-obj_moving[1]),
+           e.offsetY-viewto[2]+viewto[7].viewport[1]-(obj_moving[4]+viewfrom[7].viewport[1]-viewfrom[2]-obj_moving[2])
+        ]
+     );
+  }
+  act();
+  obj_moving = null;
+});
+
+function drag_drop_event_fn(obj_index, from, to) {
+   if (from[0] !== to[0] && from[0] === 0) {
+      var viewbox_from = from[1][7];
+      var viewbox_to = to[1][7];
+      var obj = viewbox_from.objs[obj_index];
+      var obj_copy = obj.slice();
+      viewbox_to.objs.push(obj_copy);
+      obj[1] = from[2];
+      obj[2] = from[3];
+      obj_copy[1] = to[2];
+      obj_copy[2] = to[3];
+      if (obj_copy[7].indexOf('house') >= 0 || obj_copy[7] === 'field') {
+         obj_copy[0] = 'r';
+         obj_copy[4] = plw/5;
+         obj_copy[5] = plw/5;
+      } else if (obj_copy[7] === 'pence_vec') {
+         obj_copy[0] = 'r';
+         obj_copy[4] = plw/25;
+         obj_copy[5] = plw/5;
+      } else if (obj_copy[7] === 'pence_hon') {
+         obj_copy[0] = 'r';
+         obj_copy[4] = plw/5;
+         obj_copy[5] = plw/25;
+      }
+      obj_select = [viewbox_to.objs.length-1, obj[7], to[0]];
+      window.requestAnimationFrame(paint);
+   } else if (from[0] !== to[0] && from[0] === 1) {
+      var viewbox_from = from[1][7];
+      viewbox_from.objs.splice(obj_index, 1);
+      obj_select = null;
+      window.requestAnimationFrame(paint);
+   } else if (from[0] === to[0] && from[0] === 0) {
+      var viewbox_from = from[1][7];
+      var obj = viewbox_from.objs[obj_index];
+      obj[1] = from[2];
+      obj[2] = from[3];
+      window.requestAnimationFrame(paint);
+   }
+}
+
+var timestamp = 0, next_timestamp = 0;
+
+function act() {
+}
+
+</script>
+<script type="text/javascript" src="petal-interactions.js"></script>
+<script type="text/javascript">
+var mob = new PetalMobileInteraction();
+/*var mouse_ext = new PetalInteraction({
+   mousehold: function (target, positoin, extra) {
+      mouse_holding = true;
+      window.requestAnimationFrame(paint);
+   }
+});*/
+mob.bind(paper);
+//mouse_ext.bind(paper);
+//mouse_ext.config().last = 200;
+
+document.addEventListener('DOMContentLoaded', function () {
+   paint();
+}, false);
+</script>
+</body>
+</html>

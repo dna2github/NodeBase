@@ -161,6 +161,10 @@ public class NodeBaseApp extends LinearLayout {
       });
    }
 
+   public String getAppName() {
+      return _appdir.getName();
+   }
+
    private NodeBase.AppAction _delegate;
    private File _appdir;
    private String[] _appentries;

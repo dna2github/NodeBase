@@ -3,6 +3,8 @@
 
 Android NodeJS Platform to Build Sharable Application (Android as a Server)
 
+Share application with your friends in the same Wi-Fi!
+
 # How to use
 
 - (notice that in this repo, there is no NodeJS binary provided, [download](https://github.com/dna2github/dna2oslab/releases)) put compiled NodeJS binrary to `app/src/main/res/raw/bin_node_v710`

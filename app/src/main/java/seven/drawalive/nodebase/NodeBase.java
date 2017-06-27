@@ -8,6 +8,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -22,6 +24,7 @@ import android.widget.Toast;
 import java.io.File;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -36,6 +39,7 @@ public class NodeBase extends AppCompatActivity {
       _permissionSdcard = false;
 
       LinearLayout view = prepareLayout();
+      prepareState();
       prepareEvents();
       preparePermissions();
 
@@ -66,7 +70,7 @@ public class NodeBase extends AppCompatActivity {
                      Collections.list(NetworkInterface.getNetworkInterfaces())) {
                   List<InterfaceAddress> nic_addr = nic.getInterfaceAddresses();
                   if (nic_addr.size() == 0) continue;
-                  StringBuffer nic_one = new StringBuffer();
+                  StringBuilder nic_one = new StringBuilder();
                   nic_one.append(nic.getName());
                   nic_one.append(':');
                   for (InterfaceAddress ia : nic_addr) {
@@ -101,6 +105,10 @@ public class NodeBase extends AppCompatActivity {
       return true;
    }
 
+   protected void prepareState() {
+      _appList = new ArrayList<>();
+   }
+
    protected LinearLayout prepareLayout() {
       LinearLayout view, subview;
       TextView label;
@@ -129,6 +137,12 @@ public class NodeBase extends AppCompatActivity {
       subview.addView(_btnRefreshAppList);
       view.addView(subview);
 
+      _txtAppFilter = new EditText(this);
+      _txtAppFilter.setText("");
+      _txtAppFilter.setHint("Filter app ...");
+      _txtAppFilter.setVisibility(View.GONE);
+      view.addView(_txtAppFilter);
+
       ScrollView scroll = new ScrollView(this);
       _panelAppList = new LinearLayout(this);
       _panelAppList.setOrientation(LinearLayout.VERTICAL);
@@ -147,6 +161,27 @@ public class NodeBase extends AppCompatActivity {
             Utils.prepareNodeDirectory("", appdir);
             refreshAppList();
          }
+      });
+
+      _txtAppFilter.addTextChangedListener(new TextWatcher() {
+         @Override
+         public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+         @Override
+         public void onTextChanged(CharSequence s, int start, int before, int count) {
+            for (NodeBaseApp app : _appList) {
+               if (s.length() == 0) {
+                  app.setVisibility(View.VISIBLE);
+               } else if (app.getAppName().indexOf(s.toString()) >= 0) {
+                  app.setVisibility(View.VISIBLE);
+               } else {
+                  app.setVisibility(View.GONE);
+               }
+            }
+         }
+
+         @Override
+         public void afterTextChanged(Editable s) {}
       });
    }
 
@@ -184,7 +219,6 @@ public class NodeBase extends AppCompatActivity {
                _txtAppRootDir.setText(
                      String.format("%s%s", getApplicationInfo().dataDir, "/.nodebase"));
             }
-            return;
       }
    }
 
@@ -215,13 +249,22 @@ public class NodeBase extends AppCompatActivity {
          return;
       }
       try {
+         _appList.clear();
          File[] files = approot.listFiles();
          for (File f : files) {
             if (!f.isDirectory()) continue;
-            if ("node_modules".compareTo(f.getName()) == 0) continue;
+            String name = f.getName();
+            // skip the folders of node_modules and which whose name starts with '.'
+            if ("node_modules".compareTo(name) == 0) continue;
+            if (name.indexOf('.') == 0) continue;
             Log.i("UI:AppList", f.getAbsolutePath());
-            _panelAppList.addView(
-                  new NodeBaseApp(this, new AppAction(this), f));
+            NodeBaseApp app = new NodeBaseApp(this, new AppAction(this), f);
+            _appList.add(app);
+            _panelAppList.addView(app);
+         }
+         if (_appList.size() > 0) {
+            _txtAppFilter.setText("");
+            _txtAppFilter.setVisibility(View.VISIBLE);
          }
       } catch (Exception e) {
          Log.w("UI:NodeBase", "fail", e);
@@ -246,8 +289,13 @@ public class NodeBase extends AppCompatActivity {
 
    private boolean _permissionSdcard;
 
+   // state
+   private ArrayList<NodeBaseApp> _appList;
+
+   // view components
    private TextView _labelIp;
    private EditText _txtAppRootDir;
    private Button _btnRefreshAppList;
+   private EditText _txtAppFilter;
    private LinearLayout _panelAppList;
 }

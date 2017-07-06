@@ -12,6 +12,7 @@ Share application with your friends in the same Wi-Fi!
 - build to generate apk
 - install the apk on Android phone
 - do `npm install` in `modules` folder
+   - to make node-gyp work, download GCC4droid from for example Google Play Store and then unzip the apk to get android `gcc`
 - adb push entire `modules` as `/sdcard/.nodebase`
 
 # Modules

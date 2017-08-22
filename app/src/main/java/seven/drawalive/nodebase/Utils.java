@@ -37,10 +37,14 @@ public class Utils {
    }
 
    public static boolean prepareNode(String workdir, InputStream node_binary) {
+      return prepareNode(workdir, node_binary, false);
+   }
+
+   public static boolean prepareNode(String workdir, InputStream node_binary, boolean force) {
       try {
          String node_filename = String.format("%s/node/node", workdir);
          File node_file = new File(node_filename);
-         if (node_file.exists()) {
+         if (node_file.exists() && !force) {
             return true;
          }
          node_file.createNewFile();

@@ -3,6 +3,7 @@ package seven.drawalive.nodebase;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.PermissionInfo;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -22,6 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
@@ -55,7 +57,9 @@ public class NodeBase extends AppCompatActivity {
    @Override
    public boolean onCreateOptionsMenu(Menu menu) {
       menu.add(Menu.NONE, 101, Menu.NONE, "NICs");
-      menu.add(Menu.NONE, 102, Menu.NONE, "Reset");
+      menu.add(Menu.NONE, 102, Menu.NONE, "Node Version");
+      menu.add(Menu.NONE, 103, Menu.NONE, "Node Upgrade");
+      menu.add(Menu.NONE, 199, Menu.NONE, "Reset");
       return true;
    }
 
@@ -94,7 +98,13 @@ public class NodeBase extends AppCompatActivity {
             builder.setMessage(text).setTitle("NetworkInterface(s)");
             builder.create().show();
             break;
-         case 102: // reset
+         case 102: // Show NodeJS Version
+            show_node_version();
+            break;
+         case 103: // Upgrade NodeJS
+            copy_bin_node_from_nodebase_workdir();
+            break;
+         case 199: // reset
             Log.i("UI:ActionButton", "Update node js binary ...");
             Utils.resetNodeJS(NodeBase.this, getApplicationInfo().dataDir);
             refreshAppList();
@@ -285,6 +295,41 @@ public class NodeBase extends AppCompatActivity {
       }
 
       private NodeBase _nodebase;
+   }
+
+   private void copy_bin_node_from_nodebase_workdir() {
+      String dirname = _txtAppRootDir.getText().toString();
+      String upgrade_node_filename = String.format("%s/.bin/node", dirname);
+      File f = new File(upgrade_node_filename);
+      if (!f.exists()) {
+         AlertDialog.Builder builder = new AlertDialog.Builder(this);
+         builder.setMessage(
+                 String.format("%s does not exists.", upgrade_node_filename)
+         ).setTitle("Upgrade Failed");
+         builder.create().show();
+         return;
+      }
+      try {
+         FileInputStream fr = new FileInputStream(f);
+         Utils.prepareNode(getApplicationInfo().dataDir, fr, true);
+         fr.close();
+      } catch (Exception e) {
+         Log.e("NodeBase:upgrade_node",
+                 "Cannot copy binary file of \"node\"");
+      }
+   }
+
+   private void show_node_version() {
+      String version = NodeBaseServer.nodeVersion(getApplicationInfo().dataDir);
+      String text = null;
+      if (version == null) {
+         text = "NodeJS: (not found)";
+      } else {
+         text = String.format("NodeJS: %s", version);
+      }
+      AlertDialog.Builder builder = new AlertDialog.Builder(this);
+      builder.setMessage(text).setTitle("Node Version");
+      builder.create().show();
    }
 
    private boolean _permissionSdcard;

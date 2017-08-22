@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.util.Log;
 
+import java.io.InputStream;
+
 
 public class NodeBaseServer extends Service {
 
@@ -81,6 +83,34 @@ public class NodeBaseServer extends Service {
 
       _workdir = this.getApplicationInfo().dataDir;
       Utils.resetNodeJS(this, _workdir);
+   }
+
+   public static String nodeVersion(String _workdir) {
+      // e.g. cd "/sdcard/.nodebase/apps/test" &&
+      //      /data/seven.drawalive.nodebase/node/node "index.js"
+      String[] cmd;
+      cmd = new String[] {
+              String.format("%s/node/node", _workdir),
+              "--version",
+      };
+      Log.i("Server:NodeVersion", String.format("Command - %s", cmd));
+      try {
+         Process p = Runtime.getRuntime().exec(cmd);
+         p.waitFor();
+         InputStream is = p.getInputStream();
+         byte[] b = new byte[1024];
+         int len = 0;
+         len = is.read(b);
+         is.close();
+         char[] chs = new char[len];
+         for(int i = len-1; i>=0; i--) {
+            chs[i] = (char)b[i];
+         }
+         return String.valueOf(chs);
+      } catch (Exception e) {
+         Log.e("Server:NodeVersion", "Cannot get the version of \"node\"", e);
+         return null;
+      }
    }
 
    public int startNode(String appdir, String appentry, String appparams) {

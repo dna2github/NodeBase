@@ -7,7 +7,7 @@ Share application with your friends in the same Wi-Fi!
 
 # How to use
 
-- (notice that in this repo, there is a prebuilt NodeJS v7.1.0 binary provided, [download latest](https://github.com/dna2github/dna2oslab/releases)) put compiled NodeJS binrary to `app/src/main/res/raw/bin_node_v710`
+- (notice that in this repo, there is a prebuilt NodeJS v7.1.0 binary provided, [download latest](https://github.com/dna2github/dna2oslab/releases)) put compiled NodeJS binary to `app/src/main/res/raw/bin_node_v710`
 - (if not use name of `bin_node_v710`) modify `app/src/main/java/seven/drawalive/nodebase/Utils.java` at `R.raw.bin_node_v710`
 - build to generate apk
 - install the apk on Android phone

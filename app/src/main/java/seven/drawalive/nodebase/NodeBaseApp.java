@@ -1,11 +1,14 @@
 package seven.drawalive.nodebase;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TableLayout;
@@ -62,14 +65,40 @@ public class NodeBaseApp extends LinearLayout {
 
    public void prepareLayout() {
       Context context = getContext();
+      LinearLayout frame = new LinearLayout(context);
+      frame.setOrientation(LinearLayout.HORIZONTAL);
+
+      ImageView image = new ImageView(context);
+      LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(64, 64);
+      params.setMargins(1, 1, 1, 1);
+      image.setLayoutParams(params);
+      image.setMaxHeight(64);
+      image.setMaxWidth(64);
+      image.setMinimumHeight(64);
+      image.setMinimumWidth(64);
+      try {
+         File imgfile = new File(_appdir.getAbsolutePath().concat("/icon.png"));
+         if (imgfile.exists()) {
+            Bitmap bmp = BitmapFactory.decodeFile(imgfile.getAbsolutePath());
+            image.setImageBitmap(bmp);
+         } else {
+            image.setBackgroundResource(R.drawable.default_icon);
+         }
+      } catch (Exception e) {
+      }
+      frame.addView(image);
+
+      LinearLayout contents = new LinearLayout(context);
+      contents.setOrientation(LinearLayout.VERTICAL);
+
       TextView label;
       label = new TextView(context);
       label.setText(String.format("\n=============== App: %s ===", _appdir.getName()));
-      addView(label);
+      contents.addView(label);
       label = new TextView(context);
       label.setText(_readme);
       _readme = null; // release memory
-      addView(label);
+      contents.addView(label);
 
       TableLayout tbl = new TableLayout(context);
       TableRow tbl_r_t = null;
@@ -91,7 +120,7 @@ public class NodeBaseApp extends LinearLayout {
       tbl_r_t.addView(_txtParams);
       tbl.addView(tbl_r_t);
       tbl.setStretchAllColumns(true);
-      addView(tbl);
+      contents.addView(tbl);
 
 
       LinearLayout subview = new LinearLayout(context);
@@ -107,7 +136,10 @@ public class NodeBaseApp extends LinearLayout {
       _btnShare.setText("Share");
       _btnShare.setEnabled(false);
       subview.addView(_btnShare);
-      addView(subview);
+      contents.addView(subview);
+
+      frame.addView(contents);
+      addView(frame);
    }
 
    public void prepareEvents() {

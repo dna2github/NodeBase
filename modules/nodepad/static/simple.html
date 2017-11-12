@@ -54,7 +54,6 @@
        <div class="container-fluid" id="view_plugin" style="margin-top:10px;"></div>
     </div>
     <script type="text/javascript" src="common.js"></script>
-    <script type="text/javascript" src="plugin.js"></script>
     <script>
     var word_stop = [
        ' ', '\t', '\n', '~', '`', '!', '@', '#', '$', '%', '^', '&', '*',
@@ -211,6 +210,8 @@
        });
     });
 
+/*
+    <!-- script type="text/javascript" src="plugin.js" /-->
     var plugin_subsys = plugin();
     $('btn_plugin_refresh').on('click', function (evt) {
        ajax({
@@ -231,6 +232,7 @@
        if (!val) return;
        plugin_subsys.load('__plugin__', '/plugin/' + val + '/index.js', null, true);
     });
+*/
     </script>
   </body>
 </html>

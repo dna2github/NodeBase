@@ -34,7 +34,7 @@ public class NodeBaseServer extends Service {
                case "start":
                   Log.i("Server:Command",
                         String.format("Server starts for \"%s\" at \"%s\"", args[2], args[1]));
-                  startNode(args[1], args[2], args[3]);
+                  startNode(args[1], args[2], args[3], args[4]);
                   break;
                case "restart":
                   Log.i("Server:Command",
@@ -113,13 +113,14 @@ public class NodeBaseServer extends Service {
       }
    }
 
-   public int startNode(String appdir, String appentry, String appparams) {
+   public int startNode(String appdir, String appentry, String appparams, String env) {
       if (!_valid) return -1;
       int result = 0;
       _crash = true;
       _appdir = appdir;
       _appentry = appentry;
       _appparams = appparams;
+      _env = env;
       Utils.setServiceInfo(new String[] {_appdir, _appentry});
 
       if (_node != null) {
@@ -144,7 +145,13 @@ public class NodeBaseServer extends Service {
       }
       Log.i("Server:Start", String.format("Command - %s", cmd));
       try {
-         _node = new NodeMonitor(this, Runtime.getRuntime().exec(cmd));
+         if (_env != null && _env.length() > 0) {
+            _node = new NodeMonitor(this, Runtime.getRuntime().exec(
+                  cmd, new String[] { _env }
+            ));
+         } else {
+            _node = new NodeMonitor(this, Runtime.getRuntime().exec(cmd));
+         }
          _node.start();
       } catch (Exception e) {
          Log.e("Server:Start", "Cannot start \"node\"", e);
@@ -158,7 +165,7 @@ public class NodeBaseServer extends Service {
       if (!_valid) return -1;
       int result = 0;
       stopNode();
-      startNode(_appdir, _appentry, _appparams);
+      startNode(_appdir, _appentry, _appparams, _env);
       return result;
    }
 
@@ -183,7 +190,7 @@ public class NodeBaseServer extends Service {
    }
 
    private boolean _valid, _crash;
-   private String _workdir, _appdir, _appentry, _appparams;
+   private String _workdir, _appdir, _appentry, _appparams, _env;
    private NodeMonitor _node;
 
 }

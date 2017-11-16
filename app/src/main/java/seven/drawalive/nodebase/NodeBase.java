@@ -28,6 +28,7 @@ import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -146,6 +147,12 @@ public class NodeBase extends AppCompatActivity {
       _btnRefreshAppList.setText("Refresh");
       subview.addView(_btnRefreshAppList);
       view.addView(subview);
+
+      _txtEnv = new EditText(this);
+      _txtEnv.setText("");
+      _txtEnv.setHint("Environment KeyValue ...");
+      _txtEnv.setVisibility(View.GONE);
+      view.addView(_txtEnv);
 
       _txtAppFilter = new EditText(this);
       _txtAppFilter.setText("");
@@ -268,12 +275,16 @@ public class NodeBase extends AppCompatActivity {
             if ("node_modules".compareTo(name) == 0) continue;
             if (name.indexOf('.') == 0) continue;
             Log.i("UI:AppList", f.getAbsolutePath());
-            NodeBaseApp app = new NodeBaseApp(this, new AppAction(this), f);
+            HashMap<String, Object> env = new HashMap<>();
+            env.put("appdir", f);
+            env.put("txtenv", _txtEnv);
+            NodeBaseApp app = new NodeBaseApp(this, new AppAction(this), env);
             _appList.add(app);
             _panelAppList.addView(app);
          }
          if (_appList.size() > 0) {
             _txtAppFilter.setText("");
+            _txtEnv.setVisibility(View.VISIBLE);
             _txtAppFilter.setVisibility(View.VISIBLE);
          }
       } catch (Exception e) {
@@ -341,6 +352,7 @@ public class NodeBase extends AppCompatActivity {
    private TextView _labelIp;
    private EditText _txtAppRootDir;
    private Button _btnRefreshAppList;
+   private EditText _txtEnv;
    private EditText _txtAppFilter;
    private LinearLayout _panelAppList;
 }

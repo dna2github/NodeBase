@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -16,13 +17,15 @@ import android.widget.TableRow;
 import android.widget.TextView;
 
 import java.io.File;
+import java.util.HashMap;
 
 public class NodeBaseApp extends LinearLayout {
-   public NodeBaseApp(Context context, NodeBase.AppAction delegate, File appdir) {
+   public NodeBaseApp(Context context, NodeBase.AppAction delegate, HashMap<String, Object> env) {
       super(context);
       setOrientation(LinearLayout.VERTICAL);
+      _env = env;
       _delegate = delegate;
-      _appdir = appdir;
+      _appdir = (File)env.get("appdir");
 
       collectAppInformation();
       prepareLayout();
@@ -68,32 +71,13 @@ public class NodeBaseApp extends LinearLayout {
       LinearLayout frame = new LinearLayout(context);
       frame.setOrientation(LinearLayout.HORIZONTAL);
 
-      ImageView image = new ImageView(context);
-      LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(64, 64);
-      params.setMargins(1, 1, 1, 1);
-      image.setLayoutParams(params);
-      image.setMaxHeight(64);
-      image.setMaxWidth(64);
-      image.setMinimumHeight(64);
-      image.setMinimumWidth(64);
-      try {
-         File imgfile = new File(_appdir.getAbsolutePath().concat("/icon.png"));
-         if (imgfile.exists()) {
-            Bitmap bmp = BitmapFactory.decodeFile(imgfile.getAbsolutePath());
-            image.setImageBitmap(bmp);
-         } else {
-            image.setBackgroundResource(R.drawable.default_icon);
-         }
-      } catch (Exception e) {
-      }
-      frame.addView(image);
-
       LinearLayout contents = new LinearLayout(context);
       contents.setOrientation(LinearLayout.VERTICAL);
 
       TextView label;
       label = new TextView(context);
-      label.setText(String.format("\n=============== App: %s ===", _appdir.getName()));
+      label.setText(String.format("\nApp: %s", _appdir.getName()));
+      label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24f);
       contents.addView(label);
       label = new TextView(context);
       label.setText(_readme);
@@ -154,7 +138,8 @@ public class NodeBaseApp extends LinearLayout {
                         "start",
                         _appdir.getAbsolutePath(),
                         String.valueOf(_listEntries.getSelectedItem()),
-                        _txtParams.getText().toString()
+                        _txtParams.getText().toString(),
+                        ((EditText)_env.get("txtenv")).getText().toString()
                   });
          }
       });
@@ -197,6 +182,7 @@ public class NodeBaseApp extends LinearLayout {
       return _appdir.getName();
    }
 
+   private HashMap<String, Object> _env;
    private NodeBase.AppAction _delegate;
    private File _appdir;
    private String[] _appentries;

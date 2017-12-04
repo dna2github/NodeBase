@@ -1,0 +1,132 @@
+<!doctype>
+<html>
+  <head>
+    <meta charset='utf-8'> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Piano</title>
+    <style>
+    .pianokey {
+       width: 30px;
+       height: 100px;
+       border: 1px solid black;
+       display: inline-block;
+    }
+    </style>
+  </head>
+  <body>
+    <div>
+      <div class="pianokey" code="a">C</div>
+      <div class="pianokey" code="b">D</div>
+      <div class="pianokey" code="c">E</div>
+      <div class="pianokey" code="d">F</div>
+      <div class="pianokey" code="e">G</div>
+      <div class="pianokey" code="f">A</div>
+      <div class="pianokey" code="g">B</div>
+    </div>
+    <div>
+      <div class="pianokey" code="h">C</div>
+      <div class="pianokey" code="i">D</div>
+      <div class="pianokey" code="j">E</div>
+      <div class="pianokey" code="k">F</div>
+      <div class="pianokey" code="l">G</div>
+      <div class="pianokey" code="m">A</div>
+      <div class="pianokey" code="n">B</div>
+    </div>
+    <div>
+      <div class="pianokey" code="o">C</div>
+      <div class="pianokey" code="p">D</div>
+      <div class="pianokey" code="q">E</div>
+      <div class="pianokey" code="r">F</div>
+      <div class="pianokey" code="s">G</div>
+      <div class="pianokey" code="t">A</div>
+      <div class="pianokey" code="u">B</div>
+    </div>
+    <div>
+      <div class="pianokey" code="v">C</div>
+      <div class="pianokey" code="w">D</div>
+      <div class="pianokey" code="x">E</div>
+      <div class="pianokey" code="y">F</div>
+      <div class="pianokey" code="z">G</div>
+    </div>
+    <script type="text/javascript" src="soundutils.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/waud.js/0.9.16/waud.min.js"></script>
+    <script>
+    function format(raw) {
+       return raw.map(function(x) {
+          if (x < 0) x += 128;
+          return String.fromCharCode(x);
+       }).join('');
+    }
+
+    function play(hz, sec) {
+       var tone = module.exports.tone({ freq: hz, lengthInSecs: sec, volume: module.exports.MAX_8 });
+       var header = module.exports.wavheader(tone.length);
+       data = 'data:audio/wav;base64,' + btoa(header + format(tone));
+       var base64Snd = new WaudSound(data, { autoplay: false, loop: false, volume: 0.5 });
+       base64Snd.onLoad(function (snd) {snd.play();});
+       base64Snd.onEnd(function (snd) {snd.destroy();});
+    }
+
+    const note_step = Math.pow(2, 1/12);
+    var note_map = {
+       'a': -21,
+       'b': -19,
+       'c': -17,
+       'd': -16,
+       'e': -14,
+       'f': -12,
+       'g': -10,
+       'h': -9,
+       'i': -7,
+       'j': -5,
+       'k': -4,
+       'l': -2,
+       'm': 0, // 1A
+       'n': 2,
+       'o': 3,
+       'p': 5,
+       'q': 7,
+       'r': 8,
+       's': 10,
+       't': 12,
+       'u': 14,
+       'v': 15,
+       'w': 17,
+       'x': 19,
+       'y': 20,
+       'z': 22
+    }
+    Object.keys(note_map).forEach(function(x) {
+       note_map[x] = 440*Math.pow(note_step, note_map[x]);
+    });
+    Waud.init();
+
+    var data = '';
+    var audio = document.getElementById('play');
+    document.body.addEventListener('keydown', function(evt) {
+       if (evt.keyCode < 65 || evt.keyCode > 91) return;
+       play(note_map[evt.key] || 0, 0.5);
+    });
+
+    var keys = document.querySelectorAll('.pianokey');
+    for(var i = 0, n = keys.length; i<n; i++) {
+       keys[i].addEventListener('mousedown', function(evt) {
+          evt.target.style.backgroundColor = 'green';
+          var code = evt.target.getAttribute('code');
+          play(note_map[code] || 0, 0.5);
+       });
+       keys[i].addEventListener('mouseup', function(evt) {
+          evt.target.style.backgroundColor = null;
+       });
+       keys[i].addEventListener('touchstart', function(evt) {
+          evt.target.style.backgroundColor = 'green';
+          var code = evt.target.getAttribute('code');
+          play(note_map[code] || 0, 0.5);
+       });
+       keys[i].addEventListener('touchend', function(evt) {
+          evt.target.style.backgroundColor = null;
+       });
+    }
+    </script>
+  </body>
+</html>

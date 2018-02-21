@@ -17,7 +17,7 @@ public class NodeService extends Service {
    public static final HashMap<String, NodeMonitor> services = new HashMap<>();
    public static String AUTH_TOKEN = refreshAuthToken();
 
-   private enum STATE { READY, RUNNING, DEAD };
+   private enum STATE { BORN, READY, RUNNING, DEAD };
 
 
    public static String refreshAuthToken() {
@@ -55,7 +55,7 @@ public class NodeService extends Service {
 
    public static class NodeMonitor extends Thread {
       public NodeMonitor(String service_name, String[] command) {
-         state = STATE.READY;
+         state = STATE.BORN;
          this.service_name = service_name;
          this.command = command;
          event = null;
@@ -125,6 +125,14 @@ public class NodeService extends Service {
 
       public boolean isRunning() {
          return state == STATE.RUNNING;
+      }
+
+      public boolean isReady() {
+         return state == STATE.READY;
+      }
+
+      public boolean isDead() {
+         return state == STATE.DEAD;
       }
 
       private STATE state;

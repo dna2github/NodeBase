@@ -19,6 +19,7 @@ public class Storage {
       try {
          URL urlobj = new URL(url);
          URLConnection conn = urlobj.openConnection();
+         // int file_len = conn.getContentLength();
          byte[] buf = new byte[4096];
          int read_len = 0;
          download_stream = conn.getInputStream();
@@ -158,5 +159,16 @@ public class Storage {
 
    public static boolean exists(String infile) {
       return new File(infile).exists();
+   }
+
+   private static final String[] READABLE_SIZE_UNIT = new String[] {"B", "KB", "MB", "GB", "TB"};
+   public static String readableSize(int size) {
+      int index = 0, n = READABLE_SIZE_UNIT.length - 1;
+      double val = size;
+      while (val > 1024 && index < n) {
+         index ++;
+         val /= 1024.0;
+      }
+      return String.format("%.2f %s", val, READABLE_SIZE_UNIT[index]);
    }
 }

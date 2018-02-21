@@ -1,7 +1,6 @@
 package seven.drawalive.nodebase;
 
 import android.content.Intent;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
@@ -15,7 +14,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -38,6 +36,9 @@ public class NodeBase extends AppCompatActivity {
       Permission.request(this);
 
       setContentView(view);
+      if (!Storage.exists(config.nodeBin())) {
+         resetNode();
+      }
    }
 
    @Override
@@ -58,7 +59,7 @@ public class NodeBase extends AppCompatActivity {
    @Override
    public boolean onOptionsItemSelected(MenuItem item) {
       switch (item.getItemId()) {
-         case 101:
+         case 101: // Show Network Interfaces
             showNicIps();
             break;
          case 102: // Show NodeJS Version
@@ -67,10 +68,8 @@ public class NodeBase extends AppCompatActivity {
          case 103: // Upgrade NodeJS
             copyBinNodeFromNodebaseWorkdir();
             break;
-         case 199: // reset
-            Log.i("UI:ActionButton", "Update node js binary ...");
-            // copyBinNodeFromNodebaseWorkdir();
-            refreshAppList();
+         case 199: // Reset NodeJS
+            resetNode();
             break;
          default:
             return super.onOptionsItemSelected(item);
@@ -101,7 +100,7 @@ public class NodeBase extends AppCompatActivity {
       subview = new LinearLayout(this);
       subview.setOrientation(LinearLayout.HORIZONTAL);
       _txtAppRootDir = new EditText(this);
-      _txtAppRootDir.setText("/sdcard/.nodebase");
+      _txtAppRootDir.setText(config.workDir());
       param = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
       _txtAppRootDir.setLayoutParams(param);
       subview.addView(_txtAppRootDir);
@@ -131,6 +130,10 @@ public class NodeBase extends AppCompatActivity {
          public void onClick(View view) {
             Log.i("UI:Button", "Refresh app list ...");
             String appdir = _txtAppRootDir.getText().toString();
+            if (appdir.compareTo(config.workDir()) != 0) {
+               config.set(Configuration.KEYVAL_NODEBASE_DIR, appdir);
+               config.save();
+            }
             Storage.makeDirectory(config.workDir());
             refreshAppList();
          }
@@ -163,10 +166,7 @@ public class NodeBase extends AppCompatActivity {
       File approot = new File(dirname);
       _panelAppList.removeAllViews();
       if (!approot.isDirectory()) {
-         Toast.makeText(
-               getApplicationContext(),
-               String.format("\"%s\" is not a directory", dirname),
-               Toast.LENGTH_SHORT).show();
+         External.showToast(this, String.format("\"%s\" is not a directory", dirname));
          return;
       }
       try {
@@ -236,11 +236,11 @@ public class NodeBase extends AppCompatActivity {
       String upgrade_node_filename = String.format("%s/.bin/node", dirname);
       File f = new File(upgrade_node_filename);
       if (!f.exists()) {
-         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-         builder.setMessage(
-                 String.format("%s does not exists.", upgrade_node_filename)
-         ).setTitle("Upgrade Failed");
-         builder.create().show();
+         External.showMessage(
+               this,
+               String.format("%s does not exists.", upgrade_node_filename),
+               "Upgrade Failed"
+         );
          return;
       }
       String nodeBin = config.nodeBin();
@@ -261,9 +261,7 @@ public class NodeBase extends AppCompatActivity {
       } else {
          text = String.format("NodeJS: %s", version);
       }
-      AlertDialog.Builder builder = new AlertDialog.Builder(this);
-      builder.setMessage(text).setTitle("Node Version");
-      builder.create().show();
+      External.showMessage(this, text, "Node Version");
    }
 
    private void showNicIps() {
@@ -280,10 +278,22 @@ public class NodeBase extends AppCompatActivity {
          }
          nic_list.append('\n');
       }
-      CharSequence text = new String(nic_list);
-      AlertDialog.Builder builder = new AlertDialog.Builder(this);
-      builder.setMessage(text).setTitle("NetworkInterface(s)");
-      builder.create().show();
+      String text = new String(nic_list);
+      External.showMessage(this, text, "NetworkInterface(s)");
+   }
+
+   private void resetNode() {
+      String workdir = config.workDir();
+      String workdir_bin = String.format("%s/.bin", workdir);
+      Storage.makeDirectory(workdir_bin);
+      String upgrade_node_filename = String.format("%s/node", workdir_bin);
+      Storage.unlink(upgrade_node_filename);
+      new Downloader(this, new Runnable() {
+         @Override
+         public void run() {
+            copyBinNodeFromNodebaseWorkdir();
+         }
+      }).act("Downlaod NodeJS", Configuration.NODE_URL, upgrade_node_filename);
    }
 
    // state

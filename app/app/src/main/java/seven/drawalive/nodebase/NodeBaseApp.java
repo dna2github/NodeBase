@@ -1,15 +1,12 @@
 package seven.drawalive.nodebase;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TableLayout;
@@ -49,9 +46,9 @@ public class NodeBaseApp extends LinearLayout {
                entries[i] = name;
                count ++;
             } else if (name.toLowerCase().compareTo("readme") == 0) {
-               _readme = Utils.readSmallFile(fentry.getAbsolutePath());
+               _readme = Storage.read(fentry.getAbsolutePath());
             } else if (name.toLowerCase().compareTo("config") == 0) {
-               _config = new NodeBaseAppConfigFile(Utils.readSmallFile(fentry.getAbsolutePath()));
+               _config = new NodeBaseAppConfigFile(Storage.read(fentry.getAbsolutePath()));
             }
          }
 
@@ -70,6 +67,26 @@ public class NodeBaseApp extends LinearLayout {
       Context context = getContext();
       LinearLayout frame = new LinearLayout(context);
       frame.setOrientation(LinearLayout.HORIZONTAL);
+
+      /*ImageView image = new ImageView(context);
+      LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(64, 64);
+      params.setMargins(1, 1, 1, 1);
+      image.setLayoutParams(params);
+      image.setMaxHeight(64);
+      image.setMaxWidth(64);
+      image.setMinimumHeight(64);
+      image.setMinimumWidth(64);
+      try {
+         File imgfile = new File(_appdir.getAbsolutePath().concat("/icon.png"));
+         if (imgfile.exists()) {
+            Bitmap bmp = BitmapFactory.decodeFile(imgfile.getAbsolutePath());
+            image.setImageBitmap(bmp);
+         } else {
+            image.setBackgroundResource(R.drawable.default_icon);
+         }
+      } catch (Exception e) {
+      }
+      frame.addView(image);*/
 
       LinearLayout contents = new LinearLayout(context);
       contents.setOrientation(LinearLayout.VERTICAL);
@@ -127,7 +144,7 @@ public class NodeBaseApp extends LinearLayout {
    }
 
    public void prepareEvents() {
-      _btnStart.setOnClickListener(new View.OnClickListener() {
+      _btnStart.setOnClickListener(new OnClickListener() {
          @Override
          public void onClick(View view) {
             _btnStart.setEnabled(false);
@@ -135,26 +152,34 @@ public class NodeBaseApp extends LinearLayout {
             _btnShare.setEnabled(true);
             _delegate.signal(
                   new String[]{
+                        NodeService.AUTH_TOKEN,
                         "start",
-                        _appdir.getAbsolutePath(),
-                        String.valueOf(_listEntries.getSelectedItem()),
-                        _txtParams.getText().toString(),
-                        ((EditText)_env.get("txtenv")).getText().toString()
+                        _appdir.getName(),
+                        String.format(
+                              "%s/node/node %s/%s %s",
+                              (String)_env.get("datadir"),
+                              _appdir.getAbsolutePath(),
+                              String.valueOf(_listEntries.getSelectedItem()),
+                              _txtParams.getText().toString()
+                        )
                   });
          }
       });
 
-      _btnStop.setOnClickListener(new View.OnClickListener() {
+      _btnStop.setOnClickListener(new OnClickListener() {
          @Override
          public void onClick(View view) {
             _btnStart.setEnabled(true);
             _btnStop.setEnabled(false);
             _btnShare.setEnabled(false);
-            _delegate.signal(new String[]{"stop"});
+            _delegate.signal(new String[]{
+                  NodeService.AUTH_TOKEN,
+                  "stop", _appdir.getName()
+            });
          }
       });
 
-      _btnShare.setOnClickListener(new View.OnClickListener() {
+      _btnShare.setOnClickListener(new OnClickListener() {
          @Override
          public void onClick(View view) {
             String name = null, protocol = null, port = null, index = null;
@@ -168,11 +193,11 @@ public class NodeBaseApp extends LinearLayout {
             if (port == null) port = ""; else port = ":" + port;
             if (protocol == null) protocol = "http";
             if (index == null) index = "";
-            Utils.shareInformation(
+            External.shareInformation(
                   getContext(), "Share", "NodeBase",
                   String.format(
                         "[%s] is running at %s://%s%s%s",
-                        name, protocol, Utils.getIPv4(getContext()), port, index
+                        name, protocol, Network.getWifiIpv4(getContext()), port, index
                   ), null);
          }
       });

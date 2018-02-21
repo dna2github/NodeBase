@@ -26,7 +26,7 @@
       </activity>
 
       <service
-         android:name=".NodeBaseServer"
+         android:name=".NodeService"
          android:enabled="true"
          android:exported="true">
       </service>

@@ -1,11 +1,6 @@
 package seven.drawalive.nodebase;
 
-import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.PermissionInfo;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -23,13 +18,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 
 
 public class NodeBase extends AppCompatActivity {
@@ -39,19 +29,20 @@ public class NodeBase extends AppCompatActivity {
       super.onCreate(savedInstanceState);
       // setContentView(R.layout.activity_node_base);
 
-      _permissionSdcard = false;
+      config = new Configuration(this);
+      config.prepareEnvironment();
 
       LinearLayout view = prepareLayout();
       prepareState();
       prepareEvents();
-      preparePermissions();
+      Permission.request(this);
 
       setContentView(view);
    }
 
    @Override
    protected void onDestroy() {
-      nodeStop();
+      stopNodeService();
       super.onDestroy();
    }
 
@@ -68,46 +59,17 @@ public class NodeBase extends AppCompatActivity {
    public boolean onOptionsItemSelected(MenuItem item) {
       switch (item.getItemId()) {
          case 101:
-            Log.i("UI:ActionButton", "Show NIC IP ...");
-            StringBuffer nic_list = new StringBuffer();
-            try {
-               for (NetworkInterface nic :
-                     Collections.list(NetworkInterface.getNetworkInterfaces())) {
-                  List<InterfaceAddress> nic_addr = nic.getInterfaceAddresses();
-                  if (nic_addr.size() == 0) continue;
-                  StringBuilder nic_one = new StringBuilder();
-                  nic_one.append(nic.getName());
-                  nic_one.append(':');
-                  for (InterfaceAddress ia : nic_addr) {
-                     nic_one.append(' ');
-                     nic_one.append('[');
-                     String addr = ia.getAddress().getHostAddress();
-                     if (addr.indexOf('%') >= 0) {
-                        addr = addr.split("%")[0];
-                     }
-                     nic_one.append(addr);
-                     nic_one.append(']');
-                  }
-                  nic_list.append('\n');
-                  nic_list.append(nic_one);
-               }
-            } catch (Exception e) {
-               nic_list.append(String.format("\nError: %s", e.getMessage()));
-            }
-            CharSequence text = new String(nic_list);
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setMessage(text).setTitle("NetworkInterface(s)");
-            builder.create().show();
+            showNicIps();
             break;
          case 102: // Show NodeJS Version
-            show_node_version();
+            showNodeVersion();
             break;
          case 103: // Upgrade NodeJS
-            copy_bin_node_from_nodebase_workdir();
+            copyBinNodeFromNodebaseWorkdir();
             break;
          case 199: // reset
             Log.i("UI:ActionButton", "Update node js binary ...");
-            Utils.resetNodeJS(NodeBase.this, getApplicationInfo().dataDir);
+            // copyBinNodeFromNodebaseWorkdir();
             refreshAppList();
             break;
          default:
@@ -129,7 +91,7 @@ public class NodeBase extends AppCompatActivity {
       view.setOrientation(LinearLayout.VERTICAL);
 
       _labelIp = new TextView(this);
-      _labelIp.setText(String.format("Network (%s)", Utils.getIPv4(this)));
+      _labelIp.setText(String.format("Network (%s)", Network.getWifiIpv4(this)));
       view.addView(_labelIp);
 
       label = new TextView(this);
@@ -147,12 +109,6 @@ public class NodeBase extends AppCompatActivity {
       _btnRefreshAppList.setText("Refresh");
       subview.addView(_btnRefreshAppList);
       view.addView(subview);
-
-      _txtEnv = new EditText(this);
-      _txtEnv.setText("");
-      _txtEnv.setHint("Environment KeyValue ...");
-      _txtEnv.setVisibility(View.GONE);
-      view.addView(_txtEnv);
 
       _txtAppFilter = new EditText(this);
       _txtAppFilter.setText("");
@@ -175,7 +131,7 @@ public class NodeBase extends AppCompatActivity {
          public void onClick(View view) {
             Log.i("UI:Button", "Refresh app list ...");
             String appdir = _txtAppRootDir.getText().toString();
-            Utils.prepareNodeDirectory("", appdir);
+            Storage.makeDirectory(config.workDir());
             refreshAppList();
          }
       });
@@ -202,58 +158,6 @@ public class NodeBase extends AppCompatActivity {
       });
    }
 
-   protected void preparePermissions() {
-      int permission;
-      permission = ContextCompat.checkSelfPermission(
-            this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-      if (permission != PackageManager.PERMISSION_GRANTED) {
-         ActivityCompat.requestPermissions(
-               this,
-               new String[] {
-                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                     Manifest.permission.READ_EXTERNAL_STORAGE
-               },
-               Utils.PERMISSIONS_EXTERNAL_STORAGE);
-      }
-   }
-
-   @Override
-   public void onRequestPermissionsResult (
-         int requestCode, String[] permissions, int[] grantResults) {
-      switch (requestCode) {
-         case Utils.PERMISSIONS_EXTERNAL_STORAGE:
-            if (grantResults.length == 0) {
-               _permissionSdcard = false;
-            } else if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
-               _permissionSdcard = false;
-            } else if (grantResults[1] == PackageManager.PERMISSION_DENIED) {
-               _permissionSdcard = false;
-            } else {
-               _permissionSdcard = true;
-            }
-
-            if (!_permissionSdcard) {
-               _txtAppRootDir.setText(
-                     String.format("%s%s", getApplicationInfo().dataDir, "/.nodebase"));
-            }
-      }
-   }
-
-   protected void nodeSignal(String[] args) {
-      Log.i("NodeBase:Signal", "Start Service");
-      Log.i("NodeBase:Signal", String.format("Command - %s", args[0]));
-      Utils.setServiceAuthentication("NodeBase");
-      Intent intent = new Intent(this, NodeBaseServer.class);
-      intent.putExtra("signal", args);
-      startService(intent);
-   }
-
-   protected void nodeStop() {
-      Log.i("NodeBase:Signal", "Stop Service");
-      Intent intent = new Intent(this, NodeBaseServer.class);
-      stopService(intent);
-   }
-
    protected void refreshAppList() {
       String dirname = _txtAppRootDir.getText().toString();
       File approot = new File(dirname);
@@ -267,9 +171,8 @@ public class NodeBase extends AppCompatActivity {
       }
       try {
          _appList.clear();
-         File[] files = approot.listFiles();
+         File[] files = Storage.listDirectories(dirname);
          for (File f : files) {
-            if (!f.isDirectory()) continue;
             String name = f.getName();
             // skip the folders of node_modules and which whose name starts with '.'
             if ("node_modules".compareTo(name) == 0) continue;
@@ -277,14 +180,13 @@ public class NodeBase extends AppCompatActivity {
             Log.i("UI:AppList", f.getAbsolutePath());
             HashMap<String, Object> env = new HashMap<>();
             env.put("appdir", f);
-            env.put("txtenv", _txtEnv);
+            env.put("datadir", config.dataDir());
             NodeBaseApp app = new NodeBaseApp(this, new AppAction(this), env);
             _appList.add(app);
             _panelAppList.addView(app);
          }
          if (_appList.size() > 0) {
             _txtAppFilter.setText("");
-            _txtEnv.setVisibility(View.VISIBLE);
             _txtAppFilter.setVisibility(View.VISIBLE);
          }
       } catch (Exception e) {
@@ -298,18 +200,39 @@ public class NodeBase extends AppCompatActivity {
       }
 
       public void signal(String[] args) {
-         _nodebase.nodeSignal(args);
+         _nodebase.sendNodeSignal(args);
       }
 
-      public void stop() {
-         _nodebase.nodeStop();
+      public void stop(String name) {
+         if (name == null) {
+            _nodebase.stopNodeService();
+         } else {
+            _nodebase.sendNodeSignal(new String[]{
+                  NodeService.AUTH_TOKEN,
+                  "stop", name
+            });
+         }
       }
 
       private NodeBase _nodebase;
    }
 
-   private void copy_bin_node_from_nodebase_workdir() {
-      String dirname = _txtAppRootDir.getText().toString();
+   protected void sendNodeSignal(String[] args) {
+      Log.i("NodeBase:Signal", "Start Service");
+      Log.i("NodeBase:Signal", String.format("Command - %s", args[1]));
+      Intent intent = new Intent(this, NodeService.class);
+      intent.putExtra(NodeService.ARGV, args);
+      startService(intent);
+   }
+
+   protected void stopNodeService() {
+      Log.i("NodeBase:Signal", "Stop Service");
+      Intent intent = new Intent(this, NodeService.class);
+      stopService(intent);
+   }
+
+   private void copyBinNodeFromNodebaseWorkdir() {
+      String dirname = config.workDir();
       String upgrade_node_filename = String.format("%s/.bin/node", dirname);
       File f = new File(upgrade_node_filename);
       if (!f.exists()) {
@@ -320,18 +243,18 @@ public class NodeBase extends AppCompatActivity {
          builder.create().show();
          return;
       }
-      try {
-         FileInputStream fr = new FileInputStream(f);
-         Utils.prepareNode(getApplicationInfo().dataDir, fr, true);
-         fr.close();
-      } catch (Exception e) {
+      String nodeBin = config.nodeBin();
+      if (!Storage.copy(upgrade_node_filename, nodeBin)) {
          Log.e("NodeBase:upgrade_node",
-                 "Cannot copy binary file of \"node\"");
+               "Cannot copy binary file of \"node\"");
       }
+      Storage.executablize(nodeBin);
    }
 
-   private void show_node_version() {
-      String version = NodeBaseServer.nodeVersion(getApplicationInfo().dataDir);
+   private void showNodeVersion() {
+      String version = NodeService.checkOutput(new String[] {
+            String.format("%s/node/node", config.dataDir()), "--version"
+      });
       String text = null;
       if (version == null) {
          text = "NodeJS: (not found)";
@@ -343,16 +266,34 @@ public class NodeBase extends AppCompatActivity {
       builder.create().show();
    }
 
-   private boolean _permissionSdcard;
+   private void showNicIps() {
+      HashMap<String, String[]> name_ip = Network.getNicIps();
+      StringBuffer nic_list = new StringBuffer();
+      for (String name : name_ip.keySet()) {
+         nic_list.append(name);
+         nic_list.append(':');
+         for (String ip : name_ip.get(name)) {
+            nic_list.append(' ');
+            nic_list.append('[');
+            nic_list.append(ip);
+            nic_list.append(']');
+         }
+         nic_list.append('\n');
+      }
+      CharSequence text = new String(nic_list);
+      AlertDialog.Builder builder = new AlertDialog.Builder(this);
+      builder.setMessage(text).setTitle("NetworkInterface(s)");
+      builder.create().show();
+   }
 
    // state
+   private Configuration config;
    private ArrayList<NodeBaseApp> _appList;
 
    // view components
    private TextView _labelIp;
    private EditText _txtAppRootDir;
    private Button _btnRefreshAppList;
-   private EditText _txtEnv;
    private EditText _txtAppFilter;
    private LinearLayout _panelAppList;
 }

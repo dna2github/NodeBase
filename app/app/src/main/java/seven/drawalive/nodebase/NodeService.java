@@ -2,6 +2,7 @@ package seven.drawalive.nodebase;
 
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
@@ -44,6 +45,21 @@ public class NodeService extends Service {
       } catch (Exception e) {
          return null;
       }
+   }
+
+
+   public static void touchService(Context context, String[] args) {
+      Log.i("NodeService:Signal", "Start Service");
+      Log.i("NodeService:Signal", String.format("Command - %s", args[1]));
+      Intent intent = new Intent(context, NodeService.class);
+      intent.putExtra(NodeService.ARGV, args);
+      context.startService(intent);
+   }
+
+   public static void stopService(Context context) {
+      Log.i("NodeService:Signal", "Stop Service");
+      Intent intent = new Intent(context, NodeService.class);
+      context.stopService(intent);
    }
 
    public interface NodeMonitorEvent {

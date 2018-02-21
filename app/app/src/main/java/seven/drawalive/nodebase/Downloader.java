@@ -9,9 +9,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 
 public class Downloader {
    public static class DownloadTask extends AsyncTask<String, String, String> {
@@ -25,12 +25,16 @@ public class Downloader {
          String outfile = strings[1];
          InputStream download_stream = null;
          OutputStream output_stream = null;
+         HttpURLConnection conn = null;
          publishProgress("Starting ...");
          try {
             URL urlobj = new URL(url);
-            URLConnection conn = urlobj.openConnection();
+            conn = (HttpURLConnection)urlobj.openConnection();
+            if (conn.getResponseCode()/200 != 2) {
+               throw new IOException("server error: " + conn.getResponseCode());
+            }
             int file_len = conn.getContentLength();
-            byte[] buf = new byte[4096];
+            byte[] buf = new byte[1024*1024];
             int read_len = 0, total_read_len = 0;
             download_stream = conn.getInputStream();
             Storage.unlink(outfile);
@@ -38,7 +42,7 @@ public class Downloader {
             output_stream = new FileOutputStream(outfile);
             while ((read_len = download_stream.read(buf)) >= 0) {
                if (isCancelled()) {
-                  throw new IOException();
+                  throw new IOException("user cancelled");
                }
                total_read_len += read_len;
                output_stream.write(buf, 0, read_len);
@@ -52,14 +56,15 @@ public class Downloader {
             download_stream.close();
             publishProgress("Finishing ...");
          } catch (MalformedURLException e) {
-            return null;
+            return e.toString();
          } catch (IOException e) {
-            return null;
+            return e.toString();
          } finally {
             if (download_stream != null) try {download_stream.close();} catch (IOException e) {}
             if (output_stream != null) try {output_stream.close();} catch (IOException e) {}
+            if (conn != null) conn.disconnect();
          }
-         return outfile;
+         return null;
       }
 
       @Override
@@ -81,10 +86,10 @@ public class Downloader {
             downloader.callback.run();
          }
          downloader.progress.dismiss();
-         if (result != null) {
-            External.showToast(downloader.context,"Download successful");
+         if (result == null) {
+            Alarm.showToast(downloader.context,"Download successful");
          } else {
-            External.showToast(downloader.context,"Download failed");
+            Alarm.showToast(downloader.context,"Download failed: " + result);
          }
       }
 

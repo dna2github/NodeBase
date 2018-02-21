@@ -16,12 +16,12 @@ import android.widget.TextView;
 import java.io.File;
 import java.util.HashMap;
 
-public class NodeBaseApp extends LinearLayout {
-   public NodeBaseApp(Context context, NodeBase.AppAction delegate, HashMap<String, Object> env) {
+public class NodeBaseApp extends LinearLayout implements NodeService.NodeMonitorEvent {
+   public NodeBaseApp(Context context, HashMap<String, Object> env) {
       super(context);
       setOrientation(LinearLayout.VERTICAL);
+      _context = context;
       _env = env;
-      _delegate = delegate;
       _appdir = (File)env.get("appdir");
 
       collectAppInformation();
@@ -133,6 +133,10 @@ public class NodeBaseApp extends LinearLayout {
       _btnStop.setText("Stop");
       _btnStop.setEnabled(false);
       subview.addView(_btnStop);
+      _btnOpen = new Button(context);
+      _btnOpen.setText("Open");
+      _btnOpen.setEnabled(false);
+      subview.addView(_btnOpen);
       _btnShare = new Button(context);
       _btnShare.setText("Share");
       _btnShare.setEnabled(false);
@@ -149,8 +153,10 @@ public class NodeBaseApp extends LinearLayout {
          public void onClick(View view) {
             _btnStart.setEnabled(false);
             _btnStop.setEnabled(true);
+            _btnOpen.setEnabled(true);
             _btnShare.setEnabled(true);
-            _delegate.signal(
+            NodeService.touchService(
+                  _context,
                   new String[]{
                         NodeService.AUTH_TOKEN,
                         "start",
@@ -171,11 +177,33 @@ public class NodeBaseApp extends LinearLayout {
          public void onClick(View view) {
             _btnStart.setEnabled(true);
             _btnStop.setEnabled(false);
+            _btnOpen.setEnabled(false);
             _btnShare.setEnabled(false);
-            _delegate.signal(new String[]{
+            NodeService.touchService(_context, new String[]{
                   NodeService.AUTH_TOKEN,
                   "stop", _appdir.getName()
             });
+         }
+      });
+
+      _btnOpen.setOnClickListener(new OnClickListener() {
+         @Override
+         public void onClick(View v) {
+            String name = null, protocol = null, port = null, index = null;
+            if (_config != null) {
+               name = _config.get(null, "name");
+               port = _config.get(null, "port");
+               protocol = _config.get(null, "protocol");
+               index = _config.get(null, "index");
+            }
+            if (name == null) name = "NodeBase Service";
+            if (port == null) port = ""; else port = ":" + port;
+            if (protocol == null) protocol = "http";
+            if (index == null) index = "";
+            String url = String.format(
+                  "%s://%s%s%s", protocol, Network.getWifiIpv4(getContext()), port, index
+            );
+            External.openBrowser(getContext(), url);
          }
       });
 
@@ -207,13 +235,41 @@ public class NodeBaseApp extends LinearLayout {
       return _appdir.getName();
    }
 
+   @Override
+   public void before(String[] cmd) {
+      _btnStart.setEnabled(false);
+      _btnStop.setEnabled(false);
+      _btnOpen.setEnabled(false);
+      _btnShare.setEnabled(false);
+   }
+
+   @Override
+   public void started(String[] cmd, Process process) {
+      _btnStart.setEnabled(false);
+      _btnStop.setEnabled(true);
+      _btnOpen.setEnabled(true);
+      _btnShare.setEnabled(true);
+   }
+
+   @Override
+   public void error(String[] cmd, Process process) {
+   }
+
+   @Override
+   public void after(String[] cmd, Process process) {
+      _btnStart.setEnabled(true);
+      _btnStop.setEnabled(false);
+      _btnOpen.setEnabled(false);
+      _btnShare.setEnabled(false);
+   }
+
    private HashMap<String, Object> _env;
-   private NodeBase.AppAction _delegate;
    private File _appdir;
    private String[] _appentries;
-   private Button _btnStart, _btnStop, _btnShare;
+   private Button _btnStart, _btnStop, _btnOpen, _btnShare;
    private Spinner _listEntries;
    private EditText _txtParams;
    private String _readme;
    private NodeBaseAppConfigFile _config;
+   private Context _context;
 }

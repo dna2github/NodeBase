@@ -1,6 +1,5 @@
 package seven.drawalive.nodebase;
 
-import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
@@ -34,6 +33,7 @@ public class NodeBase extends AppCompatActivity {
       prepareState();
       prepareEvents();
       Permission.request(this);
+      Permission.keepScreen(this, true);
 
       setContentView(view);
       if (!Storage.exists(config.nodeBin())) {
@@ -43,7 +43,8 @@ public class NodeBase extends AppCompatActivity {
 
    @Override
    protected void onDestroy() {
-      stopNodeService();
+      Permission.keepScreen(this, false);
+      NodeService.stopService(this);
       super.onDestroy();
    }
 
@@ -166,7 +167,7 @@ public class NodeBase extends AppCompatActivity {
       File approot = new File(dirname);
       _panelAppList.removeAllViews();
       if (!approot.isDirectory()) {
-         External.showToast(this, String.format("\"%s\" is not a directory", dirname));
+         Alarm.showToast(this, String.format("\"%s\" is not a directory", dirname));
          return;
       }
       try {
@@ -181,7 +182,7 @@ public class NodeBase extends AppCompatActivity {
             HashMap<String, Object> env = new HashMap<>();
             env.put("appdir", f);
             env.put("datadir", config.dataDir());
-            NodeBaseApp app = new NodeBaseApp(this, new AppAction(this), env);
+            NodeBaseApp app = new NodeBaseApp(this, env);
             _appList.add(app);
             _panelAppList.addView(app);
          }
@@ -194,49 +195,12 @@ public class NodeBase extends AppCompatActivity {
       }
    }
 
-   public static class AppAction {
-      AppAction(NodeBase nodebase) {
-         _nodebase = nodebase;
-      }
-
-      public void signal(String[] args) {
-         _nodebase.sendNodeSignal(args);
-      }
-
-      public void stop(String name) {
-         if (name == null) {
-            _nodebase.stopNodeService();
-         } else {
-            _nodebase.sendNodeSignal(new String[]{
-                  NodeService.AUTH_TOKEN,
-                  "stop", name
-            });
-         }
-      }
-
-      private NodeBase _nodebase;
-   }
-
-   protected void sendNodeSignal(String[] args) {
-      Log.i("NodeBase:Signal", "Start Service");
-      Log.i("NodeBase:Signal", String.format("Command - %s", args[1]));
-      Intent intent = new Intent(this, NodeService.class);
-      intent.putExtra(NodeService.ARGV, args);
-      startService(intent);
-   }
-
-   protected void stopNodeService() {
-      Log.i("NodeBase:Signal", "Stop Service");
-      Intent intent = new Intent(this, NodeService.class);
-      stopService(intent);
-   }
-
    private void copyBinNodeFromNodebaseWorkdir() {
       String dirname = config.workDir();
       String upgrade_node_filename = String.format("%s/.bin/node", dirname);
       File f = new File(upgrade_node_filename);
       if (!f.exists()) {
-         External.showMessage(
+         Alarm.showMessage(
                this,
                String.format("%s does not exists.", upgrade_node_filename),
                "Upgrade Failed"
@@ -261,7 +225,7 @@ public class NodeBase extends AppCompatActivity {
       } else {
          text = String.format("NodeJS: %s", version);
       }
-      External.showMessage(this, text, "Node Version");
+      Alarm.showMessage(this, text, "Node Version");
    }
 
    private void showNicIps() {
@@ -279,7 +243,7 @@ public class NodeBase extends AppCompatActivity {
          nic_list.append('\n');
       }
       String text = new String(nic_list);
-      External.showMessage(this, text, "NetworkInterface(s)");
+      Alarm.showMessage(this, text, "NetworkInterface(s)");
    }
 
    private void resetNode() {

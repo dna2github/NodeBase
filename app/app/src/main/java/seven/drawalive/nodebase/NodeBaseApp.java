@@ -16,11 +16,10 @@ import android.widget.TextView;
 import java.io.File;
 import java.util.HashMap;
 
-public class NodeBaseApp extends LinearLayout implements NodeService.NodeMonitorEvent {
+public class NodeBaseApp extends LinearLayout implements NodeMonitorEvent {
    public NodeBaseApp(Context context, HashMap<String, Object> env) {
       super(context);
       setOrientation(LinearLayout.VERTICAL);
-      _context = context;
       _env = env;
       _appdir = (File)env.get("appdir");
 
@@ -93,7 +92,7 @@ public class NodeBaseApp extends LinearLayout implements NodeService.NodeMonitor
 
       TextView label;
       label = new TextView(context);
-      label.setText(String.format("\nApp: %s", _appdir.getName()));
+      label.setText(String.format("\nApp: %s", getAppName()));
       label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24f);
       contents.addView(label);
       label = new TextView(context);
@@ -114,7 +113,7 @@ public class NodeBaseApp extends LinearLayout implements NodeService.NodeMonitor
       tbl_r_t = new TableRow(context);
       _listEntries = new Spinner(context);
       _listEntries.setAdapter(
-            new ArrayAdapter<String>(
+            new ArrayAdapter<>(
                   context, android.R.layout.simple_spinner_dropdown_item, _appentries));
       tbl_r_t.addView(_listEntries);
       _txtParams = new EditText(context);
@@ -151,19 +150,39 @@ public class NodeBaseApp extends LinearLayout implements NodeService.NodeMonitor
       _btnStart.setOnClickListener(new OnClickListener() {
          @Override
          public void onClick(View view) {
+            String appname = getAppName();
             _btnStart.setEnabled(false);
             _btnStop.setEnabled(true);
             _btnOpen.setEnabled(true);
             _btnShare.setEnabled(true);
+            new Thread(new Runnable() {
+               @Override
+               public void run() {
+                  String appname = getAppName();
+                  long timestamp = System.currentTimeMillis();
+                  while (System.currentTimeMillis() - timestamp < 3000 /* 3s timeout */) {
+                     if (NodeService.services.containsKey(appname)) {
+                        NodeMonitor monitor = NodeService.services.get(appname);
+                        if (monitor.isDead()) {
+                           // not guarantee but give `after` get chance to run
+                           // if want to guarantee, `synchronized` isDead
+                           NodeBaseApp.this.after(monitor.getCommand(), null);
+                        } else {
+                           monitor.setEvent(NodeBaseApp.this);
+                        }
+                        break;
+                     }
+                  }
+               }
+            }).start();
             NodeService.touchService(
-                  _context,
+                  getContext(),
                   new String[]{
                         NodeService.AUTH_TOKEN,
-                        "start",
-                        _appdir.getName(),
+                        "start", appname,
                         String.format(
                               "%s/node/node %s/%s %s",
-                              (String)_env.get("datadir"),
+                              _env.get("datadir").toString(),
                               _appdir.getAbsolutePath(),
                               String.valueOf(_listEntries.getSelectedItem()),
                               _txtParams.getText().toString()
@@ -179,9 +198,9 @@ public class NodeBaseApp extends LinearLayout implements NodeService.NodeMonitor
             _btnStop.setEnabled(false);
             _btnOpen.setEnabled(false);
             _btnShare.setEnabled(false);
-            NodeService.touchService(_context, new String[]{
+            NodeService.touchService(getContext(), new String[]{
                   NodeService.AUTH_TOKEN,
-                  "stop", _appdir.getName()
+                  "stop", getAppName()
             });
          }
       });
@@ -189,46 +208,50 @@ public class NodeBaseApp extends LinearLayout implements NodeService.NodeMonitor
       _btnOpen.setOnClickListener(new OnClickListener() {
          @Override
          public void onClick(View v) {
-            String name = null, protocol = null, port = null, index = null;
-            if (_config != null) {
-               name = _config.get(null, "name");
-               port = _config.get(null, "port");
-               protocol = _config.get(null, "protocol");
-               index = _config.get(null, "index");
-            }
-            if (name == null) name = "NodeBase Service";
-            if (port == null) port = ""; else port = ":" + port;
-            if (protocol == null) protocol = "http";
-            if (index == null) index = "";
-            String url = String.format(
-                  "%s://%s%s%s", protocol, Network.getWifiIpv4(getContext()), port, index
+            String app_url = String.format(
+                  generateAppUrlTemplate(),
+                  Network.getWifiIpv4(getContext())
             );
-            External.openBrowser(getContext(), url);
+            External.openBrowser(getContext(), app_url);
          }
       });
 
       _btnShare.setOnClickListener(new OnClickListener() {
          @Override
          public void onClick(View view) {
-            String name = null, protocol = null, port = null, index = null;
-            if (_config != null) {
-               name = _config.get(null, "name");
-               port = _config.get(null, "port");
-               protocol = _config.get(null, "protocol");
-               index = _config.get(null, "index");
-            }
-            if (name == null) name = "NodeBase Service";
-            if (port == null) port = ""; else port = ":" + port;
-            if (protocol == null) protocol = "http";
-            if (index == null) index = "";
+            String name = generateAppTitle();
+            String app_url = String.format(
+                  generateAppUrlTemplate(),
+                  Network.getWifiIpv4(getContext())
+            );
             External.shareInformation(
                   getContext(), "Share", "NodeBase",
-                  String.format(
-                        "[%s] is running at %s://%s%s%s",
-                        name, protocol, Network.getWifiIpv4(getContext()), port, index
-                  ), null);
+                  String.format("[%s] is running at %s", name, app_url), null
+            );
          }
       });
+   }
+
+   private String generateAppUrlTemplate() {
+      String protocol = null, port = null, index = null;
+      if (_config != null) {
+         port = _config.get(null, "port");
+         protocol = _config.get(null, "protocol");
+         index = _config.get(null, "index");
+      }
+      if (port == null) port = ""; else port = ":" + port;
+      if (protocol == null) protocol = "http";
+      if (index == null) index = "";
+      return protocol + "://%s" + String.format("%s%s", port, index);
+   }
+
+   private String generateAppTitle() {
+      String name = null;
+      if (_config != null) {
+         name = _config.get(null, "name");
+      }
+      if (name == null) name = "NodeBase Service";
+      return name;
    }
 
    public String getAppName() {
@@ -237,18 +260,28 @@ public class NodeBaseApp extends LinearLayout implements NodeService.NodeMonitor
 
    @Override
    public void before(String[] cmd) {
-      _btnStart.setEnabled(false);
-      _btnStop.setEnabled(false);
-      _btnOpen.setEnabled(false);
-      _btnShare.setEnabled(false);
+      UserInterface.run(new Runnable() {
+         @Override
+         public void run() {
+            _btnStart.setEnabled(false);
+            _btnStop.setEnabled(false);
+            _btnOpen.setEnabled(false);
+            _btnShare.setEnabled(false);
+         }
+      });
    }
 
    @Override
    public void started(String[] cmd, Process process) {
-      _btnStart.setEnabled(false);
-      _btnStop.setEnabled(true);
-      _btnOpen.setEnabled(true);
-      _btnShare.setEnabled(true);
+      UserInterface.run(new Runnable() {
+         @Override
+         public void run() {
+            _btnStart.setEnabled(false);
+            _btnStop.setEnabled(true);
+            _btnOpen.setEnabled(true);
+            _btnShare.setEnabled(true);
+         }
+      });
    }
 
    @Override
@@ -257,10 +290,19 @@ public class NodeBaseApp extends LinearLayout implements NodeService.NodeMonitor
 
    @Override
    public void after(String[] cmd, Process process) {
-      _btnStart.setEnabled(true);
-      _btnStop.setEnabled(false);
-      _btnOpen.setEnabled(false);
-      _btnShare.setEnabled(false);
+      UserInterface.run(new Runnable() {
+         @Override
+         public void run() {
+            _btnStart.setEnabled(true);
+            _btnStop.setEnabled(false);
+            _btnOpen.setEnabled(false);
+            _btnShare.setEnabled(false);
+            Alarm.showToast(
+                  NodeBaseApp.this.getContext(),
+                  String.format("\"%s\" stopped", getAppName())
+            );
+         }
+      });
    }
 
    private HashMap<String, Object> _env;
@@ -271,5 +313,4 @@ public class NodeBaseApp extends LinearLayout implements NodeService.NodeMonitor
    private EditText _txtParams;
    private String _readme;
    private NodeBaseAppConfigFile _config;
-   private Context _context;
 }

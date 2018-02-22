@@ -33,8 +33,8 @@ Share application with your friends in the same Wi-Fi!
 #### Screenshots
 
 <div>
-<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/install_app_manager.png" width="100" />
-<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/app_manager.png" width="100" />
-<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/file_download_upload.png" width="100" />
-<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/nodepad.png" width="100" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/install_app_manager.png" width="200" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/app_manager.png" width="200" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/file_download_upload.png" width="200" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/nodepad.png" width="200" />
 </div>

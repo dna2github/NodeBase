@@ -136,7 +136,9 @@ public class NodeService extends Service {
 
       public NodeMonitor restartService() {
          stopService();
-         return new NodeMonitor(service_name, command);
+         NodeMonitor m = new NodeMonitor(service_name, command);
+         if (event != null) m.setEvent(event);
+         return m;
       }
 
       public boolean isRunning() {

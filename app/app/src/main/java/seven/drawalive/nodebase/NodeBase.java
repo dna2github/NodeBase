@@ -51,8 +51,9 @@ public class NodeBase extends AppCompatActivity {
    @Override
    public boolean onCreateOptionsMenu(Menu menu) {
       menu.add(Menu.NONE, 101, Menu.NONE, "NICs");
-      menu.add(Menu.NONE, 102, Menu.NONE, "Node Version");
-      menu.add(Menu.NONE, 103, Menu.NONE, "Node Upgrade");
+      menu.add(Menu.NONE, 110, Menu.NONE, "Install App Manager");
+      menu.add(Menu.NONE, 120, Menu.NONE, "Node Version");
+      menu.add(Menu.NONE, 121, Menu.NONE, "Node Upgrade");
       menu.add(Menu.NONE, 199, Menu.NONE, "Reset");
       return true;
    }
@@ -63,10 +64,13 @@ public class NodeBase extends AppCompatActivity {
          case 101: // Show Network Interfaces
             showNicIps();
             break;
-         case 102: // Show NodeJS Version
+         case 110: // Install App Manager
+            installAppManager();
+            break;
+         case 120: // Show NodeJS Version
             showNodeVersion();
             break;
-         case 103: // Upgrade NodeJS
+         case 121: // Upgrade NodeJS
             copyBinNodeFromNodebaseWorkdir();
             break;
          case 199: // Reset NodeJS
@@ -258,6 +262,12 @@ public class NodeBase extends AppCompatActivity {
             copyBinNodeFromNodebaseWorkdir();
          }
       }).act("Downlaod NodeJS", Configuration.NODE_URL, upgrade_node_filename);
+   }
+
+   private void installAppManager() {
+      String workdir = config.workDir();
+      ModuleAppManager.InstallAppManager(this, workdir);
+      Alarm.showToast(this, "successful");
    }
 
    // state

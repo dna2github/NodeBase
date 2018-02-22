@@ -120,7 +120,10 @@ public class NodeService extends Service {
    }
 
    private void stopNodeApps() {
-      for(String name : services.keySet()) {
+      int n = services.keySet().size();
+      String[] keys = new String[n];
+      services.keySet().toArray(keys);
+      for(String name : keys) {
          stopNodeApp(name);
       }
    }

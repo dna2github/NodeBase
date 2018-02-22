@@ -44,6 +44,8 @@ public class NodeBase extends AppCompatActivity {
    @Override
    protected void onDestroy() {
       Permission.keepScreen(this, false);
+      // if want to keep service running in backend
+      // comment out this line and add "Stop Service" somewhere
       NodeService.stopService(this);
       super.onDestroy();
    }

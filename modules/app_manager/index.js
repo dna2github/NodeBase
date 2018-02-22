@@ -146,7 +146,7 @@ const Storage = {
          var curPath = path.join(dir, file);
          if (fs.lstatSync(curPath).isDirectory()) {
             // recurse
-            rmtree(curPath);
+            Storage.rmtree(curPath);
          } else { // delete file
             fs.unlinkSync(curPath);
          }

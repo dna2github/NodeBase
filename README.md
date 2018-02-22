@@ -16,9 +16,25 @@ Share application with your friends in the same Wi-Fi!
    - to make node-gyp work, download GCC4droid from for example Google Play Store and then unzip the apk to get android `gcc`
 - adb push entire `modules` as `/sdcard/.nodebase`
 
+# How to share apps
+
+- install NodeBase
+- click "Install App Manager" in right-top menu
+- click "Refresh"
+- "Start" app manager and "Open"
+- read the label on top of another Nodebase "Network (xxx.xxx.xxx.xxx)"
+- "Start" app manager
+- type xxx.xxx.xxx.xxx:20180 under "Shared Application" and click "Enter"
+- select an app and click
+- click "Import" to get app
+
 # Modules
 
 #### Screenshots
 
-<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/file_download_upload.png" width="200" />
-<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/nodepad.png" width="200" />
+<div>
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/install_app_manager.png" width="100" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/app_manager.png" width="100" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/file_download_upload.png" width="100" />
+<img src="https://raw.githubusercontent.com/wiki/dna2github/NodeBase/images/v0/nodepad.png" width="100" />
+</div>

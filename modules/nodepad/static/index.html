@@ -3,29 +3,28 @@
   <head>
     <meta charset='utf-8'> 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link type="text/css" rel="stylesheet" href="index.css" />
     <title>Notepad</title>
-    <link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
   </head>
   <body>
-    <div class="well well-sm" id="view_file_list">
-       <div class="input-group">
-          <input id="txt_dir" type="text" class="form-control" placeholder="dirictory path" />
-          <span class="input-group-btn">
-             <button id="btn_list" class="btn btn-default">List</button>
-          </span>
+    <div class="item green">NodePad</div>
+    <div id="panel_browser">
+       <div class="item">
+          <input id="txt_dir" type="text" class="input" placeholder="directory path, e.g. /sdcard" />
        </div>
-       <div id="view_list" class="alert alert-default">(No Files)</div>
+       <div><a id="btn_list" class="item-r blue">List</a></div>
+       <div id="view_list"><div class="item red">(No Files)</div></div>
     </div>
-    <div class="well well-sm" id="view_notepad">
-       <div class="input-group">
-          <input id="txt_file" type="text" class="form-control" placeholder="file name" />
-          <span class="input-group-btn">
-             <button id="btn_open" class="btn btn-default">Open</button>
-             <button id="btn_save" class="btn btn-default">Save</button>
-          </span>
+    <div id="panel_editor" class="hide">
+       <div><a id="btn_back" class="item-r grey">Back</a></div>
+       <div class="item">
+          <input id="txt_file" type="text" class="input" placeholder="file name, e.g. /sdcard/README" />
        </div>
+       <div><a id="btn_open" class="item-r blue">Open</a></div>
+       <div><a id="btn_save" class="item-r blue">Save</a></div>
+       <br/>
+       <div id="txt_text" style="width: 100%; height: 300px; position: absolute;"></div>
     </div>
-    <div id="txt_text" style="width: 100%; height: 300px; position: absolute;"></div>
     <script type="text/javascript" src="https://ace.c9.io/build/src/ace.js"></script>
     <script type="text/javascript" src="https://ace.c9.io/build/src/mode-javascript.js" charset="utf-8"></script>
     <script type="text/javascript" src="https://ace.c9.io/build/src/mode-html.js" charset="utf-8"></script>
@@ -39,7 +38,7 @@
     <script>
     var editor = ace.edit('txt_text');
     $('view_list').on('click', function (evt) {
-       if (evt.target.tagName.toLowerCase() !== 'button') return;
+       if (evt.target.tagName.toLowerCase() !== 'a') return;
        var txt_dir = document.getElementById('txt_dir'),
            view_list = document.getElementById('view_list'),
            one = evt.target.textContent,
@@ -47,10 +46,17 @@
        if (one.charAt(one.length - 1) === '/') {
           txt_dir.value = txt_dir.value + sp + one;
           clear_element(view_list);
-          view_list.appendChild(document.createTextNode('(No Files)'));
+          view_list.innerHTML = '<div class="item red">(No Files)</div>';
        } else {
           document.getElementById('txt_file').value = txt_dir.value + sp + one;
+          editor.setValue('');
+          $('panel_browser').classList.add('hide');
+          $('panel_editor').classList.remove('hide');
        }
+    });
+    $('btn_back').on('click', function (evt) {
+       $('panel_editor').classList.add('hide');
+       $('panel_browser').classList.remove('hide');
     });
     $('btn_list').on('click', function (evt) {
        ajax({
@@ -63,20 +69,27 @@
           green_border(document.getElementById('btn_list'));
           clear_element(x);
           if (data.files.length + data.dirs.length > 0) {
-             data.files.forEach(function (f) {
-                var c = document.createElement('button');
-                c.className = 'btn btn-default';
-                c.appendChild(document.createTextNode(f));
-                x.appendChild(c);
-             });
+             x.innerHTML = '<br/>';
              data.dirs.forEach(function (d) {
-                var c = document.createElement('button');
-                c.className = 'btn btn-info';
+                var c = document.createElement('a');
+                c.className = 'item grey';
                 c.appendChild(document.createTextNode(d + '/'));
                 x.appendChild(c);
              });
+             data.files.forEach(function (f) {
+                var c = document.createElement('a');
+                c.className = 'item blue';
+                c.appendChild(document.createTextNode(f));
+                x.appendChild(c);
+             });
+             {
+                var c = document.createElement('a');
+                c.className = 'item yellow';
+                c.appendChild(document.createTextNode('NewFile'));
+                x.appendChild(c);
+             }
           } else {
-             x.appendChild(document.createTextNode('(No Files)'));
+             x.innerHTML = '<div><a class="item yellow">NewFile</a></div>';
           }
        }, function () {
           red_border(document.getElementById('btn_list'));

@@ -1,0 +1,68 @@
+body {
+   overflow-x: hidden;
+}
+.disabled {
+   pointer-events: none;
+}
+.item {
+   display: block;
+   width: 100%;
+   margin-top: 2px;
+   padding: 10px 0px 10px 10px;
+   text-decoration: none;
+   color: black;
+}
+.item-r {
+   display: block;
+   width: 100%;
+   margin-top: 2px;
+   margin-left: -10px;
+   padding: 10px 10px 10px 0;
+   text-decoration: none;
+   text-align: right;
+   color: black;
+}
+.btn {
+   display: inline-block;
+   padding: 5px;
+   background-color: white;
+   border-radius: 3px;
+   border: 1px solid black;
+}
+.badge {
+   border: 1px solid black;
+   padding: 0 5px 0 5px;
+   margin-left: 10px;
+}
+.input {
+   padding: 5px;
+   border-top: 0;
+   border-left: 0;
+   border-right: 0;
+   border-bottom: 1px solid black;
+   width: 100%;
+}
+a.item-r:hover {
+   opacity: 0.5;
+   cursor: pointer;
+}
+a.item:hover {
+   opacity: 0.5;
+   cursor: pointer;
+}
+.btn:hover {
+   border: 1px solid black;
+   color: white;
+   background-color: black;
+}
+.hide {
+   display: none;
+}
+.grey   { background-color: #e2e2e2; }
+.red    { background-color: #f5cdcd; }
+.green  { background-color: #cff5cd; }
+.blue   { background-color: #cdebf5; }
+.yellow { background-color: #fbf59f; }
+.orange { background-color: #ffe6cc; }
+.pink   { background-color: #f5cde8; }
+.purple { background-color: #dfcdf5; }

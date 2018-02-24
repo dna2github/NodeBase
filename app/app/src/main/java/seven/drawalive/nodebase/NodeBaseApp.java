@@ -2,7 +2,7 @@ package seven.drawalive.nodebase;
 
 import android.content.Context;
 import android.util.Log;
-import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -90,15 +90,21 @@ public class NodeBaseApp extends LinearLayout implements NodeMonitorEvent {
       LinearLayout contents = new LinearLayout(context);
       contents.setOrientation(LinearLayout.VERTICAL);
 
+      _btnTitle = new Button(context);
+      _btnTitle.setText(String.format("App : %s", getAppName()));
+      _btnTitle.setGravity(Gravity.LEFT);
+      _btnTitle.setAllCaps(false);
+      UserInterface.themeAppTitleButton(_btnTitle, false);
+      contents.addView(_btnTitle);
+
+      _panelDetails = new LinearLayout(context);
+      _panelDetails.setOrientation(LinearLayout.VERTICAL);
+      _panelDetails.setVisibility(View.GONE);
       TextView label;
-      label = new TextView(context);
-      label.setText(String.format("\nApp: %s", getAppName()));
-      label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24f);
-      contents.addView(label);
       label = new TextView(context);
       label.setText(_readme);
       _readme = null; // release memory
-      contents.addView(label);
+      _panelDetails.addView(label);
 
       TableLayout tbl = new TableLayout(context);
       TableRow tbl_r_t = null;
@@ -120,7 +126,7 @@ public class NodeBaseApp extends LinearLayout implements NodeMonitorEvent {
       tbl_r_t.addView(_txtParams);
       tbl.addView(tbl_r_t);
       tbl.setStretchAllColumns(true);
-      contents.addView(tbl);
+      _panelDetails.addView(tbl);
 
 
       LinearLayout subview = new LinearLayout(context);
@@ -140,13 +146,32 @@ public class NodeBaseApp extends LinearLayout implements NodeMonitorEvent {
       _btnShare.setText("Share");
       _btnShare.setEnabled(false);
       subview.addView(_btnShare);
-      contents.addView(subview);
+      _panelDetails.addView(subview);
+
+      LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.FILL_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+      );
+      params.setMargins(0, 5, 0, 0);
+      contents.setLayoutParams(params);
+      contents.addView(_panelDetails);
 
       frame.addView(contents);
       addView(frame);
    }
 
    public void prepareEvents() {
+      _btnTitle.setOnClickListener(new OnClickListener() {
+         @Override
+         public void onClick(View v) {
+            if (_panelDetails.getVisibility() == View.GONE) {
+               _panelDetails.setVisibility(View.VISIBLE);
+            } else {
+               _panelDetails.setVisibility(View.GONE);
+            }
+         }
+      });
+
       _btnStart.setOnClickListener(new OnClickListener() {
          @Override
          public void onClick(View view) {
@@ -280,6 +305,7 @@ public class NodeBaseApp extends LinearLayout implements NodeMonitorEvent {
             _btnStop.setEnabled(true);
             _btnOpen.setEnabled(true);
             _btnShare.setEnabled(true);
+            UserInterface.themeAppTitleButton(_btnTitle, true);
          }
       });
    }
@@ -297,6 +323,7 @@ public class NodeBaseApp extends LinearLayout implements NodeMonitorEvent {
             _btnStop.setEnabled(false);
             _btnOpen.setEnabled(false);
             _btnShare.setEnabled(false);
+            UserInterface.themeAppTitleButton(_btnTitle, false);
             Alarm.showToast(
                   NodeBaseApp.this.getContext(),
                   String.format("\"%s\" stopped", getAppName())
@@ -308,7 +335,8 @@ public class NodeBaseApp extends LinearLayout implements NodeMonitorEvent {
    private HashMap<String, Object> _env;
    private File _appdir;
    private String[] _appentries;
-   private Button _btnStart, _btnStop, _btnOpen, _btnShare;
+   private LinearLayout _panelDetails;
+   private Button _btnTitle, _btnStart, _btnStop, _btnOpen, _btnShare;
    private Spinner _listEntries;
    private EditText _txtParams;
    private String _readme;

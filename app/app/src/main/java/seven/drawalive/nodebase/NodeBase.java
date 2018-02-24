@@ -39,6 +39,9 @@ public class NodeBase extends AppCompatActivity {
       if (!Storage.exists(config.nodeBin())) {
          resetNode();
       }
+      if (Storage.exists(config.workDir())) {
+         refreshAppList();
+      }
    }
 
    @Override
@@ -268,7 +271,7 @@ public class NodeBase extends AppCompatActivity {
 
    private void installAppManager() {
       String workdir = config.workDir();
-      ModuleAppManager.InstallAppManager(this, workdir);
+      ModuleAppManager.install(this, workdir);
       Alarm.showToast(this, "successful");
    }
 

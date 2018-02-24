@@ -98,7 +98,7 @@ let html_index = `<!doctype html>
       -->
       <div><a id="btn_enter_local" class="item-r blue" href="#">Enter</a></div>
       <br />
-      <div class="item green">Shared Application</div>
+      <div class="item green">Shared Applications</div>
       <div class="item">
          <input id="txt_server" class="input" placeholder="another server, e.g. 192.168.1.101:20180"/>
       </div>

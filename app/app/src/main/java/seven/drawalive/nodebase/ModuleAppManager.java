@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class ModuleAppManager {
-   public static String appManagerJs(Context context) {
+   public static String js(Context context) {
       InputStream reader = context.getResources().openRawResource(R.raw.app_manager);
       try {
          byte[] buf = new byte[(int) reader.available()];
@@ -20,23 +20,23 @@ public class ModuleAppManager {
       }
    }
 
-   public static String appManagerReadme() {
+   public static String readme() {
       return "# NodeBase Application Manager\nrunning: 20180\nparams:  (no params)\n";
    }
 
-   public static String appManagerConfig() {
+   public static String config() {
       return "name=NodeBase Application Manager\nport=20180\n";
    }
 
-   public static void InstallAppManager(Context context, String workdir) {
+   public static void install(Context context, String workdir) {
       String appdir = workdir + "/app_manager";
       File dir = new File(appdir);
       if (dir.exists()) {
          return;
       }
       dir.mkdir();
-      Storage.write(appManagerJs(context), appdir + "/index.js");
-      Storage.write(appManagerReadme(), appdir + "/readme");
-      Storage.write(appManagerConfig(), appdir + "/config");
+      Storage.write(js(context), appdir + "/index.js");
+      Storage.write(readme(), appdir + "/readme");
+      Storage.write(config(), appdir + "/config");
    }
 }

@@ -21,23 +21,29 @@ Build IoT edge on your phone; smart your home!
 # How to share apps
 
 - `Service Share`
-- Write nodeJS server program and listen on 0.0.0.0 (set `app_manager` as an example; if listen on 127.0.0.1, local use only)
-- "Start" app and share IP and port to near device
+<pre>
+  Write nodeJS server program and listen on 0.0.0.0
+  (set `app_manager` as an example; if listen on 127.0.0.1, local use only)
+  "Start" app and share IP and port to near device
+</pre>
 
 - `Copy Share`
-- install NodeBase
-- click "Install App Manager" in right-top menu
-- click "Refresh"
-- "Start" app manager and "Open"
-- read the label on top of another Nodebase "Network (xxx.xxx.xxx.xxx)"
-- "Start" app manager
-- type xxx.xxx.xxx.xxx:20180 under "Shared Application" and click "Enter"
-- select an app and click
-- click "Import" to get app; then NodeBase Application Manager will make a copy of the app on local
+<pre>
+  read the label on top of another Nodebase "Network (xxx.xxx.xxx.xxx)"
+  click "Install App Manager" in right-top menu
+  "Refresh" application list
+  "Start" app manager and "Open" in browser
+  "Start" app manager in another Android
+  type xxx.xxx.xxx.xxx:20180 under "Shared Application" and click "Enter"
+  select an app and click to enter
+  click "Import" to get app
+  then NodeBase Application Manager will make a copy of the app on local
+</pre>
 
 # FAQ
 
-- "Network" shows 0.0.0.0? A: probably not connect to Wi-Fi.
+- "Network" shows 0.0.0.0?
+   - A: probably not connect to Wi-Fi; not support start service on Internet.
 
 # Modules
 

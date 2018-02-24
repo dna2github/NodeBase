@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -99,8 +100,12 @@ public class NodeBase extends AppCompatActivity {
       view = new LinearLayout(this);
       view.setOrientation(LinearLayout.VERTICAL);
 
-      _labelIp = new TextView(this);
-      _labelIp.setText(String.format("Network (%s)", Network.getWifiIpv4(this)));
+      _labelIp = new Button(this);
+      _labelIp.setText(String.format("  Network (%s)", Network.getWifiIpv4(this)));
+      _labelIp.setGravity(Gravity.LEFT);
+      _labelIp.setClickable(false);
+      _labelIp.setLayoutParams(UserInterface.buttonFillStyle);
+      UserInterface.themeAppTitleButton(_labelIp, false);
       view.addView(_labelIp);
 
       label = new TextView(this);
@@ -280,9 +285,8 @@ public class NodeBase extends AppCompatActivity {
    private ArrayList<NodeBaseApp> _appList;
 
    // view components
-   private TextView _labelIp;
    private EditText _txtAppRootDir;
-   private Button _btnRefreshAppList;
+   private Button _labelIp, _btnRefreshAppList;
    private EditText _txtAppFilter;
    private LinearLayout _panelAppList;
 }

@@ -87,13 +87,15 @@ public class NodeBaseApp extends LinearLayout implements NodeMonitorEvent {
       }
       frame.addView(image);*/
 
+      LayoutParams param;
       LinearLayout contents = new LinearLayout(context);
       contents.setOrientation(LinearLayout.VERTICAL);
 
       _btnTitle = new Button(context);
-      _btnTitle.setText(String.format("App : %s", getAppName()));
+      _btnTitle.setText(String.format("  App : %s", getAppName()));
       _btnTitle.setGravity(Gravity.LEFT);
       _btnTitle.setAllCaps(false);
+      _btnTitle.setLayoutParams(UserInterface.buttonLeftStyle);
       UserInterface.themeAppTitleButton(_btnTitle, false);
       contents.addView(_btnTitle);
 
@@ -148,12 +150,12 @@ public class NodeBaseApp extends LinearLayout implements NodeMonitorEvent {
       subview.addView(_btnShare);
       _panelDetails.addView(subview);
 
-      LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.FILL_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
+      param = new LayoutParams(
+            LayoutParams.MATCH_PARENT,
+            LayoutParams.WRAP_CONTENT
       );
-      params.setMargins(0, 5, 0, 0);
-      contents.setLayoutParams(params);
+      param.setMargins(0, 5, 0, 0);
+      contents.setLayoutParams(param);
       contents.addView(_panelDetails);
 
       frame.addView(contents);

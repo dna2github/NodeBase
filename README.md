@@ -5,6 +5,8 @@ Android NodeJS Platform to Build Sharable Application (Android as a Server)
 
 Share application with your friends in the same Wi-Fi!
 
+Build IoT edge on your phone; smart your home!
+
 # How to use
 
 - build to generate apk
@@ -18,6 +20,11 @@ Share application with your friends in the same Wi-Fi!
 
 # How to share apps
 
+- `Service Share`
+- Write nodeJS server program and listen on 0.0.0.0 (set `app_manager` as an example; if listen on 127.0.0.1, local use only)
+- "Start" app and share IP and port to near device
+
+- `Copy Share`
 - install NodeBase
 - click "Install App Manager" in right-top menu
 - click "Refresh"
@@ -26,7 +33,11 @@ Share application with your friends in the same Wi-Fi!
 - "Start" app manager
 - type xxx.xxx.xxx.xxx:20180 under "Shared Application" and click "Enter"
 - select an app and click
-- click "Import" to get app
+- click "Import" to get app; then NodeBase Application Manager will make a copy of the app on local
+
+# FAQ
+
+- "Network" shows 0.0.0.0? A: probably not connect to Wi-Fi.
 
 # Modules
 

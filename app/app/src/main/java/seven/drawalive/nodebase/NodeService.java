@@ -95,7 +95,7 @@ public class NodeService extends Service {
                restartNodeApp(first /* name */);
                break;
             case "stop":
-               if (first == "!") {
+               if ("!".compareTo(first) == 0) {
                   stopNodeApps();
                } else {
                   stopNodeApp(first /* name */);

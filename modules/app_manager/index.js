@@ -256,8 +256,6 @@ const router = {
    }
 };
 
-init();
-
 const server = http.createServer((req, res) => {
    route(req, res);
 });

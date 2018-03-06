@@ -132,10 +132,14 @@ function process_message(ws, env, obj) {
 const clients = {};
 wssrv.on('connection', (client) => {
    let env = {
-      name: null
+      name: null,
+      timer: null,
    };
    client.on('open', () => {
       console.log('[debug]', 'connected ...');
+      env.timer = setInterval(() => {
+         client.ping();
+      }, 20*1000);
    });
    client.on('message', (message) => {
       console.log('[debug]', message);
@@ -144,15 +148,17 @@ wssrv.on('connection', (client) => {
       } catch(e) {}
    });
    client.on('close', () => {
-      console.log('[debug]', env.name + ' closed ...');
       if (!env.name) {
+         console.log('[debug]', env.name + ' closed ...');
          delete clients[env.name];
+         clearInterval(env.timer);
       }
    });
    client.on('error', () => {
       if (!env.name) {
          console.log('[debug]', env.name + ' error ...');
          delete clients[env.name];
+         clearInterval(env.timer);
       }
    })
 });

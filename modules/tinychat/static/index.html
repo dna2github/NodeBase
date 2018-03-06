@@ -192,12 +192,12 @@
       client.addEventListener('close', function (evt) {
         app.data.client = null;
         id('txt_alarm').innerHTML = 'Got WebSocket closed; refresh please.';
-        app.ui.switch_panel('panel_alarm');
+        id('panel_alarm').classList.remove('hide');
       });
       client.addEventListener('error', function (evt) {
         app.data.client = null;
         id('txt_alarm').innerHTML = 'Got WebSocket error; refresh please.';
-        app.ui.switch_panel('panel_alarm');
+        id('panel_alarm').classList.remove('hide');
       });
     };
 

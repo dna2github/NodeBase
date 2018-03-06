@@ -194,8 +194,8 @@ const router = {
             return router.code(req, res, 404, 'Not Found');
          }
          res.setHeader('Content-Disposition', 'attachment; filename=' + path.basename(filename));
-         //res.setHeader('Content-Type', 'application/octet-stream');
-         res.setHeader('Content-Type', 'text/plain');
+         res.setHeader('Content-Type', 'application/octet-stream');
+         // res.setHeader('Content-Type', 'text/plain');
          let buf = fs.readFileSync(filename);
          res.end(buf, 'binary');
       },

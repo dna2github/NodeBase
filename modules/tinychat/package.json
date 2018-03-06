@@ -1,0 +1,22 @@
+{
+  "name": "tinychat",
+  "version": "0.1.0",
+  "description": "Simple Chat Room for Android NodeBase",
+  "main": "index.js",
+  "dependencies": {
+    "ws": "^4.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "module",
+    "nodebase",
+    "android",
+    "communication",
+    "tinychat"
+  ],
+  "author": "Seven Lju",
+  "license": "MIT"
+}

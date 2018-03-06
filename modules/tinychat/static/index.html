@@ -1,0 +1,243 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset='utf-8'> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>NodeBase Tiny Chat</title>
+    <style text="text/css">
+    body {
+       overflow-x: hidden;
+    }
+    .disabled {
+       pointer-events: none;
+    }
+    .item {
+       display: block;
+       width: 100%;
+       margin-top: 2px;
+       padding: 10px 0px 10px 10px;
+       text-decoration: none;
+       color: black;
+       word-wrap: break-word;
+    }
+    .item-r {
+       display: block;
+       width: 100%;
+       margin-top: 2px;
+       margin-left: -10px;
+       padding: 10px 10px 10px 0;
+       text-decoration: none;
+       text-align: right;
+       color: black;
+       word-wrap: break-word;
+    }
+    .btn {
+       display: inline-block;
+       padding: 5px;
+       background-color: white;
+       border-radius: 3px;
+       border: 1px solid black;
+    }
+    .badge {
+       border: 1px solid black;
+       padding: 0 5px 0 5px;
+       margin-left: 10px;
+    }
+    .input {
+       padding: 5px;
+       border-top: 0;
+       border-left: 0;
+       border-right: 0;
+       border-bottom: 1px solid black;
+       width: 95%;
+    }
+    a.item-r:hover {
+       opacity: 0.5;
+       cursor: pointer;
+    }
+    a.item:hover {
+       opacity: 0.5;
+       cursor: pointer;
+    }
+    .btn:hover {
+       border: 1px solid black;
+       color: white;
+       background-color: black;
+    }
+    .hide {
+       display: none;
+    }
+    .grey   { background-color: #e2e2e2; }
+    .red    { background-color: #f5cdcd; }
+    .green  { background-color: #cff5cd; }
+    .blue   { background-color: #cdebf5; }
+    .yellow { background-color: #fbf59f; }
+    .orange { background-color: #ffe6cc; }
+    .pink   { background-color: #f5cde8; }
+    .purple { background-color: #dfcdf5; }
+    </style>
+  </head>
+  <body>
+    <div class="item">NodeBase Tiny Chat</div>
+
+    <div class="item yellow">A tiny chat room for temporary team talking. For example between mobile and laptop.</div>
+    <div id="panel_alarm" class="hide">
+      <div id="txt_alarm" class="item red">Loading ...</div>
+    </div>
+
+    <div id="panel_entry">
+      <div class="item green">Welcome</div>
+      <div class="item">
+         <input id="txt_username" class="input" placeholder="user name, e.g. TinyBot"/>
+      </div>
+      <div><a id="btn_enter" class="item-r blue">Enter</a></div>
+      <br />
+    </div>
+
+    <div id="panel_message" class="hide">
+      <div id="txt_displayed_username" class="item blue" href="#">TinyBot</div>
+      <div class="item">
+        <input id="txt_message" class="input" placeholder="message, e.g. Hello, TinyBot!"/>
+     </div>
+     <div><a id="btn_send" class="item-r blue">Send</a></div>
+     <div class="item green">Message</div>
+      <div id="list_message"></div>
+    </div>
+
+    <script>
+    function id(name) {
+       return document.getElementById(name);
+    }
+    function elem_clear(elem) {
+       while (elem.hasChildNodes()) elem.removeChild(elem.lastChild);
+    }
+    function elem_settext(elem, text) {
+       elem_clear(elem);
+       elem.appendChild(document.createTextNode(text));
+    }
+    function on(name, event, fn) {
+       id(name).addEventListener(event, fn);
+    }
+
+    var app = {};
+    app.data = {
+      name: null,
+      client: null
+    };
+    app.ui = {
+       switch_panel: function (panel) {
+          var panel_list = ['panel_alarm', 'panel_message', 'panel_entry'];
+          panel_list.forEach(function (x) {
+             id(x).classList.add('hide');
+          });
+          id(panel).classList.remove('hide');
+       }
+    };
+    app.api = function (options, done_fn, fail_fn) {
+       var xhr = new XMLHttpRequest(), payload = null;
+       xhr.open(options.method || 'POST', options.url + (options.data?uriencode(options.data):''), true);
+       xhr.addEventListener('readystatechange', function (evt) {
+          if (evt.target.readyState === 4 /*XMLHttpRequest.DONE*/) {
+             if (~~(evt.target.status/100) === 2) {
+                done_fn && done_fn(evt.target.response);
+             } else {
+                fail_fn && fail_fn(evt.target.status);
+             }
+          }
+       });
+       if (options.json) {
+          xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+          payload = JSON.stringify(options.json);
+       }
+       xhr.send(payload);
+    };
+    app.websocket = function () {
+      if (app.client) return;
+      var protocol = location.protocol==='http:'?'ws:':'wss:';
+      var hostname = location.host;
+      var client = new WebSocket(protocol + '//' + hostname + '/ws');
+      client.addEventListener('message', function (evt) {
+        var obj = JSON.parse(evt.data);
+        if (obj.ack) {
+          if (obj.ack === 'name') {
+            app.ui.switch_panel('panel_message');
+          }
+          return;
+        }
+        if (obj.error) {
+          if (obj.error === 'name') {
+            id('txt_alarm').innerHTML = 'Name exists; try another one.';
+            id('panel_alarm').classList.remove('hide');
+          }
+          return;
+        }
+        if (obj.message) {
+          var div = document.createElement('div');
+          div.classList.add('item');
+          div.classList.add('grey');
+          div.style.paddingRight = '10px';
+          div.appendChild(document.createTextNode(obj.name + ': ' + obj.message));
+          var parent = id('list_message');
+          if (parent.children.length) {
+            parent.insertBefore(div, parent.children[0]);
+          } else {
+            parent.appendChild(div);
+          }
+          return;
+        }
+      });
+      client.addEventListener('open', function (evt) {
+        app.data.client = client;
+      });
+      client.addEventListener('close', function (evt) {
+        app.data.client = null;
+        id('txt_alarm').innerHTML = 'Got WebSocket closed; refresh please.';
+        app.ui.switch_panel('panel_alarm');
+      });
+      client.addEventListener('error', function (evt) {
+        app.data.client = null;
+        id('txt_alarm').innerHTML = 'Got WebSocket error; refresh please.';
+        app.ui.switch_panel('panel_alarm');
+      });
+    };
+
+    on('btn_enter', 'click', function (evt) {
+      if (!app.data.client) return;
+      var name = id('txt_username').value;
+      if (!name) return;
+      app.data.name = id('txt_username').value;
+      id('txt_displayed_username').innerHTML = '';
+      id('txt_displayed_username').appendChild(document.createTextNode('NAME: ' + name));
+      app.data.client.send(JSON.stringify({
+        cmd: 'name',
+        value: name
+      }));
+    });
+    on('btn_send', 'click', function (evt) {
+      if (!app.data.client) return;
+      if (!app.data.name) return;
+      var message = id('txt_message').value;
+      id('txt_message').value = '';
+      app.data.client.send(JSON.stringify({
+        cmd: 'talk',
+        value: message
+      }));
+      var div = document.createElement('div');
+      div.classList.add('item-r');
+      div.classList.add('grey');
+      div.style.textAlign = 'left';
+      div.style.paddingLeft = '10px';
+      div.style.width = '98%';
+      div.appendChild(document.createTextNode(': ' + message));
+      var parent = id('list_message');
+      if (parent.children.length) {
+        parent.insertBefore(div, parent.children[0]);
+      } else {
+        parent.appendChild(div);
+      }
+    });
+
+    app.websocket();
+    </script>
+  </body>
+</html>

@@ -281,6 +281,32 @@ function get_ip (req) {
    return ip;
 }
 
+function make_directory(dir) {
+   dir = path.resolve(dir);
+   let parent_dir = path.dirname(dir);
+   let state = true;
+   if (dir !== parent_dir) {
+      if (!fs.existsSync(parent_dir)) {
+         state = make_directory(parent_dir);
+      } else {
+         if (!fs.lstatSync(parent_dir).isDirectory()) {
+            state = false;
+         }
+      }
+      if (!state) {
+         return null;
+      }
+   }
+   if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+      return dir;
+   } else if (!fs.lstatSync(dir).isDirectory()) {
+      return null;
+   } else {
+      return dir;
+   }
+}
+
 function process_app_import(req, res, api, appname, appfiles, rename) {
    function random_tmp_name() {
       return 'tmp-' + Math.random();
@@ -297,9 +323,7 @@ function process_app_import(req, res, api, appname, appfiles, rename) {
       let filename = appfiles[index];
       let tmpfile = path.join(tmpdir, filename);
       let subtmpdir = path.dirname(tmpfile);
-      if (!fs.existsSync(subtmpdir)) {
-         fs.mkdirSync(subtmpdir);
-      }
+      make_directory(subtmpdir);
       let file = fs.createWriteStream(tmpfile);
       let request = http.get(api + '/download/' + appname + '/' + filename, (obj) => {
          obj.pipe(file);

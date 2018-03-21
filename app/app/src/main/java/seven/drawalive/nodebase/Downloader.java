@@ -30,7 +30,7 @@ public class Downloader {
          try {
             URL urlobj = new URL(url);
             conn = (HttpURLConnection)urlobj.openConnection();
-            if (conn.getResponseCode()/200 != 2) {
+            if (conn.getResponseCode()/100 != 2) {
                throw new IOException("server error: " + conn.getResponseCode());
             }
             int file_len = conn.getContentLength();

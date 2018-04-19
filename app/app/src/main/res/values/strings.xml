@@ -1,3 +1,4 @@
 <resources>
    <string name="app_name">NodeBase</string>
+   <string name="write_external_storage">android.permission.WRITE_EXTERNAL_STORAGE</string>
 </resources>

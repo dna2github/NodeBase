@@ -1,6 +1,5 @@
 const http = require('http');
 const url = require('url');
-const mime = require('mime');
 const path = require('path');
 const fs = require('fs');
 
@@ -181,6 +180,18 @@ const Storage = {
    }
 };
 
+function mime_lookup(filename) {
+   let extname = path.extname(filename);
+   switch(extname) {
+   case '.json': return 'application/json';
+   case '.html': return 'text/html';
+   case '.js': return 'text/javascript';
+   case '.css': return 'text/css';
+   default: return 'application/octet-stream'
+   }
+}
+
+
 const router = {
    app: {
       list: (req, res, options) => {
@@ -274,7 +285,7 @@ const router = {
       if (!fs.existsSync(filename)) {
          return router.code(req, res, 404, 'Not Found');
       }
-      res.setHeader('Content-Type', mime.lookup(filename));
+      res.setHeader('Content-Type', mime_lookup(filename));
       let buf = fs.readFileSync(filename);
       res.end(buf, 'binary');
    },

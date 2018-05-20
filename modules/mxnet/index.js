@@ -71,8 +71,14 @@ function mime_lookup(filename) {
 
 const router = {
    test: (req, res, options) => {
-      wrap.predict(path.join(__dirname, 'images', options.path[0])).then(function (result) {
-         res.end(result.join('\n'));
+      let image_name = options.path[0];
+      wrap.predict(path.join(__dirname, 'images', image_name)).then(function (result) {
+         let html = '<html><body>';
+         html += '<div><pre>' + result.join('\n') + '</pre></div>';
+         html += '<div><img style="width:224px;height:224px;" src="/images/' + image_name + '" /></div>';
+         html += '</body></html>';
+         res.setHeader('Context-Type', 'text/html');
+         res.end(html);
       });
    },
    static: (req, res, filename) => {
@@ -84,7 +90,11 @@ const router = {
       if (filename.length === 0 || filename.indexOf('..') >= 0) {
          return router.code(req, res, 404, 'Not Found');
       }
-      filename = path.join(__dirname, 'static', ...filename);
+      if (filename[0] === 'images') {
+         filename = path.join(__dirname, ...filename);
+      } else {
+         filename = path.join(__dirname, 'static', ...filename);
+      }
       if (!fs.existsSync(filename)) {
          return router.code(req, res, 404, 'Not Found');
       }

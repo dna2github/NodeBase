@@ -1,0 +1,34 @@
+<html>
+<head>
+   <title>Example Service</title>
+   <link rel="stylesheet" href="css/clr-ui.min.css">
+</head>
+<body>
+<div class="login-wrapper">
+    <div class="login">
+    <section class="title">
+        <h3 class="welcome">Welcome to</h3>
+        Example Service
+        <h5 class="hint">Use your LDAP account to sign in</h5>
+    </section>
+    <div class="login-group">
+        <div class="auth-source select">
+            <select id="login-auth-source-1">
+                <option>LDAP Users</option>
+                <option>Administrator</option>
+            </select>
+        </div>
+        <input class="username" type="text" id="login_username" placeholder="Username">
+        <input class="password" type="password" id="login_password" placeholder="Password">
+        <div class="error active hide" id="login_error">
+            Invalid username or password
+        </div>
+        <button class="btn btn-primary" id="btn_signin">SIGN IN</button>
+        <a href="mailto:jiayil@vmware.com" class="signup">contact with administrators</a>
+    </div>
+    </div>
+</div>
+<script src="js/common.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>

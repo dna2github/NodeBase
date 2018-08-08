@@ -1,0 +1,26 @@
+{
+  "name": "bubble",
+  "version": "1.0.0",
+  "description": "VMware General Search Engine",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No Test\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@gitlab.eng.vmware.com/jiayil/bubble"
+  },
+  "keywords": [
+    "niumbus",
+    "service"
+  ],
+  "author": "Seven Lju",
+  "license": "MIT",
+  "dependencies": {
+    "ldapjs": "^1.0.2",
+    "ssh2": "^0.6.1",
+    "uuid": "^3.3.2",
+    "ws": "^5.2.1"
+  },
+  "devDependencies": {}
+}

@@ -11,6 +11,7 @@ const api = {
             url: LDAP_SERVER
          });
          client.bind(username + '@example.localhost', password, (error) => {
+            client.unbind();
             if (error) {
                reject({username, error});
             } else {

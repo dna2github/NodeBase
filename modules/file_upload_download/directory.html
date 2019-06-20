@@ -129,7 +129,7 @@
           switch(~~(evt.target.status/100)) {
           case 2:
             $('mask').css('display', 'none');
-            window.refresh(true);
+            setTimeout(function () { window.location.reload(true); }, 500);
           }
         }
       }

@@ -2,7 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import './io.dart';
 import './search.dart';
-import './item_editor.dart';
+import './app_model.dart';
+import './page_environment.dart';
+import './page_platform.dart';
+import './page_apps.dart';
+
 
 class NodeBaseHomePage extends StatefulWidget {
   NodeBaseHomePage({Key key, this.title}) : super(key: key);
@@ -14,33 +18,37 @@ class NodeBaseHomePage extends StatefulWidget {
 }
 
 class _NodeBaseHomePageState extends State<NodeBaseHomePage> {
-  int _counter = 0;
-  List<String> entries = <String>[];
 
   @override
   void initState() {
     super.initState();
-    for (var i = 0; i < 100; i ++) entries.add('$i');
     readAppFileAsString("/config.json").then((config) {
       if (config != "") {
          onReady(jsonDecode(config));
       }
     });
-    ioLs("/").then((list) {
-      entries.clear();
-      setState(() {
-        for (var i = 0; i < list.length; i++) entries.add(_dirname(list[i].path));
-      });
-    });
-  }
-  _dirname(String filepath) {
-    return filepath.split("/").last;
   }
 
   onReady(config) {
     print(config);
     if (config == null) return;
-    setState(() { _counter = config['counter']; });
+    // setState(() { _counter = config['counter']; });
+  }
+
+  onNavigate(NodeBaseAppModule module) {
+    var route;
+    switch (module.name) {
+       case "Environment": {
+         route = MaterialPageRoute(builder: (context) => NodeBaseEnvironmentSettings());
+       } break;
+       case "Platform": {
+         route = MaterialPageRoute(builder: (context) => NodeBasePlatformSettings());
+       } break;
+       case "Application": {
+         route = MaterialPageRoute(builder: (context) => NodeBaseApplications());
+       } break;
+    }
+    Navigator.push(context, route);
   }
 
   @override
@@ -55,33 +63,24 @@ class _NodeBaseHomePageState extends State<NodeBaseHomePage> {
           )
         ]
       ),
-      body: ListView.separated(
+      body: ListView.builder(
         padding: const EdgeInsets.all(8),
-        itemCount: entries.length,
+        itemCount: NodeBaseAppModule.list.length,
         itemBuilder: (BuildContext context, int index) {
           return Container(
             child: Card(
               child: ListTile(
-                title: Text('Card ${entries[index]}'),
-                trailing: PopupMenuButton<int>(
-                  icon: Icon(Icons.more_vert),
-                  onSelected: (int result) {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => NodeBaseItemEditor()));
-                  },
-                  itemBuilder: (BuildContext context) => <PopupMenuEntry<int>>[
-                    const PopupMenuItem<int>( value: 101, child: Text('TODO') )
-                  ]
-                )
-              )
-            )
+                onTap: () => onNavigate(NodeBaseAppModule.list[index]),
+                title: Text('${NodeBaseAppModule.list[index].name}'),
+                subtitle: Text('${NodeBaseAppModule.list[index].desc}'),
+                leading: IconButton(
+                  icon: NodeBaseAppModule.list[index].icon,
+                ) // IconButton
+              ) // ListTile
+            ) // Card
           );
-        },
-        separatorBuilder: (BuildContext context, int index) => const Divider()
-      ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Add Card',
-        child: Icon(Icons.add),
-      )
+        }
+      ) // body
     );
   }
 }

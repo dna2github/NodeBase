@@ -14,12 +14,15 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity: FlutterActivity() {
-  private val CHANNEL = "samples.flutter.dev/battery"
+  private val BATTERY_CHANNEL = "net.seven.nodebase/battery"
+  private val APP_CHANNEL = "net.seven.nodebase/app"
+  private val NODEBASE_CHANNEL = "net.seven.nodebase/nodebase"
 
   override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
     super.configureFlutterEngine(flutterEngine)
-    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler {
-      // Note: this method is invoked on the main thread.
+
+    // Note: MethodCallHandler is invoked on the main thread.
+    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, BATTERY_CHANNEL).setMethodCallHandler {
       call, result ->
       if (call.method == "getBatteryLevel") {
         val batteryLevel = getBatteryLevel()
@@ -33,6 +36,32 @@ class MainActivity: FlutterActivity() {
         result.notImplemented()
       }
     }
+
+    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, APP_CHANNEL).setMethodCallHandler {
+      call, result ->
+      if (call.method == "RequestExternalStoragePermission") {
+        result.success(requestExternalStoragePermission())
+      } else if (call.method == "KeepScreenOn") {
+        var sw: Boolean? = call.argument("sw")
+        if (sw == true) {
+          keepScreenOn(true)
+        } else {
+          keepScreenOn(false)
+        }
+        result.success(0)
+      } else {
+        result.notImplemented()
+      }
+    }
+  }
+
+  private fun requestExternalStoragePermission(): Int {
+    Permission.request(this)
+    return 0
+  }
+
+  private fun keepScreenOn(sw: Boolean) {
+    Permission.keepScreen(this, sw)
   }
 
   private fun getBatteryLevel(): Int {
@@ -44,7 +73,6 @@ class MainActivity: FlutterActivity() {
       val intent = ContextWrapper(applicationContext).registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
       batteryLevel = intent!!.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) * 100 / intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
     }
-
     return batteryLevel
   }
 }

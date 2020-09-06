@@ -12,10 +12,10 @@ import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
 
-class Downloader(private val context: Context, private val callback: Runnable?) {
+class Download(private val context: Context, private val callback: Runnable?) {
     private val progress: ProgressDialog
 
-    class DownloadTask(private val downloader: Downloader) : AsyncTask<String, String, String>() {
+    class DownloadTask(private val downloader: Download) : AsyncTask<String, String, String>() {
 
         override fun doInBackground(vararg strings: String): String? {
             val url = strings[0]

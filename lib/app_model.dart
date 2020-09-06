@@ -23,3 +23,12 @@ class NodeBaseAppModule {
     )
   ];
 }
+
+class NodeBasePlatform {
+  NodeBasePlatform({Key key, this.name}) {}
+
+  String name;
+  String version;
+  String path;
+  String updateUrl;
+}

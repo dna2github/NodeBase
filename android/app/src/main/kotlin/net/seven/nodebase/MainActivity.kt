@@ -9,6 +9,8 @@ import android.os.BatteryManager
 import android.os.Build.VERSION
 import android.os.Build.VERSION_CODES
 
+import java.io.File
+
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -49,10 +51,43 @@ class MainActivity: FlutterActivity() {
           keepScreenOn(false)
         }
         result.success(0)
+      } else if (call.method == "FetchExecutable") {
+        var src: String? = call.argument("url")
+        var dst: String? = call.argument("target")
+        if (src == null || dst == null) {
+          result.error("INVALID_PARAMS", "invalid parameter.", null)
+        } else {
+          val file = File(dst)
+          val dir = file.getParentFile()
+          if (!dir.exists()) {
+            Storage.makeDirectory(dir.getAbsolutePath())
+          }
+          result.success(fetchAndMarkExecutable(src, dst))
+        }
       } else {
         result.notImplemented()
       }
     }
+  }
+
+  private fun fetchAndMarkExecutable(src: String, dst: String): Int {
+    if (src == null) return -1
+    if (src.startsWith("file://")) {
+      Permission.request(this)
+      var final_src = src
+      final_src = final_src.substring("file://".length)
+      if (!Storage.copy(final_src, dst)) return -2
+      if (!Storage.executablize(dst)) return -3
+      return 0
+    } else {
+      // download
+      Download(this, Runnable() {
+        fun run() {
+          Storage.executablize(dst)
+        }
+      }).act("fetch", src, dst)
+    }
+    return 0
   }
 
   private fun requestExternalStoragePermission(): Int {

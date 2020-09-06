@@ -19,14 +19,12 @@ class NodeBasePlatformItem extends StatefulWidget {
 class _NodeBasePlatformItemState extends State<NodeBasePlatformItem> {
 
   final ctrlName = TextEditingController();
-  final ctrlVersion = TextEditingController();
   final ctrlDownloadUrl = TextEditingController();
   bool _initialized = false;
 
   @override
   void dispose() {
     ctrlName.dispose();
-    ctrlVersion.dispose();
     ctrlDownloadUrl.dispose();
     super.dispose();
   }
@@ -36,7 +34,6 @@ class _NodeBasePlatformItemState extends State<NodeBasePlatformItem> {
     if (widget.isEdit) {
       if (!_initialized) {
         ctrlName.text = widget.item.name;
-        ctrlVersion.text = widget.item.version;
         ctrlDownloadUrl.text = widget.item.updateUrl;
         _initialized = true;
       }
@@ -46,13 +43,6 @@ class _NodeBasePlatformItemState extends State<NodeBasePlatformItem> {
           title: TextField(
             controller: ctrlName,
             decoration: InputDecoration( labelText: 'Name' )
-          )
-        ),
-        ListTile(
-          leading: SizedBox(width: 5),
-          title: TextField(
-            controller: ctrlVersion,
-            decoration: InputDecoration( labelText: 'Version' )
           )
         ),
         ListTile(
@@ -91,7 +81,6 @@ class _NodeBasePlatformItemState extends State<NodeBasePlatformItem> {
                 if (ctrlName.text == "") return;
                 setState(() {
                   widget.item.name = ctrlName.text;
-                  widget.item.version = ctrlVersion.text;
                   widget.item.updateUrl = ctrlDownloadUrl.text;
                   widget.isCreated = false;
                   widget.isEdit = false;
@@ -120,8 +109,6 @@ class _NodeBasePlatformItemState extends State<NodeBasePlatformItem> {
       );
     }
     var name = widget.item.name == null?"":widget.item.name;
-    var version = widget.item.version == null?"":"${widget.item.version}";
-    if (version == "") version = ": N/A"; else version = ": ${version}";
     var path = widget.item.path == null?"":widget.item.path;
     if (path == "") {
       var url = widget.item.updateUrl == null?"":widget.item.updateUrl;
@@ -130,7 +117,7 @@ class _NodeBasePlatformItemState extends State<NodeBasePlatformItem> {
     }
     return Card(
       child: ListTile(
-        title: Text("${name}${version}"),
+        title: Text(name),
         subtitle: Text(path),
         trailing: PopupMenuButton<int>(
           icon: Icon(Icons.more_vert),
@@ -181,7 +168,6 @@ class _NodeBasePlatformSettingsState extends State<NodeBasePlatformSettings> {
       entities.clear();
       data['platforms'].toList().forEach((x) {
         final item = NodeBasePlatform(name: x['name']);
-        item.version = x['version'];
         item.path = x['path'];
         item.updateUrl = x['url'];
         final NodeBasePlatformItem node = makeItem(item);
@@ -200,7 +186,6 @@ class _NodeBasePlatformSettingsState extends State<NodeBasePlatformSettings> {
       if (x is NodeBasePlatformItem) {
         return {
           "name": x.item.name,
-          "version": x.item.version,
           "path": x.item.path,
           "url": x.item.updateUrl
         };

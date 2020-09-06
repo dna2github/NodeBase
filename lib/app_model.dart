@@ -28,7 +28,14 @@ class NodeBasePlatform {
   NodeBasePlatform({Key key, this.name}) {}
 
   String name;
-  String version;
   String path;
   String updateUrl;
+}
+
+class NodeBaseApp {
+  NodeBaseApp({Key key, this.name}) {}
+
+  String name;
+  String path;
+  String platform;
 }

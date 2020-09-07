@@ -1,11 +1,9 @@
 package net.seven.nodebase
 
-import java.util.ArrayList
-
 object StringUtils {
-    fun parseArgv(argv: String?): Array<String>? {
-        val r = ArrayList<String>()
-        if (argv == null) return null
+    fun parseArgv(argv: String?): Array<String> {
+        var r = arrayOf<String>()
+        if (argv == null) return r
         var buf = StringBuffer()
         var state = 0
         var last = ' '
@@ -17,7 +15,7 @@ object StringUtils {
                             continue@loop
                         }
                         if (buf.length > 0) {
-                            r.add(String(buf))
+                            r += String(buf)
                             buf = StringBuffer()
                         }
                         last = ch
@@ -58,8 +56,8 @@ object StringUtils {
             }
         }
         if (buf.length > 0) {
-            r.add(String(buf))
+            r += String(buf)
         }
-        return r.toTypedArray()
+        return r
     }
 }

@@ -8,17 +8,22 @@ import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build.VERSION
 import android.os.Build.VERSION_CODES
+import android.os.Handler
 
 import java.io.File
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.EventChannel
 
 class MainActivity: FlutterActivity() {
   private val BATTERY_CHANNEL = "net.seven.nodebase/battery"
   private val APP_CHANNEL = "net.seven.nodebase/app"
   private val NODEBASE_CHANNEL = "net.seven.nodebase/nodebase"
+  private val EVENT_CHANNEL = "net.seven.nodebase/event"
+  private val eventHandler = NodeBaseEventHandler()
+  private val NodeBaseServiceMap = mutableMapOf<String, NodeMonitor>()
 
   override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
     super.configureFlutterEngine(flutterEngine)
@@ -64,10 +69,76 @@ class MainActivity: FlutterActivity() {
           }
           result.success(fetchAndMarkExecutable(src, dst))
         }
+      } else if (call.method == "FetchWifiIpv4") {
+        result.success(fetchWifiIpv4())
       } else {
         result.notImplemented()
       }
     }
+
+    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NODEBASE_CHANNEL).setMethodCallHandler {
+      call, result ->
+      if (call.method == "GetStatus") {
+        var app: String? = call.argument("app")
+        app?.let { result.success(getAppStatus(app)) }
+      } else if (call.method == "Start") {
+        var app: String? = call.argument("app")
+        var cmd: String? = call.argument("cmd")
+        app?.let { cmd?.let { result.success(startApp(app, cmd)) } }
+      } else if (call.method == "Stop") {
+        var app: String? = call.argument("app")
+        app?.let { result.success(stopApp(app)) }
+      } else {
+        result.notImplemented()
+      }
+    }
+
+    EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL).setStreamHandler(eventHandler)
+  }
+
+  private fun getAppStatus(app: String): String {
+    val m = NodeBaseServiceMap.get(app)
+    if (m == null) return "n/a"
+    if (m.isRunning) return "started"
+    if (m.isDead) return "stopped"
+    return "unknown"
+  }
+
+  private fun startApp(app: String, cmd: String): Boolean {
+    val m = NodeBaseServiceMap.get(app)
+    if (m != null) {
+      if (!m.isDead) return true
+    }
+    val cmdarr = StringUtils.parseArgv(cmd)
+    val exec = NodeMonitor(app, cmdarr)
+    val handler = Handler()
+    val evt = object: NodeMonitorEvent {
+      override fun before(cmd: Array<String>) {}
+      override fun started(cmd: Array<String>, process: Process) {
+        handler.post(object: Runnable { override fun run() { eventHandler.send(app + "\nstart") } });
+      }
+      override fun error(cmd: Array<String>, process: Process) {}
+      override fun after(cmd: Array<String>, process: Process) {
+        handler.post(object: Runnable { override fun run() { eventHandler.send(app + "\nstop") } });
+      }
+    }
+    exec.setEvent(evt)
+    NodeBaseServiceMap[app] = exec
+    exec.start()
+    return true
+  }
+
+  private fun stopApp(app: String): Boolean {
+    val m = NodeBaseServiceMap.get(app)
+    if (m == null) return true
+    if (m.isDead) return true
+    m.stopService()
+    NodeBaseServiceMap.remove(app)
+    return true
+  }
+
+  private fun fetchWifiIpv4(): String {
+    return Network.getWifiIpv4(this)
   }
 
   private fun fetchAndMarkExecutable(src: String, dst: String): Int {

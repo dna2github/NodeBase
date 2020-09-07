@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import './page_app_home.dart';
 import './io.dart';
 import './app_model.dart';
 import './api.dart';
@@ -93,7 +94,7 @@ class _NodeBaseAppItemState extends State<NodeBaseAppItem> {
       return Card(
         child: Column(
           children: entities
-        ) // ListView
+        )
       );
     }
     var name = widget.item.name == null?"":widget.item.name;
@@ -121,7 +122,12 @@ class _NodeBaseAppItemState extends State<NodeBaseAppItem> {
             const PopupMenuItem<int>( value: 101, child: Text('Edit') ),
             const PopupMenuItem<int>( value: 102, child: Text('Delete') )
           ]
-        ) // PopupMenuButton
+        ), // PopupMenuButton
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(
+            builder: (context) => NodeBaseAppHome(item: widget.item))
+          );
+        }
       )
     );
   }

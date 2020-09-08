@@ -68,6 +68,9 @@ class _NodeBaseAppItemState extends State<NodeBaseAppItem> {
               label: Text("Save"),
               onPressed: () {
                 if (ctrlName.text == "") return;
+                if (widget.item.name != ctrlName.text) {
+                  ioMoveApp(widget.item.name, ctrlName.text);
+                }
                 setState(() {
                   widget.item.name = ctrlName.text;
                   widget.item.platform = ctrlPlatform.text;
@@ -111,8 +114,7 @@ class _NodeBaseAppItemState extends State<NodeBaseAppItem> {
                 setState(() { widget.isEdit = true; });
               } break;
               case 102: {
-                // TODO: if we remove this item, do we need also remove the file at
-                //       widget.item.path?
+                ioRemoveApp(widget.item.name);
                 widget.fnRemove(widget);
                 widget.fnSaveConfig();
               } break;

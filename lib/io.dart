@@ -76,3 +76,24 @@ Future<String> ioGetAppBaseDir(String app) async {
   final appBaseDir = '${path}/apps/${app}';
   return appBaseDir;
 }
+
+Future<bool> ioRemoveApp(String app) async {
+  final path = await _appPath;
+  final appBaseDir = '${path}/apps/${app}';
+  final dir = Directory(appBaseDir);
+  if (await dir.exists()) {
+    await dir.delete(recursive: true);
+  }
+  return true;
+}
+
+Future<bool> ioMoveApp(String app, String newname) async {
+  final path = await _appPath;
+  final appBaseDir = '${path}/apps/${app}';
+  final newBaseDir = '${path}/apps/${newname}';
+  final dir = Directory(appBaseDir);
+  if (await dir.exists()) {
+    await dir.rename(newBaseDir);
+  }
+  return true;
+}

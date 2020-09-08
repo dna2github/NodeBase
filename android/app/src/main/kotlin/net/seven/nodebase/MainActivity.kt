@@ -99,6 +99,13 @@ class MainActivity: FlutterActivity() {
           }
           result.success(fetchAndUnzip(zipfile, path))
         } } }
+      } else if (call.method == "Pack") {
+        var app: String? = call.argument("app")
+        var zipfile: String? = call.argument("zipfile")
+        var path: String? = call.argument("path")
+        app?.let { zipfile?.let { path?.let {
+          result.success(fetchAndZip(path, zipfile))
+        } } }
       } else {
         result.notImplemented()
       }
@@ -107,7 +114,13 @@ class MainActivity: FlutterActivity() {
     EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL).setStreamHandler(eventHandler)
   }
 
+  private fun fetchAndZip(target_dir: String, zipfile: String): Boolean {
+    // TODO: wrap a thread instead of running on main thread
+    return Storage.zip(target_dir, zipfile)
+  }
+
   private fun fetchAndUnzip(zipfile: String, target_dir: String): Boolean {
+    // TODO: wrap a thread instead of running on main thread
     return Storage.unzip(zipfile, target_dir)
   }
 

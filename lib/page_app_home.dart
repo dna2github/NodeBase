@@ -200,7 +200,7 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
           ) ), // Row, ListTile
           ListTile(
             leading: IconButton(
-                icon: Icon(Icons.file_download),
+                icon: Icon(Icons.file_upload),
                 onPressed: () {
                   // TODO: if url, download zip to tmp folder and unpack
                   setState(() { loading = true; });
@@ -209,9 +209,18 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
                   });
                 }
             ),
+            trailing: IconButton(
+                icon: Icon(Icons.file_download),
+                onPressed: () {
+                  setState(() { loading = true; });
+                  NodeBaseApi.appPack(widget.item.name, ctrlDownload.text).then((ok) {
+                    setState(() { loading = false; });
+                  });
+                }
+            ),
             title: TextField(
               controller: ctrlDownload,
-              decoration: InputDecoration( labelText: 'Import' )
+              decoration: InputDecoration( labelText: 'Import / Export' )
             )
           ), // Row, ListTile
         ]

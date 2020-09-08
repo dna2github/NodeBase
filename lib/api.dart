@@ -89,4 +89,16 @@ class NodeBaseApi {
     } catch (e) {
     }
   }
+
+  static Future<bool> appPack(String app, String zipfile) async {
+    final appBaseDir = await ioGetAppBaseDir(app);
+    try {
+      nodebaseApi.invokeMethod('Pack', <String, dynamic>{
+        "app": app,
+        "path": appBaseDir,
+        "zipfile": zipfile
+      });
+    } catch (e) {
+    }
+  }
 }

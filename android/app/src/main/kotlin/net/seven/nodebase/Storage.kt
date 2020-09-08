@@ -1,5 +1,6 @@
 package net.seven.nodebase
 
+import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -15,6 +16,7 @@ import java.nio.charset.Charset
 import java.util.ArrayList
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 
 object Storage {
 
@@ -229,6 +231,52 @@ object Storage {
             return false
         }
 
+        return true
+    }
+
+    fun zip(target_dir: String, zipfile: String): Boolean {
+        val files = ArrayList<File>()
+        val todos = ArrayList<File>()
+        val dir = File(target_dir)
+        if (!dir.exists()) return false
+        todos.add(dir)
+        while (todos.size > 0) {
+          val cur = todos.removeAt(0);
+          val list = cur.listFiles()
+          for (f in list) {
+            if (f.isDirectory) {
+              todos.add(f)
+            } else {
+              files.add(f)
+            }
+          }
+        }
+        return zip(files.toTypedArray(), target_dir, zipfile)
+    }
+
+    fun zip(target_files: Array<File>, base_dir: String, zipfile: String): Boolean {
+        val zipout = ZipOutputStream(BufferedOutputStream(FileOutputStream(zipfile)));
+        zipout.use { out ->
+            for (file in target_files) {
+                val filename = file.getAbsolutePath()
+                var zipname = filename
+                if (zipname.startsWith(base_dir)) {
+                    zipname = zipname.substring(base_dir.length)
+                }
+                if (zipname.startsWith("/")) {
+                    zipname = zipname.substring(1)
+                }
+                System.out.println(filename)
+                FileInputStream(filename).use { fi ->
+                    BufferedInputStream(fi).use { origin ->
+                        val entry = ZipEntry(zipname)
+                        out.putNextEntry(entry)
+                        origin.copyTo(out, 1024)
+                        zipout.closeEntry()
+                    }
+                }
+            }
+        }
         return true
     }
 

@@ -39,3 +39,15 @@ class NodeBaseApp {
   String path;
   String platform;
 }
+
+class NodeBaseAppDetails {
+  String path;
+  // e.g. 127.0.0.1, 0.0.0.0
+  String host;
+  // e.g. 9090
+  int port;
+  // e.g. index.js
+  String entry;
+  // e.g. /index.html
+  String home;
+}

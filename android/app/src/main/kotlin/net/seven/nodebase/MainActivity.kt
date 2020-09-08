@@ -88,12 +88,27 @@ class MainActivity: FlutterActivity() {
       } else if (call.method == "Stop") {
         var app: String? = call.argument("app")
         app?.let { result.success(stopApp(app)) }
+      } else if (call.method == "Unpack") {
+        var app: String? = call.argument("app")
+        var zipfile: String? = call.argument("zipfile")
+        var path: String? = call.argument("path")
+        app?.let { zipfile?.let { path?.let {
+          val dir = File(path)
+          if (!dir.exists()) {
+            Storage.makeDirectory(dir.getAbsolutePath())
+          }
+          result.success(fetchAndUnzip(zipfile, path))
+        } } }
       } else {
         result.notImplemented()
       }
     }
 
     EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL).setStreamHandler(eventHandler)
+  }
+
+  private fun fetchAndUnzip(zipfile: String, target_dir: String): Boolean {
+    return Storage.unzip(zipfile, target_dir)
   }
 
   private fun getAppStatus(app: String): String {
@@ -147,8 +162,17 @@ class MainActivity: FlutterActivity() {
       Permission.request(this)
       var final_src = src
       final_src = final_src.substring("file://".length)
-      if (!Storage.copy(final_src, dst)) return -2
-      if (!Storage.executablize(dst)) return -3
+      // Add Alarm to align with Download()
+      // XXX: but how about we move Alarm out of Download() and use call back to do alarm?
+      if (!Storage.copy(final_src, dst)) {
+        Alarm.showToast(this, "Copy failed: cannot copy origin")
+        return -2
+      }
+      if (!Storage.executablize(dst)) {
+        Alarm.showToast(this, "Copy failed: cannot set binary executable")
+        return -3
+      }
+      Alarm.showToast(this, "Copy successful")
       return 0
     } else {
       // download

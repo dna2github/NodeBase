@@ -70,3 +70,9 @@ Future<List<FileSystemEntity>> ioLs(filepath) async {
   }
   return list;
 }
+
+Future<String> ioGetAppBaseDir(String app) async {
+  final path = await _appPath;
+  final appBaseDir = '${path}/apps/${app}';
+  return appBaseDir;
+}

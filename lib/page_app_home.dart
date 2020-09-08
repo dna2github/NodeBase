@@ -15,9 +15,11 @@ class NodeBaseAppHome extends StatefulWidget {
 
 class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
 
+  bool loading = true;
   bool isRunning = false;
   String wifiIp = "0.0.0.0";
   final ctrlParams = TextEditingController();
+  final ctrlDownload = TextEditingController();
   var eventSub = null;
 
   appStopped() {
@@ -45,6 +47,20 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
     return null;
   }
 
+  Future<NodeBaseAppDetails> loadAppDetails(String name) async {
+    var config = await readAppFileAsString("/apps/${name}/config.json");
+    if (config != "") {
+      final data = jsonDecode(config);
+      final item = NodeBaseAppDetails();
+      item.host = data['host'];
+      item.port = data['port'];
+      item.entry = data['entry'];
+      item.home = data['home'];
+      item.path = await ioGetAppBaseDir(name);
+      return item;
+    }
+    return null;
+  }
 
   @override
   void initState () {
@@ -85,12 +101,14 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
           appStopped();
         } break;
       }
+      setState(() { loading = false; });
     });
   }
 
   @override
   void dispose () {
     ctrlParams.dispose();
+    ctrlDownload.dispose();
     eventSub.cancel();
     super.dispose();
   }
@@ -100,6 +118,13 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
     if (widget.item == null || widget.item.name == null || widget.item.name == "") {
       Navigator.pop(context);
       return null;
+    }
+    if (loading) {
+      return Scaffold(
+        body: Center( child: CircularProgressIndicator(
+          semanticsLabel: "Loading ..."
+        ) )
+      );
     }
     return Scaffold(
       appBar: AppBar(
@@ -122,14 +147,22 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
               IconButton(
                 icon: Icon(Icons.play_arrow),
                 onPressed: isRunning ? null : () {
-                  setState(() { isRunning = true; });
+                  setState(() { loading = true; });
                   loadPlatform(widget.item.platform).then((p) {
                     if (p == null || p.path == null || p.path == "") {
-                      setState(() { isRunning = false; });
+                      setState(() { loading = false; });
                       return;
                     }
-                    final cmd = "${p.path} ${ctrlParams.text}";
-                    NodeBaseApi.appStart(widget.item.name, cmd);
+                    loadAppDetails(widget.item.name).then((info) {
+                      if (info == null) {
+                        // no config.json
+                        return;
+                      }
+                      final entry = info.entry == null?"":info.entry;
+                      final cmd = "${p.path} ${info.path}/${entry} ${ctrlParams.text}";
+                      NodeBaseApi.appStart(widget.item.name, cmd);
+                      setState(() { loading = false; });
+                    });
                   });
                 }
               ),
@@ -142,15 +175,45 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
               ),
               IconButton(
                 icon: Icon(Icons.open_in_browser),
-                onPressed: isRunning == isRunning ? () {
+                onPressed: isRunning ? () {
                   // open webview?
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) => NodeBaseAppWebview()
-                  ) );
+                  setState(() { loading = true; });
+                  loadAppDetails(widget.item.name).then((info) {
+                    if (info == null) {
+                      // no config.json
+                      return;
+                    }
+                    setState(() { loading = false; });
+                    var homeUrl = info.host;
+                    if (info.port > 0) homeUrl += ":${info.port}";
+                    homeUrl += info.home;
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => NodeBaseAppWebview(
+                        name: widget.item.name,
+                        home: homeUrl
+                      )
+                    ) );
+                  });
                 } : null
               )
             ]
-          ) ) // Row, ListTile
+          ) ), // Row, ListTile
+          ListTile(
+            leading: IconButton(
+                icon: Icon(Icons.file_download),
+                onPressed: () {
+                  // TODO: if url, download zip to tmp folder and unpack
+                  setState(() { loading = true; });
+                  NodeBaseApi.appUnpack(widget.item.name, ctrlDownload.text).then((ok) {
+                    setState(() { loading = false; });
+                  });
+                }
+            ),
+            title: TextField(
+              controller: ctrlDownload,
+              decoration: InputDecoration( labelText: 'Import' )
+            )
+          ), // Row, ListTile
         ]
       ) // ListView
     );

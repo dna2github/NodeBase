@@ -9,6 +9,7 @@
 
     <application
         android:name="io.flutter.app.FlutterApplication"
+        android:usesCleartextTraffic="true"
         android:label="NodeBase"
         android:icon="@mipmap/ic_launcher">
         <activity

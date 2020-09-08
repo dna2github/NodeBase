@@ -3,22 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-const String kNavigationExamplePage = '''
-<!DOCTYPE html><html>
-<head><title>Navigation Delegate Example</title></head>
-<body>
-<p>
-The navigation delegate is set to block navigation to the youtube website.
-</p>
-<ul>
-<ul><a href="https://www.youtube.com/">https://www.youtube.com/</a></ul>
-<ul><a href="https://www.baidu.com/">https://www.baidu.com/</a></ul>
-</ul>
-</body>
-</html>
-''';
-
 class NodeBaseAppWebview extends StatefulWidget {
+  String name;
+  String home;
+
+  NodeBaseAppWebview({Key key, this.name, this.home}): super(key: key);
+
   @override
   _NodeBaseAppWebviewState createState() => _NodeBaseAppWebviewState();
 }
@@ -31,8 +21,7 @@ class _NodeBaseAppWebviewState extends State<NodeBaseAppWebview> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Flutter WebView example'),
-        // This drop down menu demonstrates that Flutter widgets can be shown over the web view.
+        title: Text(widget.name),
         actions: <Widget>[
           NavigationControls(_controller.future),
           SampleMenu(_controller.future),
@@ -42,7 +31,7 @@ class _NodeBaseAppWebviewState extends State<NodeBaseAppWebview> {
       // to allow calling Scaffold.of(context) so we can show a snackbar.
       body: Builder(builder: (BuildContext context) {
         return WebView(
-          initialUrl: 'about:blank',
+          initialUrl: widget.home, // 'about:blank',
           javascriptMode: JavascriptMode.unrestricted,
           onWebViewCreated: (WebViewController webViewController) {
             _controller.complete(webViewController);
@@ -246,8 +235,9 @@ class SampleMenu extends StatelessWidget {
 
   void _onNavigationDelegateExample(
       WebViewController controller, BuildContext context) async {
-    final String contentBase64 =
-        base64Encode(const Utf8Encoder().convert(kNavigationExamplePage));
+    //final String contentBase64 =
+    //    base64Encode(const Utf8Encoder().convert(kNavigationExamplePage));
+    String contentBase64 = '';
     await controller.loadUrl('data:text/html;base64,$contentBase64');
   }
 

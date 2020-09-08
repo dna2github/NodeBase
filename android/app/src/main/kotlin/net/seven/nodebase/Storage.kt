@@ -196,9 +196,15 @@ object Storage {
             entry = zip.nextEntry
             while (entry != null) {
                 val target_filename = String.format("%s/%s", target_dir, entry!!.name)
+                System.out.println(target_filename);
                 if (entry!!.isDirectory) {
                     Storage.makeDirectory(target_filename)
                 } else {
+                    val file = File(target_filename)
+                    val dir = file.getParentFile()
+                    if (!dir.exists()) {
+                        Storage.makeDirectory(dir.getAbsolutePath())
+                    }
                     val out = FileOutputStream(target_filename)
                     val writer = BufferedOutputStream(out)
                     val buf = ByteArray(4096)

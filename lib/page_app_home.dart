@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import './app_model.dart';
+import './io.dart';
 import './api.dart';
+import './page_app_webview.dart';
 
 class NodeBaseAppHome extends StatefulWidget {
   final NodeBaseApp item;
@@ -24,6 +27,24 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
   appStarted() {
     setState(() { isRunning = true; });
   }
+
+  Future<NodeBasePlatform> loadPlatform(String name) async {
+    var config = await readAppFileAsString("/platform.json");
+    final List<NodeBasePlatform> list = <NodeBasePlatform>[];
+    if (config != "") {
+      final data = jsonDecode(config);
+      data['platforms'].toList().forEach((x) {
+        final item = NodeBasePlatform(name: x['name']);
+        item.path = x['path'];
+        item.updateUrl = x['url'];
+        list.add(item);
+      });
+      if (list.length <= 0) return null;
+      return list[0];
+    }
+    return null;
+  }
+
 
   @override
   void initState () {
@@ -101,10 +122,15 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
               IconButton(
                 icon: Icon(Icons.play_arrow),
                 onPressed: isRunning ? null : () {
-                  // TODO: read platform config
-                  // TODO: generate command line string
-                  final cmd = "/system/bin/id";
-                  NodeBaseApi.appStart(widget.item.name, cmd);
+                  setState(() { isRunning = true; });
+                  loadPlatform(widget.item.platform).then((p) {
+                    if (p == null || p.path == null || p.path == "") {
+                      setState(() { isRunning = false; });
+                      return;
+                    }
+                    final cmd = "${p.path} ${ctrlParams.text}";
+                    NodeBaseApi.appStart(widget.item.name, cmd);
+                  });
                 }
               ),
               SizedBox( width: 15 ),
@@ -116,8 +142,11 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
               ),
               IconButton(
                 icon: Icon(Icons.open_in_browser),
-                onPressed: isRunning ? () {
-                  // TODO: open webview?
+                onPressed: isRunning == isRunning ? () {
+                  // open webview?
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (context) => NodeBaseAppWebview()
+                  ) );
                 } : null
               )
             ]

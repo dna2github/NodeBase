@@ -38,24 +38,17 @@ class NodeMonitor(val serviceName: String, val command: Array<String>) : Thread(
             state = STATE.READY
             if (event != null) event!!.before(command)
             Log.i("NodeService:NodeMonitor", String.format("node process starting - %s", *command))
+
             node_process = Runtime.getRuntime().exec(command)
             state = STATE.RUNNING
             if (event != null) event!!.started(command, node_process!!)
             Log.i("NodeService:NodeMonitor", "node process running ...")
             node_process!!.waitFor()
             /*
-            BufferedReader reader = new BufferedReader(
-                  new InputStreamReader(_process.getInputStream()));
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-               Log.d("NodeMonitor", line);
-            }
+            for (x in command) { System.out.println("  - $x"); }
+            node_process!!.inputStream.bufferedReader().use { Log.d("NodeMonitor", it.readText()) }
             Log.d("-----", "==========================");
-            reader = new BufferedReader(
-                  new InputStreamReader(_process.getErrorStream()));
-            while ((line = reader.readLine()) != null) {
-               Log.d("NodeMonitor", line);
-            }
+            node_process!!.errorStream.bufferedReader().use { Log.d("NodeMonitor", it.readText()) }
             */
         } catch (e: IOException) {
             Log.e("NodeService:NodeMonitor", "node process error", e)

@@ -18,6 +18,8 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
   bool loading = true;
   bool isRunning = false;
   String wifiIp = "0.0.0.0";
+  String appHomeUrl = "";
+  String appHomePath = "";
   final ctrlParams = TextEditingController();
   final ctrlDownload = TextEditingController();
   var eventSub = null;
@@ -66,7 +68,29 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
   void initState () {
     super.initState();
     NodeBaseApi.fetchWifiIpv4().then((ip) {
-      setState(() { wifiIp = ip; });
+      setState(() {
+        wifiIp = ip;
+      });
+      loadAppDetails(widget.item.name).then((item) {
+        setState(() {
+          if (item.host != "") {
+            final parts = item.host.split("://");
+            if (parts.length > 1) {
+              appHomeUrl = parts[0];
+            } else {
+              appHomeUrl = 'http';
+            }
+            appHomeUrl = '${appHomeUrl}://${ip}';
+            if (item.port > 0) {
+              appHomeUrl = '${appHomeUrl}:${item.port}';
+            }
+            appHomeUrl = '${appHomeUrl}${item.home}';
+          } else {
+            appHomeUrl = "";
+          }
+          appHomePath = item.path;
+        });
+      });
     });
     if (eventSub == null) {
       eventSub = NodeBaseApi.eventApi.receiveBroadcastStream().listen(
@@ -136,8 +160,19 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
       ),
       body: ListView(
         children: <Widget>[
-          ListTile( title: Text('Network: ${wifiIp}') ),
+          const ListTile(
+            title: Text('Basic Info'),
+            dense: true
+          ),
           ListTile( title: Text('Platform: ${widget.item.platform}') ),
+          ListTile( title: SelectableText(
+            appHomeUrl == ""?'Network: ${wifiIp}':'Home: ${appHomeUrl}',
+            maxLines: 1
+          ) ),
+          ListTile( title: SelectableText(
+            'Location: ${appHomePath}',
+            maxLines: 1
+          ) ),
           ListTile( title: TextField(
             controller: ctrlParams,
             decoration: InputDecoration( labelText: 'Params' )
@@ -176,7 +211,7 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
               IconButton(
                 icon: Icon(Icons.open_in_browser),
                 onPressed: isRunning ? () {
-                  // open webview?
+                  // open webview
                   setState(() { loading = true; });
                   loadAppDetails(widget.item.name).then((info) {
                     if (info == null) {
@@ -195,9 +230,20 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
                     ) );
                   });
                 } : null
+              ),
+              IconButton(
+                icon: Icon(Icons.open_in_new),
+                onPressed: (appHomeUrl != "" && isRunning) ? () {
+                  NodeBaseApi.appBrowser(appHomeUrl);
+                } : null
               )
             ]
           ) ), // Row, ListTile
+          const Divider(),
+          const ListTile(
+            title: Text('Import/Export'),
+            dense: true
+          ),
           ListTile(
             leading: IconButton(
                 icon: Icon(Icons.file_upload),
@@ -220,7 +266,7 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
             ),
             title: TextField(
               controller: ctrlDownload,
-              decoration: InputDecoration( labelText: 'Import / Export' )
+              decoration: InputDecoration( labelText: 'ZIP file path' )
             )
           ), // Row, ListTile
         ]

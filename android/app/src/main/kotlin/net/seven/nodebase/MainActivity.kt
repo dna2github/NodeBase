@@ -106,12 +106,22 @@ class MainActivity: FlutterActivity() {
         app?.let { zipfile?.let { path?.let {
           result.success(fetchAndZip(path, zipfile))
         } } }
+      } else if (call.method == "Browser") {
+        var url: String? = call.argument("url")
+        url?.let {
+          result.success(openInExternalBrowser(url))
+        }
       } else {
         result.notImplemented()
       }
     }
 
     EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL).setStreamHandler(eventHandler)
+  }
+
+  private fun openInExternalBrowser(url: String): Boolean {
+    External.openBrowser(this, url)
+    return true
   }
 
   private fun fetchAndZip(target_dir: String, zipfile: String): Boolean {

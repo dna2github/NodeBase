@@ -101,4 +101,13 @@ class NodeBaseApi {
     } catch (e) {
     }
   }
+
+  static Future<bool> appBrowser(String url) async {
+    try {
+      nodebaseApi.invokeMethod('Browser', <String, dynamic>{
+        "url": url,
+      });
+    } catch (e) {
+    }
+  }
 }

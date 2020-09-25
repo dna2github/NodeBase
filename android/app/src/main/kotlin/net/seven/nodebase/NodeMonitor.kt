@@ -64,36 +64,61 @@ class NodeMonitor(val serviceName: String, val command: Array<String>) : Thread(
         }
     }
 
-    fun stopService(): Boolean {
-        if (state == STATE.RUNNING) node_process!!.destroy()
-        state = STATE.DEAD
+    fun pidService(): Int {
         val p = node_process!!
-        // to make sure the sub process is killed eventually
-        android.os.Handler().postDelayed({
-            if (p.isAlive()) {
-               val klass = p.javaClass
-               if (klass.getName().equals("java.lang.UNIXProcess")) {
-                   Log.d("NodeMonitor", "force terminate sub process ..")
-                   try {
-                       var pid = -1;
-                       val f = klass.getDeclaredField("pid");
-                       f.setAccessible(true);
-                       // this try to make sure if getInt throw an error,
-                       // `setAccessible(false)` can be executed
-                       // so that `pid` is protected after this access
-                       try { pid = f.getInt(p); } catch (e: Exception) { }
-                       f.setAccessible(false);
-                       if (pid > 0) android.os.Process.killProcess(pid);
-                       Log.d("NodeMonitor", "force terminating done.")
-                   } catch (e: Exception) {
-                       Log.d("NodeMonitor", "force terminating failed.")
-                   }
-               } else {
-                   Log.d("NodeMonitor", p.javaClass.getName())
-                   Log.d("NodeMonitor", "force terminating not supported.")
-               }
+        if (p == null) return -1
+        if (!p.isAlive()) return -1
+        val klass = p.javaClass
+        if ("java.lang.UNIXProcess".equals(klass.getName())) {
+            try {
+                var pid = -1
+                val f = klass.getDeclaredField("pid");
+                f.setAccessible(true);
+                // this try to make sure if getInt throw an error,
+                // `setAccessible(false)` can be executed
+                // so that `pid` is protected after this access
+                try { pid = f.getInt(p); } catch (e: Exception) { }
+                f.setAccessible(false);
+                return pid
+            } catch (e: Exception) { }
+        }
+        return -1
+    }
+
+    fun childrenProcesses(pid: Int): Array<Int> {
+        var children = arrayOf<Int>()
+        val output = NodeService.checkOutput(arrayOf<String>("/system/bin/ps", "-o", "pid=", "--ppid", pid.toString()))
+        if (output == "") return children
+        val lines = output!!.split("\n")
+        lines.forEach {
+            if (it != "") {
+                try {
+                    children += it.toInt()
+                } catch(e: Exception) {}
             }
-        }, 1000)
+        }
+        return children
+    }
+
+    fun stopService(): Boolean {
+        val pid = pidService();
+        if (pid > 0) {
+           // XXX: we only make sure one level children processes can be cleaned up
+           //      for example `go run test.go` -> `test`
+           //      we reap `test` first and then kill `go run test.go`
+           //      we do not guarantee `test` children are killed
+           //      another example, if we use `sh -c "go run test.go"` -> `go run test.go` -> `test`
+           //      when kill, we merely kill `go` and `sh` but no `test`
+           Log.d("NodeMonitor", NodeService.checkOutput(arrayOf<String>("/system/bin/ps", "-ef")))
+           val children = childrenProcesses(pid)
+           children.forEach {
+               if (it > 0) {
+                   Log.d("NodeMonitor", String.format("kill %d | parent=%d", it, pid))
+                   android.os.Process.killProcess(it)
+               }
+           }
+        }
+        if (state == STATE.RUNNING) node_process!!.destroy()
         return true
     }
 

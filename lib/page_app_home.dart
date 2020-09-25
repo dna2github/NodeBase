@@ -38,6 +38,7 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
     if (config != "") {
       final data = jsonDecode(config);
       data['platforms'].toList().forEach((x) {
+        if (x['name'] != name) return;
         final item = NodeBasePlatform(name: x['name']);
         item.path = x['path'];
         item.updateUrl = x['url'];

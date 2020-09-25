@@ -237,7 +237,8 @@ class SampleMenu extends StatelessWidget {
       WebViewController controller, BuildContext context) async {
     //final String contentBase64 =
     //    base64Encode(const Utf8Encoder().convert(kNavigationExamplePage));
-    String contentBase64 = '';
+    String contentBase64 = base64Encode(const Utf8Encoder().convert('<html><body><input /></body></html>'));
+    //String contentBase64 = '';
     await controller.loadUrl('data:text/html;base64,$contentBase64');
   }
 

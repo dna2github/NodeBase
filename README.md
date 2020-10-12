@@ -63,7 +63,20 @@ samples, guidance on mobile development, and a full API reference.
 
 ##### NodeJS/Python binary for ARM
 
-https://github.com/dna2github/dna2oslab/releases/tag/0.2.0-android-gt6-arm
+ref: https://github.com/dna2github/dna2oslab/releases/tag/0.2.0-android-gt6-arm
+
+##### Java binary
+
+write a shell script `java` and `adb push java /sdcard`
+```
+#!/system/bin/sh
+
+dalvikvm $@
+```
+
+create a new platform in NodeBase and download java wrapper from `file:///sdcard/java`
+
+then write a command line tool to have a try. ref: https://github.com/dna2github/dna2sevord/tree/master/past/others/walkserver/javacmd
 
 ##### Golang binary
 
@@ -82,7 +95,7 @@ adb push go-android-arm64-bootstrap.tar.gz /sdcard/
 write a shell script `go` and `adb push go /sdcard`
 
 ```
-#/system/bin/sh
+#!/system/bin/sh
 
 SELF=$(cd `dirname $0`; pwd)
 BASE=/data/user/0/net.seven.nodebase/go-android-arm64-bootstrap

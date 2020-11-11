@@ -47,6 +47,8 @@ ref: https://github.com/stallpool/halfbase/tree/master/nodejs/tinyserver/index.j
 [...] hook `/index.html` to load `/app/static/index.html`
 ```
 
+App examples: [https://github.com/nodebase0](https://github.com/nodebase0), includes file-viewer-uploader, nodepad, ...
+
 
 ## Development
 
@@ -71,7 +73,7 @@ write a shell script `java` and `adb push java /sdcard`
 ```
 #!/system/bin/sh
 
-dalvikvm $@
+exec dalvikvm $@
 ```
 
 create a new platform in NodeBase and download java wrapper from `file:///sdcard/java`

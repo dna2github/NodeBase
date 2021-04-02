@@ -180,7 +180,7 @@ class MainActivity: FlutterActivity() {
   }
 
   private fun fetchAndMarkExecutable(src: String, dst: String): Int {
-    if (src == null) return -1
+    if (src == "") return -1
     if (src.startsWith("file://")) {
       Permission.request(this)
       var final_src = src

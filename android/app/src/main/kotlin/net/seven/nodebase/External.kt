@@ -22,7 +22,7 @@ object External {
             intent.type = "text/plain"
         } else {
             val f = File(imgFilePath)
-            if (f != null && f.exists() && f.isFile) {
+            if (f.exists() && f.isFile) {
                 intent.type = "image/jpg"
                 val u = Uri.fromFile(f)
                 intent.putExtra(Intent.EXTRA_STREAM, u)

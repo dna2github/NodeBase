@@ -16,7 +16,7 @@ object Network {
                 for (nic in Collections.list(NetworkInterface.getNetworkInterfaces())) {
                     val nic_addr = nic.interfaceAddresses
                     if (nic_addr.size == 0) continue
-                    val ips = Array(nic_addr.size, { it -> "" });
+                    val ips = Array(nic_addr.size, { _ -> "" });
                     val name = nic.name
                     var index = 0
                     for (ia in nic_addr) {

@@ -65,8 +65,7 @@ class NodeService : Service() {
     }
 
     private fun stopNodeApps() {
-        val n = services.keys.size
-        val keys = arrayOfNulls<String>(n)
+        // val n = services.keys.size
         for (name in services.keys.iterator()) {
             stopNodeApp(name.orEmpty())
         }
@@ -92,7 +91,7 @@ class NodeService : Service() {
         stopNodeApp(name)
         Log.d("NodeService:Command", String.format("%s", cmd))
         val exec = StringUtils.parseArgv(cmd)
-        val monitor = NodeMonitor(name, exec!!)
+        val monitor = NodeMonitor(name, exec)
         services[name] = monitor
         monitor.start()
     }

@@ -1,5 +1,7 @@
 package net.seven.nodebase
 
+// TODO: deprecated, solution ref:
+// https://stackoverflow.com/questions/45373007/progressdialog-is-deprecated-what-is-the-alternate-one-to-use
 import android.app.ProgressDialog
 import android.content.Context
 import android.os.AsyncTask
@@ -50,10 +52,10 @@ class Download(private val context: Context, private val callback: Runnable?) {
                         read_size += " / " + Storage.readableSize(file_len)
                     }
                     publishProgress(read_size)
-                    read_len = download_stream!!.read(buf)
+                    read_len = download_stream.read(buf)
                 }
                 output_stream.close()
-                download_stream!!.close()
+                download_stream.close()
                 publishProgress("Finishing ...")
             } catch (e: MalformedURLException) {
                 e.printStackTrace()

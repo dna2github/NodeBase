@@ -66,7 +66,6 @@ class NodeMonitor(val serviceName: String, val command: Array<String>) : Thread(
 
     fun pidService(): Int {
         val p = node_process!!
-        if (p == null) return -1
         if (!p.isAlive()) return -1
         val klass = p.javaClass
         if ("java.lang.UNIXProcess".equals(klass.getName())) {

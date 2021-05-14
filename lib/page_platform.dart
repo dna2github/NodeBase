@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import './io.dart';
 import './app_model.dart';
 import './api.dart';
+import './page_platform_market.dart';
 
 class NodeBasePlatformItem extends StatefulWidget {
   final Function(NodeBasePlatformItem item) fnRemove;
@@ -67,7 +68,7 @@ class _NodeBasePlatformItemState extends State<NodeBasePlatformItem> {
             leading: SizedBox(width: 5), title: Text(widget.item.path)));
       }
       entities.add(Row(children: <Widget>[
-        FlatButton.icon(
+        TextButton.icon(
             icon: Icon(Icons.check),
             label: Text("Save"),
             onPressed: () {
@@ -80,7 +81,7 @@ class _NodeBasePlatformItemState extends State<NodeBasePlatformItem> {
                 widget.fnSaveConfig();
               });
             }),
-        FlatButton.icon(
+        TextButton.icon(
             icon: Icon(Icons.close),
             label: Text("Cancel"),
             onPressed: () {
@@ -229,7 +230,14 @@ class _NodeBasePlatformSettingsState extends State<NodeBasePlatformSettings> {
               onPressed: () {
                 Navigator.pop(context);
               }),
-          actions: <Widget>[],
+          actions: <Widget>[
+            IconButton(
+                icon: Icon(Icons.add_shopping_cart),
+                onPressed: () {
+                  var route = MaterialPageRoute(builder: (context) => NodeBasePlatformMarket());
+                  Navigator.push(context, route);
+                })
+          ],
         ),
         body: (entities.length == 0)
             ? Center(child: Text('No platform item.'))

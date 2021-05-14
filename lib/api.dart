@@ -19,11 +19,13 @@ class NodeBaseApi {
     return batteryLevel;
   }
 
-  static Future<void> requestExternalStoragePermission () async {
-    try { appApi.invokeMethod('RequestExternalStoragePermission'); } catch (e) {}
+  static Future<void> requestExternalStoragePermission() async {
+    try {
+      appApi.invokeMethod('RequestExternalStoragePermission');
+    } catch (e) {}
   }
 
-  static Future<String> fetchExecutable (String url) async {
+  static Future<String> fetchExecutable(String url) async {
     if (url == null || url == "") return null;
     final name = url.split("/").last;
     final dst = (await getAppFileReference('/bin/${name}')).path;
@@ -31,17 +33,15 @@ class NodeBaseApi {
     if (url.indexOf("://") < 0) return dst;
     // e.g. file://.../node http://.../node https://.../node -> /path/to/app/bin/node
     try {
-      appApi.invokeMethod('FetchExecutable', <String, dynamic>{
-        "url": url,
-        "target": dst
-      });
+      appApi.invokeMethod(
+          'FetchExecutable', <String, dynamic>{"url": url, "target": dst});
       return dst;
-    } catch(e) {
+    } catch (e) {
       return null;
     }
   }
 
-  static Future<String> fetchWifiIpv4 () async {
+  static Future<String> fetchWifiIpv4() async {
     try {
       return appApi.invokeMethod('FetchWifiIpv4');
     } catch (e) {
@@ -49,33 +49,26 @@ class NodeBaseApi {
     }
   }
 
-  static Future<String> appStatus (String app) async {
+  static Future<String> appStatus(String app) async {
     try {
-      return nodebaseApi.invokeMethod('GetStatus', <String, dynamic>{
-        "app": app
-      });
+      return nodebaseApi
+          .invokeMethod('GetStatus', <String, dynamic>{"app": app});
     } catch (e) {
       return "error";
     }
   }
 
-  static Future<void> appStart (String app, String cmd) async {
+  static Future<void> appStart(String app, String cmd) async {
     try {
-      nodebaseApi.invokeMethod('Start', <String, dynamic>{
-        "app": app,
-        "cmd": cmd
-      });
-    } catch (e) {
-    }
+      nodebaseApi
+          .invokeMethod('Start', <String, dynamic>{"app": app, "cmd": cmd});
+    } catch (e) {}
   }
 
-  static Future<void> appStop (String app) async {
+  static Future<void> appStop(String app) async {
     try {
-      nodebaseApi.invokeMethod('Stop', <String, dynamic>{
-        "app": app
-      });
-    } catch (e) {
-    }
+      nodebaseApi.invokeMethod('Stop', <String, dynamic>{"app": app});
+    } catch (e) {}
   }
 
   static Future<bool> appUnpack(String app, String zipfile) async {
@@ -86,8 +79,7 @@ class NodeBaseApi {
         "path": appBaseDir,
         "zipfile": zipfile
       });
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   static Future<bool> appPack(String app, String zipfile) async {
@@ -98,8 +90,7 @@ class NodeBaseApi {
         "path": appBaseDir,
         "zipfile": zipfile
       });
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   static Future<bool> appBrowser(String url) async {
@@ -107,7 +98,6 @@ class NodeBaseApi {
       nodebaseApi.invokeMethod('Browser', <String, dynamic>{
         "url": url,
       });
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 }

@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import './api.dart';
 
 class NodeBaseEnvironmentSettings extends StatefulWidget {
-  NodeBaseEnvironmentSettings({Key key}): super(key: key);
+  NodeBaseEnvironmentSettings({Key key}) : super(key: key);
   @override
-  _NodeBaseEnvironmentSettingsState createState() => _NodeBaseEnvironmentSettingsState();
+  _NodeBaseEnvironmentSettingsState createState() =>
+      _NodeBaseEnvironmentSettingsState();
 }
 
-class _NodeBaseEnvironmentSettingsState extends State<NodeBaseEnvironmentSettings> {
+class _NodeBaseEnvironmentSettingsState
+    extends State<NodeBaseEnvironmentSettings> {
   String _batteryLevel = 'Unknown';
 
   @override
-  void initState () {
+  void initState() {
     _getBatteryLevel();
   }
 
@@ -25,14 +27,13 @@ class _NodeBaseEnvironmentSettingsState extends State<NodeBaseEnvironmentSetting
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Environment Settings'),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () { Navigator.pop(context); }
-        )
-      ),
-      body: Center( child: Text('Environment Settings $_batteryLevel') )
-    );
+        appBar: AppBar(
+            title: Text('Environment Settings'),
+            leading: IconButton(
+                icon: Icon(Icons.arrow_back),
+                onPressed: () {
+                  Navigator.pop(context);
+                })),
+        body: Center(child: Text('Environment Settings $_batteryLevel')));
   }
 }

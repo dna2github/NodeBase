@@ -63,7 +63,8 @@ Future<List<FileSystemEntity>> ioLs(filepath) async {
     list.add(File(filename));
   } else {
     final dir = Directory(filename);
-    final entities = await dir.list(recursive: false, followLinks: false).toList();
+    final entities =
+        await dir.list(recursive: false, followLinks: false).toList();
     entities.forEach((FileSystemEntity entity) {
       list.add(entity);
     });

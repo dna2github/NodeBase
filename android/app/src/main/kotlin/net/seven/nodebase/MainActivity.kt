@@ -131,7 +131,8 @@ class MainActivity: FlutterActivity() {
 
   private fun fetchAndUnzip(zipfile: String, target_dir: String): Boolean {
     // TODO: wrap a thread instead of running on main thread
-    return Storage.unzip(zipfile, target_dir)
+    Storage.unzip(zipfile, target_dir)
+    return true
   }
 
   private fun getAppStatus(app: String): String {
@@ -179,6 +180,19 @@ class MainActivity: FlutterActivity() {
     return Network.getWifiIpv4(this)
   }
 
+  private fun _markExecutable(dst: String): Boolean {
+    val isZip = dst.endsWith(".zip")
+    if (isZip) {
+      val f = File(dst)
+      for (one in Storage.unzip(dst, f.getParentFile().getAbsolutePath())) {
+        Storage.executablize(one.getAbsolutePath())
+      }
+      return Storage.unlink(dst)
+    } else {
+      return Storage.executablize(dst)
+    }
+  }
+
   private fun fetchAndMarkExecutable(src: String, dst: String): Int {
     if (src == "") return -1
     if (src.startsWith("file://")) {
@@ -191,7 +205,7 @@ class MainActivity: FlutterActivity() {
         Alarm.showToast(this, "Copy failed: cannot copy origin")
         return -2
       }
-      if (!Storage.executablize(dst)) {
+      if (!_markExecutable(dst)) {
         Alarm.showToast(this, "Copy failed: cannot set binary executable")
         return -3
       }
@@ -201,7 +215,7 @@ class MainActivity: FlutterActivity() {
       // download
       Download(this, Runnable() {
         fun run() {
-          Storage.executablize(dst)
+          _markExecutable(dst)
         }
       }).act("fetch", src, dst)
     }

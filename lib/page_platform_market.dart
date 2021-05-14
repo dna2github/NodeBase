@@ -1,14 +1,18 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import './api.dart';
+import './io.dart';
+import './app_model.dart';
 
 String BASE_HOST = 'raw.githubusercontent.com';
 String BASE_URL = '/wiki/dna2github/NodeBase';
 
 class PlatformItem {
-  String arch;
-  String name;
-  bool zip;
+  String arch = "";
+  String name = "";
+  bool zip = false;
 }
 
 class NodeBasePlatformMarketItem extends StatefulWidget {
@@ -47,6 +51,7 @@ class _NodeBasePlatformMarketItemState
                 itemBuilder: (BuildContext context) => <PopupMenuEntry<int>>[
                       const PopupMenuItem<int>(
                           value: 101, child: Text('Install')),
+                  // TODO: add Uninstall
                     ]) // PopupMenuButton
             ));
   }
@@ -72,10 +77,6 @@ class _NodeBasePlatformMarketState extends State<NodeBasePlatformMarket> {
         .get(Uri.https(BASE_HOST, BASE_URL + '/quick/platform/meta.list'));
   }
 
-  Future<http.Response> downloadFile(String uri) async {
-    return http.get(Uri.https(BASE_HOST, BASE_URL + uri));
-  }
-
   Future<List<PlatformItem>> _getPlatformItems() async {
     final res = await fetchPlatformList();
     List<PlatformItem> r = [];
@@ -88,13 +89,37 @@ class _NodeBasePlatformMarketState extends State<NodeBasePlatformMarket> {
       one.name = parts[1];
       if (parts.length == 3 && parts[2] == "zip") {
         one.zip = true;
+      } else {
+        one.zip = false;
       }
       r.add(one);
     }
     return r;
   }
 
-  installPlatformItem (PlatformItem item) {}
+  installPlatformItem (PlatformItem item) async {
+    final url = "https://" + BASE_HOST + BASE_URL + "/quick/platform/" + item.arch  + "/" + item.name + ( item.zip?".zip":"" );
+    print(url);
+    var dst = await NodeBaseApi.fetchExecutable(url);
+    if (dst.endsWith(".zip")) {
+      dst = dst.substring(0, dst.length - 4);
+    }
+    // TODO: handle download exception
+    var config = await readAppFileAsString("/platform.json");
+    if (config == "") config = "{\"platforms\": []}";
+    final data = jsonDecode(config);
+    final list = data["platforms"].toList();
+    list.add({
+      "name": item.name,
+      "path": dst,
+      "url": url
+    });
+    await writeAppFileAsString(
+        "/platform.json",
+        JsonEncoder((x) {
+          return x;
+        }).convert({"platforms": list}));
+  }
 
   uninstallPlatformItem (PlatformItem item) {}
 

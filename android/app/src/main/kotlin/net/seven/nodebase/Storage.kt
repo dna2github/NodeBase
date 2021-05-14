@@ -190,7 +190,8 @@ object Storage {
         return filtered.toTypedArray()
     }
 
-    fun unzip(zipfile: String, target_dir: String): Boolean {
+    fun unzip(zipfile: String, target_dir: String): Array<File> {
+        val unzipFiles = ArrayList<File>()
         try {
             val `in` = FileInputStream(zipfile)
             val zip = ZipInputStream(`in`)
@@ -218,6 +219,7 @@ object Storage {
                     writer.close()
                     out.close()
                     zip.closeEntry()
+                    unzipFiles.add(File(target_filename))
                 }
                 entry = zip.nextEntry
             }
@@ -225,13 +227,13 @@ object Storage {
             `in`.close()
         } catch (e: FileNotFoundException) {
             e.printStackTrace()
-            return false
+            return unzipFiles.toTypedArray()
         } catch (e: IOException) {
             e.printStackTrace()
-            return false
+            return unzipFiles.toTypedArray()
         }
 
-        return true
+        return unzipFiles.toTypedArray()
     }
 
     fun zip(target_dir: String, zipfile: String): Boolean {

@@ -69,6 +69,18 @@ class MainActivity: FlutterActivity() {
           }
           result.success(fetchAndMarkExecutable(src, dst))
         }
+      } else if (call.method == "FetchApp") {
+        var src: String? = call.argument("url")
+        var dst: String? = call.argument("target")
+        if (src == null || dst == null) {
+          result.error("INVALID_PARAMS", "invalid parameter.", null)
+        } else {
+          val dir = File(dst)
+          if (!dir.exists()) {
+            Storage.makeDirectory(dir.getAbsolutePath())
+          }
+          result.success(fetchApp(src, dst))
+        }
       } else if (call.method == "FetchWifiIpv4") {
         result.success(fetchWifiIpv4())
       } else {
@@ -222,6 +234,51 @@ class MainActivity: FlutterActivity() {
         }
       }
       Download(this, postAction).act("fetch", src, dst)
+    }
+    return 0
+  }
+
+  private fun _unpackApp(dst: String): Boolean {
+    // dst is a zip file path
+    val f = File(dst)
+    val t = f.getParentFile().getAbsolutePath()
+    android.util.Log.i("NodeBase", String.format("extracting %s -> %s ...", dst, t))
+    for (one in Storage.unzip(dst, t)) {
+      android.util.Log.i("NodeBase", String.format("   %s", one.getAbsolutePath()))
+    }
+    return Storage.unlink(dst)
+  }
+
+  private fun fetchApp(src: String, dst: String): Int {
+    if (src == "") return -1
+    if (!src.endsWith(".zip")) return -1
+    Storage.makeDirectory(dst)
+    val src_name = File(src).getName()
+    var dst_zip = dst + "/" + src_name
+    if (src.startsWith("file://")) {
+      Permission.request(this)
+      var final_src = src
+      final_src = final_src.substring("file://".length)
+      // Add Alarm to align with Download()
+      // XXX: but how about we move Alarm out of Download() and use call back to do alarm?
+      if (!Storage.copy(final_src, dst_zip)) {
+        Alarm.showToast(this, "Copy failed: cannot copy origin")
+        return -2
+      }
+      if (!_unpackApp(dst_zip)) {
+        Alarm.showToast(this, "Copy failed: cannot set binary executable")
+        return -3
+      }
+      Alarm.showToast(this, "Copy successful")
+      return 0
+    } else {
+      // download
+      val postAction = object : Runnable {
+        override fun run() {
+          _unpackApp(dst_zip)
+        }
+      }
+      Download(this, postAction).act("fetch", src, dst_zip)
     }
     return 0
   }

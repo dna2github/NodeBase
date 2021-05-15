@@ -42,6 +42,22 @@ class NodeBaseApi {
     }
   }
 
+  static Future<String> fetchApp(String url) async {
+    if (url == null || url == "") return null;
+    var name = url.split("/").last;
+    if (name.endsWith(".zip")) name = name.substring(0, name.length - 4);
+    final dst = (await getAppFileReference('/apps/${name}')).path;
+    // e.g. node -> /path/to/app/apps/node
+    if (url.indexOf("://") < 0) return dst;
+    try {
+      appApi.invokeMethod(
+          'FetchApp', <String, dynamic>{"url": url, "target": dst});
+      return dst;
+    } catch (e) {
+      return null;
+    }
+  }
+
   static Future<String> fetchWifiIpv4() async {
     try {
       return appApi.invokeMethod('FetchWifiIpv4');

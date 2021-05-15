@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import './api.dart';
 import './io.dart';
-import './app_model.dart';
 
 String BASE_HOST = 'raw.githubusercontent.com';
 String BASE_URL = '/wiki/dna2github/NodeBase';

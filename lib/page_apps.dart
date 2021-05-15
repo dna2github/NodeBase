@@ -4,6 +4,7 @@ import './page_app_home.dart';
 import './io.dart';
 import './app_model.dart';
 import './api.dart';
+import './page_app_market.dart';
 
 class NodeBaseAppItem extends StatefulWidget {
   final Function(NodeBaseAppItem item) fnRemove;
@@ -56,7 +57,7 @@ class _NodeBaseAppItemState extends State<NodeBaseAppItem> {
             leading: SizedBox(width: 5), title: Text(widget.item.path)));
       }
       entities.add(Row(children: <Widget>[
-        FlatButton.icon(
+        TextButton.icon(
             icon: Icon(Icons.check),
             label: Text("Save"),
             onPressed: () {
@@ -72,7 +73,7 @@ class _NodeBaseAppItemState extends State<NodeBaseAppItem> {
                 widget.fnSaveConfig();
               });
             }),
-        FlatButton.icon(
+        TextButton.icon(
             icon: Icon(Icons.close),
             label: Text("Cancel"),
             onPressed: () {
@@ -211,12 +212,22 @@ class _NodeBaseApplicationsState extends State<NodeBaseApplications> {
     }
     return Scaffold(
         appBar: AppBar(
-            title: Text('Applications'),
-            leading: IconButton(
-                icon: Icon(Icons.arrow_back),
+          title: Text('Applications'),
+          leading: IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: () {
+                Navigator.pop(context);
+              }),
+          actions: <Widget>[
+            IconButton(
+                icon: Icon(Icons.add_shopping_cart),
                 onPressed: () {
-                  Navigator.pop(context);
-                })),
+                  var route = MaterialPageRoute(
+                      builder: (context) => NodeBaseAppMarket());
+                  Navigator.push(context, route);
+                })
+          ],
+        ),
         body: (entities.length == 0)
             ? Center(child: Text('No application.'))
             : ListView.builder(

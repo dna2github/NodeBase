@@ -100,25 +100,28 @@ class _NodeBasePlatformMarketState extends State<NodeBasePlatformMarket> {
   installPlatformItem (PlatformItem item) async {
     final url = "https://" + BASE_HOST + BASE_URL + "/quick/platform/" + item.arch  + "/" + item.name + ( item.zip?".zip":"" );
     print(url);
-    var dst = await NodeBaseApi.fetchExecutable(url);
-    if (dst.endsWith(".zip")) {
-      dst = dst.substring(0, dst.length - 4);
+    try {
+      var dst = await NodeBaseApi.fetchExecutable(url);
+      if (dst.endsWith(".zip")) {
+        dst = dst.substring(0, dst.length - 4);
+      }
+      var config = await readAppFileAsString("/platform.json");
+      if (config == "") config = "{\"platforms\": []}";
+      final data = jsonDecode(config);
+      final list = data["platforms"].toList();
+      list.add({
+        "name": item.name,
+        "path": dst,
+        "url": url
+      });
+      await writeAppFileAsString(
+          "/platform.json",
+          JsonEncoder((x) {
+            return x;
+          }).convert({"platforms": list}));
+    } catch(e) {
+      // TODO: handle exception
     }
-    // TODO: handle download exception
-    var config = await readAppFileAsString("/platform.json");
-    if (config == "") config = "{\"platforms\": []}";
-    final data = jsonDecode(config);
-    final list = data["platforms"].toList();
-    list.add({
-      "name": item.name,
-      "path": dst,
-      "url": url
-    });
-    await writeAppFileAsString(
-        "/platform.json",
-        JsonEncoder((x) {
-          return x;
-        }).convert({"platforms": list}));
   }
 
   uninstallPlatformItem (PlatformItem item) {}

@@ -5,6 +5,7 @@ package net.seven.nodebase
 import android.app.ProgressDialog
 import android.content.Context
 import android.os.AsyncTask
+import android.os.Handler
 
 import java.io.FileOutputStream
 import java.io.IOException
@@ -91,9 +92,10 @@ class Download(private val context: Context, private val callback: Runnable?) {
         }
 
         override fun onPostExecute(result: String?) {
+            super.onPostExecute(result);
             downloader.progress.setMessage("do post actions ...")
             if (downloader.callback != null) {
-                downloader.callback.run()
+                Handler(downloader.context.getMainLooper()).post(downloader.callback)
             }
             downloader.progress.dismiss()
             if (result == null) {

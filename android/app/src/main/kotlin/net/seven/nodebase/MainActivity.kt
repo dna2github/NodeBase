@@ -184,7 +184,10 @@ class MainActivity: FlutterActivity() {
     val isZip = dst.endsWith(".zip")
     if (isZip) {
       val f = File(dst)
-      for (one in Storage.unzip(dst, f.getParentFile().getAbsolutePath())) {
+      val t = f.getParentFile().getAbsolutePath()
+      android.util.Log.i("NodeBase", String.format("extracting %s -> %s ...", dst, t))
+      for (one in Storage.unzip(dst, t)) {
+        android.util.Log.i("NodeBase", String.format("   %s", one.getAbsolutePath()))
         Storage.executablize(one.getAbsolutePath())
       }
       return Storage.unlink(dst)
@@ -213,11 +216,12 @@ class MainActivity: FlutterActivity() {
       return 0
     } else {
       // download
-      Download(this, Runnable() {
-        fun run() {
+      val postAction = object : Runnable {
+        override fun run() {
           _markExecutable(dst)
         }
-      }).act("fetch", src, dst)
+      }
+      Download(this, postAction).act("fetch", src, dst)
     }
     return 0
   }

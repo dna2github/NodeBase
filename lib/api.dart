@@ -35,6 +35,7 @@ class NodeBaseApi {
     try {
       appApi.invokeMethod(
           'FetchExecutable', <String, dynamic>{"url": url, "target": dst});
+      if (dst.endsWith(".zip")) return dst.substring(0, dst.length - 4);
       return dst;
     } catch (e) {
       return null;

@@ -11,6 +11,14 @@ Currently we are redesigning whole NodeBase based on Flutter.
 
 ## How to use
 
+- Platform/App market is online
+  - click into platform or application page
+  - click on the top-right cart icon button
+  - select what you want to download
+     - e.g. download platform `node-10.10.0`
+     -      download app `file-transfer`
+     -      edit app `file-transfer` platform value to `node-10.10.0`
+     -      start `file-transfer` by clicking play icon button
 - Create a new platform, for example named `node`
   - fill node url like `file:///sdcard/bin-node-v10.10.0` or `https://example.com/latest/arm/node`
   - click download button and wait for task complete

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import './api.dart';
 
 class NodeBaseEnvironmentSettings extends StatefulWidget {
-  NodeBaseEnvironmentSettings({Key key}) : super(key: key);
+  NodeBaseEnvironmentSettings({super.key});
   @override
   _NodeBaseEnvironmentSettingsState createState() =>
       _NodeBaseEnvironmentSettingsState();

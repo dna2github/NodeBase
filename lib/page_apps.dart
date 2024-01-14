@@ -13,8 +13,12 @@ class NodeBaseAppItem extends StatefulWidget {
   bool isEdit = false;
   bool isCreated = false;
 
-  NodeBaseAppItem({Key key, this.item, this.fnRemove, this.fnSaveConfig})
-      : super(key: key);
+  NodeBaseAppItem({
+    required this.item,
+    required this.fnRemove,
+    required this.fnSaveConfig,
+    super.key
+  });
 
   @override
   _NodeBaseAppItemState createState() => _NodeBaseAppItemState();
@@ -131,7 +135,7 @@ class _NodeBaseAppItemState extends State<NodeBaseAppItem> {
 }
 
 class NodeBaseApplications extends StatefulWidget {
-  NodeBaseApplications({Key key}) : super(key: key);
+  NodeBaseApplications({super.key});
   @override
   _NodeBaseApplicationsState createState() => _NodeBaseApplicationsState();
 }

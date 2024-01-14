@@ -12,8 +12,12 @@ class NodeBasePlatformItem extends StatefulWidget {
   bool isEdit = false;
   bool isCreated = false;
 
-  NodeBasePlatformItem({Key key, this.item, this.fnRemove, this.fnSaveConfig})
-      : super(key: key);
+  NodeBasePlatformItem({
+    required this.item,
+    required this.fnRemove,
+    required this.fnSaveConfig,
+    super.key
+  });
 
   @override
   _NodeBasePlatformItemState createState() => _NodeBasePlatformItemState();
@@ -142,7 +146,7 @@ class _NodeBasePlatformItemState extends State<NodeBasePlatformItem> {
 }
 
 class NodeBasePlatformSettings extends StatefulWidget {
-  NodeBasePlatformSettings({Key key}) : super(key: key);
+  NodeBasePlatformSettings({super.key});
   @override
   _NodeBasePlatformSettingsState createState() =>
       _NodeBasePlatformSettingsState();

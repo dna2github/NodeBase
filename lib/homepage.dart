@@ -8,7 +8,7 @@ import './page_platform.dart';
 import './page_apps.dart';
 
 class NodeBaseHomePage extends StatefulWidget {
-  NodeBaseHomePage({Key key, this.title}) : super(key: key);
+  NodeBaseHomePage({required this.title, super.key});
 
   final String title;
 
@@ -82,6 +82,7 @@ class _NodeBaseHomePageState extends State<NodeBaseHomePage> {
                               Text('${NodeBaseAppModule.list[index].desc}'),
                           leading: IconButton(
                             icon: NodeBaseAppModule.list[index].icon,
+                            onPressed: () => {},
                           ) // IconButton
                           ) // ListTile
                       ) // Card

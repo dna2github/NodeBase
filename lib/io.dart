@@ -24,17 +24,17 @@ Future<String> readAppFileAsString(filepath) async {
   }
 }
 
-Future<File> writeAppFileAsString(filepath, contents) async {
+Future<void> writeAppFileAsString(filepath, contents) async {
   final file = await getAppFileReference(filepath);
   file.writeAsString(contents);
 }
 
-Future<FileSystemEntity> ioGetEntity(filepath) async {
+Future<Object> ioGetEntity(filepath) async {
   final path = await _appPath;
   final filename = '$path$filepath';
   final T = await FileSystemEntity.type(filename);
   if (T == FileSystemEntityType.notFound) {
-    return null;
+    return Object();
   }
   if (T == FileSystemEntityType.link) {
     return Link(filepath);

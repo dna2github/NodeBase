@@ -8,7 +8,7 @@ import './page_app_webview.dart';
 class NodeBaseAppHome extends StatefulWidget {
   final NodeBaseApp item;
 
-  NodeBaseAppHome({Key key, this.item}) : super(key: key);
+  NodeBaseAppHome({required this.item, super.key});
   @override
   _NodeBaseAppHomeState createState() => _NodeBaseAppHomeState();
 }
@@ -35,7 +35,7 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
     });
   }
 
-  Future<NodeBasePlatform> loadPlatform(String name) async {
+  Future<NodeBasePlatform?> loadPlatform(String name) async {
     var config = await readAppFileAsString("/platform.json");
     final List<NodeBasePlatform> list = <NodeBasePlatform>[];
     if (config != "") {
@@ -53,7 +53,7 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
     return null;
   }
 
-  Future<NodeBaseAppDetails> loadAppDetails(String name) async {
+  Future<NodeBaseAppDetails?> loadAppDetails(String name) async {
     var config = await readAppFileAsString("/apps/${name}/config.json");
     if (config != "") {
       final data = jsonDecode(config);
@@ -73,10 +73,11 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
     super.initState();
     NodeBaseApi.fetchWifiIpv4().then((ip) {
       setState(() {
-        wifiIp = ip;
+        wifiIp = ip == null ? "0.0.0.0" : ip;
       });
       loadAppDetails(widget.item.name).then((item) {
         setState(() {
+          if (item == null) return;
           if (item.host != "") {
             final parts = item.host.split("://");
             if (parts.length > 1) {
@@ -153,7 +154,7 @@ class _NodeBaseAppHomeState extends State<NodeBaseAppHome> {
         widget.item.name == null ||
         widget.item.name == "") {
       Navigator.pop(context);
-      return null;
+      return Scaffold();
     }
     if (loading) {
       return Scaffold(

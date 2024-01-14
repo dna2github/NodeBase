@@ -19,9 +19,12 @@ class NodeBasePlatformMarketItem extends StatefulWidget {
   final Function(PlatformItem item) fnUninstall;
   final PlatformItem item;
 
-  NodeBasePlatformMarketItem(
-      {Key key, this.item, this.fnInstall, this.fnUninstall})
-      : super(key: key);
+  NodeBasePlatformMarketItem({
+    required this.item,
+    required this.fnInstall,
+    required this.fnUninstall,
+    super.key
+  });
 
   @override
   _NodeBasePlatformMarketItemState createState() =>
@@ -57,7 +60,7 @@ class _NodeBasePlatformMarketItemState
 }
 
 class NodeBasePlatformMarket extends StatefulWidget {
-  NodeBasePlatformMarket({Key key}) : super(key: key);
+  NodeBasePlatformMarket({super.key});
   @override
   _NodeBasePlatformMarketState createState() => _NodeBasePlatformMarketState();
 }

@@ -26,7 +26,24 @@ apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    compileSdkVersion 28
+    namespace "net.seven.nodebase"
+    compileSdkVersion 33
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+    defaultConfig {
+        applicationId "net.seven.nodebase"
+        targetSdkVersion 33
+        minSdkVersion flutter.minSdkVersion
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
@@ -34,14 +51,6 @@ android {
 
     lintOptions {
         disable 'InvalidPackage'
-    }
-
-    defaultConfig {
-        applicationId "net.seven.nodebase"
-        minSdkVersion 16
-        targetSdkVersion 28
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
     }
 
     buildTypes {

@@ -19,8 +19,12 @@ class NodeBaseAppMarketItem extends StatefulWidget {
   final Function(AppItem item) fnUninstall;
   final AppItem item;
 
-  NodeBaseAppMarketItem({Key key, this.item, this.fnInstall, this.fnUninstall})
-      : super(key: key);
+  NodeBaseAppMarketItem({
+    required this.item,
+    required this.fnInstall,
+    required this.fnUninstall,
+    super.key
+  });
 
   @override
   _NodeBaseAppMarketItemState createState() =>
@@ -55,7 +59,7 @@ class _NodeBaseAppMarketItemState extends State<NodeBaseAppMarketItem> {
 }
 
 class NodeBaseAppMarket extends StatefulWidget {
-  NodeBaseAppMarket({Key key}) : super(key: key);
+  NodeBaseAppMarket({super.key});
   @override
   _NodeBaseAppMarketState createState() => _NodeBaseAppMarketState();
 }

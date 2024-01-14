@@ -7,15 +7,55 @@ class NodeBaseAppWebview extends StatefulWidget {
   String name;
   String home;
 
-  NodeBaseAppWebview({Key key, this.name, this.home}) : super(key: key);
+  NodeBaseAppWebview({
+    required this.name,
+    required this.home,
+    super.key
+  });
 
   @override
   _NodeBaseAppWebviewState createState() => _NodeBaseAppWebviewState();
 }
 
 class _NodeBaseAppWebviewState extends State<NodeBaseAppWebview> {
-  final Completer<WebViewController> _controller =
-      Completer<WebViewController>();
+  late WebViewController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+            onProgress: (int progress) {},
+            onPageStarted: (String url) {
+              print('- Page started loading: $url');
+            },
+            onPageFinished: (String url) {
+              print('- Page finished loading: $url');
+            },
+            onWebResourceError: (WebResourceError error) {},
+            onNavigationRequest: (NavigationRequest request) {
+              if (request.url.startsWith('https://www.youtube.com/')) {
+                print('- blocking navigation to $request}');
+                return NavigationDecision.prevent;
+              }
+              print('- allowing navigation to $request');
+              return NavigationDecision.navigate;
+            }
+        )
+      )
+      ..loadRequest(Uri.parse(widget.home));
+
+    _controller.addJavaScriptChannel(
+        "Toaster",
+        onMessageReceived: (JavaScriptMessage message) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message.message)),
+          );
+        }
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,65 +63,30 @@ class _NodeBaseAppWebviewState extends State<NodeBaseAppWebview> {
       appBar: AppBar(
         title: Text(widget.name),
         actions: <Widget>[
-          NavigationControls(_controller.future),
-          SampleMenu(_controller.future),
+          NavigationControls(Future(() => _controller)),
+          SampleMenu(Future(() => _controller)),
         ],
       ),
       // We're using a Builder here so we have a context that is below the Scaffold
       // to allow calling Scaffold.of(context) so we can show a snackbar.
       body: Builder(builder: (BuildContext context) {
-        return WebView(
-          initialUrl: widget.home, // 'about:blank',
-          javascriptMode: JavascriptMode.unrestricted,
-          onWebViewCreated: (WebViewController webViewController) {
-            _controller.complete(webViewController);
-          },
-          // TODO(iskakaushik): Remove this when collection literals makes it to stable.
-          // ignore: prefer_collection_literals
-          javascriptChannels: <JavascriptChannel>[
-            _toasterJavascriptChannel(context),
-          ].toSet(),
-          navigationDelegate: (NavigationRequest request) {
-            if (request.url.startsWith('https://www.youtube.com/')) {
-              print('- blocking navigation to $request}');
-              return NavigationDecision.prevent;
-            }
-            print('- allowing navigation to $request');
-            return NavigationDecision.navigate;
-          },
-          onPageStarted: (String url) {
-            print('- Page started loading: $url');
-          },
-          onPageFinished: (String url) {
-            print('- Page finished loading: $url');
-          },
-          gestureNavigationEnabled: false,
-        );
+        return WebViewWidget(controller: _controller);
       }),
       floatingActionButton: favoriteButton(),
     );
   }
 
-  JavascriptChannel _toasterJavascriptChannel(BuildContext context) {
-    return JavascriptChannel(
-        name: 'Toaster',
-        onMessageReceived: (JavascriptMessage message) {
-          Scaffold.of(context).showSnackBar(
-            SnackBar(content: Text(message.message)),
-          );
-        });
-  }
-
   Widget favoriteButton() {
     return FutureBuilder<WebViewController>(
-        future: _controller.future,
+        future: Future(() => _controller),
         builder: (BuildContext context,
             AsyncSnapshot<WebViewController> controller) {
           if (controller.hasData) {
             return FloatingActionButton(
               onPressed: () async {
-                final String url = await controller.data.currentUrl();
-                Scaffold.of(context).showSnackBar(
+                final String? url = await controller.data?.currentUrl();
+                if (url == null) return;
+                ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Favorited $url')),
                 );
               },
@@ -107,7 +112,6 @@ class SampleMenu extends StatelessWidget {
   SampleMenu(this.controller);
 
   final Future<WebViewController> controller;
-  final CookieManager cookieManager = CookieManager();
 
   @override
   Widget build(BuildContext context) {
@@ -123,9 +127,6 @@ class SampleMenu extends StatelessWidget {
                 break;
               case MenuOptions.listCookies:
                 _onListCookies(controller.data, context);
-                break;
-              case MenuOptions.clearCookies:
-                _onClearCookies(context);
                 break;
               case MenuOptions.addToCache:
                 _onAddToCache(controller.data, context);
@@ -152,10 +153,6 @@ class SampleMenu extends StatelessWidget {
               child: Text('List cookies'),
             ),
             const PopupMenuItem<MenuOptions>(
-              value: MenuOptions.clearCookies,
-              child: Text('Clear cookies'),
-            ),
-            const PopupMenuItem<MenuOptions>(
               value: MenuOptions.addToCache,
               child: Text('Add to cache'),
             ),
@@ -178,69 +175,61 @@ class SampleMenu extends StatelessWidget {
   }
 
   void _onShowUserAgent(
-      WebViewController controller, BuildContext context) async {
+      WebViewController? controller, BuildContext context) async {
     // Send a message with the user agent string to the Toaster JavaScript channel we registered
     // with the WebView.
-    await controller.evaluateJavascript(
+    if (controller == null) return;
+    await controller.runJavaScript(
         'Toaster.postMessage("User Agent: " + navigator.userAgent);');
   }
 
   void _onListCookies(
-      WebViewController controller, BuildContext context) async {
-    final String cookies =
-        await controller.evaluateJavascript('document.cookie');
-    Scaffold.of(context).showSnackBar(SnackBar(
+      WebViewController? controller, BuildContext context) async {
+    if (controller == null) return;
+    final Object cookies =
+        await controller.runJavaScriptReturningResult('document.cookie');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           const Text('Cookies:'),
-          _getCookieList(cookies),
+          _getCookieList(cookies.toString()),
         ],
       ),
     ));
   }
 
-  void _onAddToCache(WebViewController controller, BuildContext context) async {
-    await controller.evaluateJavascript(
+  void _onAddToCache(WebViewController? controller, BuildContext context) async {
+    if (controller == null) return;
+    await controller.runJavaScript(
         'caches.open("test_caches_entry"); localStorage["test_localStorage"] = "dummy_entry";');
-    Scaffold.of(context).showSnackBar(const SnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
       content: Text('Added a test entry to cache.'),
     ));
   }
 
-  void _onListCache(WebViewController controller, BuildContext context) async {
-    await controller.evaluateJavascript('caches.keys()'
+  void _onListCache(WebViewController? controller, BuildContext context) async {
+    if (controller == null) return;
+    await controller.runJavaScript('caches.keys()'
         '.then((cacheKeys) => JSON.stringify({"cacheKeys" : cacheKeys, "localStorage" : localStorage}))'
         '.then((caches) => Toaster.postMessage(caches))');
   }
 
-  void _onClearCache(WebViewController controller, BuildContext context) async {
+  void _onClearCache(WebViewController? controller, BuildContext context) async {
+    if (controller == null) return;
     await controller.clearCache();
-    Scaffold.of(context).showSnackBar(const SnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
       content: Text("Cache cleared."),
     ));
   }
 
-  void _onClearCookies(BuildContext context) async {
-    final bool hadCookies = await cookieManager.clearCookies();
-    String message = 'There were cookies. Now, they are gone!';
-    if (!hadCookies) {
-      message = 'There are no cookies.';
-    }
-    Scaffold.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-    ));
-  }
-
   void _onNavigationDelegateExample(
-      WebViewController controller, BuildContext context) async {
-    //final String contentBase64 =
-    //    base64Encode(const Utf8Encoder().convert(kNavigationExamplePage));
-    String contentBase64 = base64Encode(
-        const Utf8Encoder().convert('<html><body><input /></body></html>'));
-    //String contentBase64 = '';
-    await controller.loadUrl('data:text/html;base64,$contentBase64');
+      WebViewController? controller, BuildContext context) async {
+    if (controller == null) return;
+    await controller.loadRequest(
+        Uri.dataFromString(
+            '', mimeType: 'text/html', encoding: Encoding.getByName('utf-8')));
   }
 
   Widget _getCookieList(String cookies) {
@@ -259,9 +248,7 @@ class SampleMenu extends StatelessWidget {
 }
 
 class NavigationControls extends StatelessWidget {
-  const NavigationControls(this._webViewControllerFuture)
-      : assert(_webViewControllerFuture != null);
-
+  const NavigationControls(this._webViewControllerFuture);
   final Future<WebViewController> _webViewControllerFuture;
 
   @override
@@ -272,7 +259,7 @@ class NavigationControls extends StatelessWidget {
           (BuildContext context, AsyncSnapshot<WebViewController> snapshot) {
         final bool webViewReady =
             snapshot.connectionState == ConnectionState.done;
-        final WebViewController controller = snapshot.data;
+        final WebViewController? controller = snapshot.data;
         return Row(
           children: <Widget>[
             IconButton(
@@ -280,10 +267,10 @@ class NavigationControls extends StatelessWidget {
               onPressed: !webViewReady
                   ? null
                   : () async {
-                      if (await controller.canGoBack()) {
-                        await controller.goBack();
+                      if (true == await controller?.canGoBack()) {
+                        await controller?.goBack();
                       } else {
-                        Scaffold.of(context).showSnackBar(
+                        ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("No back history item")),
                         );
                         return;
@@ -295,10 +282,10 @@ class NavigationControls extends StatelessWidget {
               onPressed: !webViewReady
                   ? null
                   : () async {
-                      if (await controller.canGoForward()) {
-                        await controller.goForward();
+                      if (true == await controller?.canGoForward()) {
+                        await controller?.goForward();
                       } else {
-                        Scaffold.of(context).showSnackBar(
+                        ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content: Text("No forward history item")),
                         );
@@ -311,7 +298,7 @@ class NavigationControls extends StatelessWidget {
               onPressed: !webViewReady
                   ? null
                   : () {
-                      controller.reload();
+                      controller?.reload();
                     },
             ),
           ],

@@ -87,8 +87,8 @@ class NodeMonitor(val serviceName: String, val command: Array<String>) : Thread(
     fun childrenProcesses(pid: Int): Array<Int> {
         var children = arrayOf<Int>()
         val output = NodeService.checkOutput(arrayOf<String>("/system/bin/ps", "-o", "pid=", "--ppid", pid.toString()))
-        if (output == "") return children
-        val lines = output!!.split("\n")
+        if (output == null || output == "") return children
+        val lines = output.trim().split("\n")
         lines.forEach {
             if (it != "") {
                 try {
@@ -108,7 +108,7 @@ class NodeMonitor(val serviceName: String, val command: Array<String>) : Thread(
            //      we do not guarantee `test` children are killed
            //      another example, if we use `sh -c "go run test.go"` -> `go run test.go` -> `test`
            //      when kill, we merely kill `go` and `sh` but no `test`
-           Log.d("NodeMonitor", NodeService.checkOutput(arrayOf<String>("/system/bin/ps", "-ef")))
+           Log.d("NodeMonitor", NodeService.checkOutput(arrayOf<String>("/system/bin/ps", "-ef")) ?: "<empty>")
            val children = childrenProcesses(pid)
            children.forEach {
                if (it > 0) {

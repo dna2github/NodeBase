@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
+import java.lang.Process
+import java.lang.ProcessBuilder
+import java.lang.StringBuffer
 
 import java.util.HashMap
 import java.util.UUID
@@ -19,7 +22,7 @@ class NodeService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         while (intent != null) {
             val argv = intent.getStringArrayExtra(ARGV)
-            if (argv.size < 3) break
+            if (argv == null || argv.size < 3) break
             val auth_token = argv[0]
             var cmd = argv[1]
             val first = argv[2]
@@ -106,25 +109,23 @@ class NodeService : Service() {
             return uuid.toString()
         }
 
-        fun checkOutput(cmd: Array<String>): String? {
+        fun checkOutput(cmd: Array<String>, joinStderr: Boolean = false): String? {
             try {
-                val p = Runtime.getRuntime().exec(cmd)
-                p.waitFor()
-                val `is` = p.inputStream
-                var len = `is`.available()
-                var b: ByteArray? = null
-                if (len > 0) {
-                    b = ByteArray(len)
-                    len = `is`.read(b)
+                val p = if (joinStderr) ProcessBuilder(cmd.asList()).redirectErrorStream(true).start()
+                    else ProcessBuilder(cmd.asList()).start()
+                val reader = java.io.BufferedReader(java.io.InputStreamReader(p.inputStream))
+                var sb = StringBuffer()
+                var line: String? = null
+                while (reader.readLine().also { line = it } != null) {
+                    sb.append(line)
+                    sb.append('\n')
                 }
-                `is`.close()
-                return if (b == null) {
-                    null
-                } else String(b, 0, len)
+                p.waitFor()
+                reader.close()
+                return sb.toString().substring(0, sb.length - 1)
             } catch (e: Exception) {
                 return null
             }
-
         }
 
 

@@ -1,23 +1,8 @@
 package net.seven.nodebase.nodebase;
 
 import java.util.HashMap;
-import java.util.UUID;
-import android.os.Handler;
 
 public class NodeAppService {
-    // XXX actually it is not safe to store data as static
-    //     we just reduce attack possibilities
-    private static String AUTH_TOKEN = refreshAuthToken();
-
-    public static String refreshAuthToken() {
-        AUTH_TOKEN = UUID.randomUUID().toString();
-        return AUTH_TOKEN;
-    }
-
-    public static String getAuthToken() {
-        return AUTH_TOKEN;
-    }
-
     private static final HashMap<String, NodeAppMonitor> services = new HashMap<>();
 
     public static int getRunningNodeAppCount() {
@@ -28,20 +13,21 @@ public class NodeAppService {
         return count;
     }
 
-    public static void startNodeApp(Handler handler, String name, String[] cmd) {
+    public static void startNodeApp(String name, String[] cmd) {
         synchronized (services) {
             NodeAppMonitor app;
             if (services.containsKey(name)) {
                 app = services.get(name);
-                if (app != null) app.nodebaseStop();
+                if (app != null && !app.nodebaseIsDead()) return;
+                // only process if the service is null/dead
             }
             app = new NodeAppMonitor(name, cmd);
-            app.nodebaseStart(handler);
+            app.nodebaseStart();
             services.put(name, app);
         }
     }
 
-    public static void restartNodeApp(Handler handler, String name) {
+    public static void restartNodeApp(String name) {
         synchronized (services) {
             if (!services.containsKey(name)) return;
             NodeAppMonitor app = services.get(name);
@@ -49,7 +35,7 @@ public class NodeAppService {
                 services.remove(name);
                 return;
             }
-            services.put(name, app.nodebaseRestart(handler));
+            services.put(name, app.nodebaseRestart());
         }
     }
 
@@ -57,8 +43,9 @@ public class NodeAppService {
         synchronized (services) {
             if (!services.containsKey(name)) return;
             NodeAppMonitor app = services.get(name);
-            services.remove(name);
-            if (app != null) app.nodebaseStop();
+            if (app == null) return;
+            if (app.nodebaseIsDead()) return;
+            app.nodebaseStop();
         }
     }
 

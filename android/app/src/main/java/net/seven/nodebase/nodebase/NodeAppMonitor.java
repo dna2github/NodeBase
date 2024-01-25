@@ -1,7 +1,6 @@
 package net.seven.nodebase.nodebase;
 
 import android.os.Build;
-import android.os.Handler;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -72,7 +71,9 @@ public class NodeAppMonitor extends Thread {
         for(String line : lines) {
             line = line.trim();
             if (line.length() == 0) continue;
-            children.add(Integer.parseInt(line));
+            // TODO: try...catch...
+            int cpid = Integer.parseInt(line);
+            if (pid != cpid) children.add(cpid);
         }
         return children;
     }
@@ -103,8 +104,8 @@ public class NodeAppMonitor extends Thread {
         return r;
     }
 
-    public void nodebaseStart(Handler handler) {
-        handler.post(this);
+    public void nodebaseStart() {
+        this.start();
     }
 
     public boolean nodebaseStop() {
@@ -122,10 +123,10 @@ public class NodeAppMonitor extends Thread {
         return true;
     }
 
-    public NodeAppMonitor nodebaseRestart(Handler handler) {
+    public NodeAppMonitor nodebaseRestart() {
         this.nodebaseStop();
         NodeAppMonitor m = new NodeAppMonitor(this.nodebaseName, this.nodebaseCmd);
-        handler.post(m);
+        m.start();
         return m;
     }
 
@@ -155,7 +156,7 @@ public class NodeAppMonitor extends Thread {
                     "monitor",
                     String.format(
                             Locale.getDefault(),
-                            "started (%d / $s)",
+                            "started (%d / %s)",
                             getId(), this.nodebaseName)
             );
             this.nodebaseProcess.waitFor();

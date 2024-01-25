@@ -98,11 +98,8 @@ public class MainActivity extends FlutterActivity {
                 "startNodeApp",
                 String.format("start node app (%s) -> %s", name, cmd));
         Intent it = new Intent(getContext(), ForegroundNodeService.class);
-        it.putExtra(ForegroundNodeService.ARGV, new String[] {
-                NodeAppService.getAuthToken(),
-                "start", name, cmd
-        });
         ContextCompat.startForegroundService(getContext(), it);
+        NodeAppService.startNodeApp(name, cmd.split("\0"));
         return ChannelResult.OK;
     }
 
@@ -115,10 +112,7 @@ public class MainActivity extends FlutterActivity {
         if (NodeAppService.getRunningNodeAppCount() <= 1) {
             stopService(it);
         } else {
-            it.putExtra(ForegroundNodeService.ARGV, new String[] {
-                    NodeAppService.getAuthToken(),
-                    "stop", name
-            });
+            NodeAppService.stopNodeApp(name);
         }
         return ChannelResult.OK;
     }

@@ -234,7 +234,7 @@ private:
         std::stringstream spliter(cmdx0);
         std::string item;
         vec.clear();
-        while (std::getline(spliter, item, '\x00')) {
+        while (std::getline(spliter, item, '\x01')) {
             vec.push_back(item);
             count++;
         }

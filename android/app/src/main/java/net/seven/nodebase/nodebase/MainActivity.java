@@ -99,7 +99,7 @@ public class MainActivity extends FlutterActivity {
                 String.format("start node app (%s) -> %s", name, cmd));
         Intent it = new Intent(getContext(), ForegroundNodeService.class);
         ContextCompat.startForegroundService(getContext(), it);
-        NodeAppService.startNodeApp(name, cmd.split("\0"));
+        NodeAppService.startNodeApp(name, cmd.split("\u0001"));
         return ChannelResult.OK;
     }
 

@@ -69,7 +69,7 @@ public class MainActivity extends FlutterActivity {
                         String ipJsonString = getIPs();
                         result.success(ipJsonString);
                     }
-                    case "util.browser" -> {
+                    case "util.browser.open" -> {
                         String url = call.argument("url");
                         if (url == null) {
                             result.error("util.browser", "no url", null);

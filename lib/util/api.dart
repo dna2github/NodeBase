@@ -5,7 +5,10 @@ import 'dart:developer';
 class NodeBaseApi {
   static const api = MethodChannel('net.seven.nodebase/app');
 
-  static Future<Map<String, List<String>>> apiUtilGetIPs() async {
+  static Future<Map<String, dynamic>> apiUtilGetIPs() async {
+    /* {
+      <interface>: ["<ipv6>", "<ipv4>", ...]
+    } */
     try {
       var json = jsonDecode(
           (await api.invokeMethod('util.ip')) as String
@@ -28,7 +31,10 @@ class NodeBaseApi {
     }
   }
 
-  static Future<Map<String, Object>> apiAppStatus(String app) async {
+  static Future<Map<String, dynamic>> apiAppStatus(String app) async {
+    /* {
+      state: "none" | "new" | "running" | "dead"
+    } */
     try {
       var json = jsonDecode(
           (await api.invokeMethod(
@@ -64,7 +70,7 @@ class NodeBaseApi {
 
   static Future<void> apiAppOpenBrowser(String url) async {
     try {
-      api.invokeMethod('Browser', <String, dynamic>{
+      api.invokeMethod('util.browser.open', <String, dynamic>{
         "url": url,
       });
     } catch (e) {

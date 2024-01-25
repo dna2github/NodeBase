@@ -19,18 +19,9 @@ enum NodeAppSTAT {
     BORN, READY, RUNNING, DEAD
 };
 
-// ref: https://codereview.stackexchange.com/questions/419/converting-between-stdwstring-and-stdstring
-static std::wstring s2ws(const std::string& s)
-{
-    int len;
-    int slength = (int)s.length() + 1;
-    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-    std::wstring r(len, L'\0');
-    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, &r[0], len);
-    return r;
-}
 /*
  * we already have `Utf8FromUtf16` in the utils.h, which provided by Flutter generator
+// ref: https://codereview.stackexchange.com/questions/419/converting-between-stdwstring-and-stdstring
 static std::string ws2s(const std::wstring& s)
 {
     int len;
@@ -38,6 +29,16 @@ static std::string ws2s(const std::wstring& s)
     len = WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, 0, 0, 0, 0);
     std::string r(len, '\0');
     WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, &r[0], len, 0, 0);
+    return r;
+}
+ * in addition, we add an impl to convert utf8 to utf16 as `Utf8ToUtf16`
+static std::wstring s2ws(const std::string& s)
+{
+    int len;
+    int slength = (int)s.length() + 1;
+    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+    std::wstring r(len, L'\0');
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, &r[0], len);
     return r;
 }
 */
@@ -143,9 +144,13 @@ public:
         ZeroMemory(&this->pi, sizeof(this->pi));
         std::vector<std::string> cmdL;
         this->SplitCmd(cmdL, this->cmd);
-        std::wstring prog = s2ws(cmdL.at(0));
+        std::wstring prog = Utf8ToUtf16(cmdL.at(0).c_str());
         cmdL.erase(cmdL.begin());
-        std::wstring cmdLine = s2ws(std::accumulate(cmdL.begin(), cmdL.end(), std::string(" ")));
+        std::wstring cmdLine = Utf8ToUtf16(
+                std::accumulate(
+                        cmdL.begin(), cmdL.end(), std::string(" ")
+                ).c_str()
+        );
         // ref: https://forums.codeguru.com/showthread.php?514716-std-string-to-LPSTR
         LPWSTR cmdLineAdapter = &cmdLine.front();
         if (!CreateProcess(

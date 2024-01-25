@@ -63,3 +63,50 @@ std::string Utf8FromUtf16(const wchar_t* utf16_string) {
   }
   return utf8_string;
 }
+
+std::wstring Utf8ToUtf16(const char* utf8_string) {
+    // ref: filled by chatGPT 4 turbo
+    if (utf8_string == nullptr) {
+        return std::wstring(); // Return an empty wstring if the input is null.
+    }
+
+    // Calculate the length of the resulting wide string.
+    int wide_char_length = MultiByteToWideChar(
+            CP_UTF8,            // Source string is in UTF-8
+            0,                  // No flags
+            utf8_string,        // Source UTF-8 string
+            -1,                 // The string is null-terminated
+            nullptr,            // No output buffer since we're calculating the length
+            0                   // Request length calculation
+    );
+
+    if (wide_char_length == 0) {
+        // Handle the error, could be due to an invalid UTF-8 sequence.
+        // GetLastError() can be used to get more information.
+        return std::wstring();
+    }
+
+    // Allocate a buffer for the wide string.
+    std::wstring utf16_string(wide_char_length, L'\0');
+
+    // Now convert the UTF-8 string to UTF-16.
+    int convert_result = MultiByteToWideChar(
+            CP_UTF8,            // Source string is in UTF-8
+            0,                  // No flags
+            utf8_string,        // Source UTF-8 string
+            -1,                 // The string is null-terminated
+            &utf16_string[0],   // Output buffer for the wide string
+            wide_char_length    // Size of the output buffer
+    );
+
+    if (convert_result == 0) {
+        // Handle the error, could be due to an invalid UTF-8 sequence.
+        // GetLastError() can be used to get more information.
+        return std::wstring();
+    }
+
+    // The length includes the null terminator, so we resize to remove it.
+    utf16_string.resize(wide_char_length - 1);
+
+    return utf16_string;
+}

@@ -14,7 +14,7 @@ public class JSONobject extends HashMap<String, Object> {
         for (Map.Entry<String, Object> one : this.entrySet()) {
             String k = one.getKey();
             Object v = one.getValue();
-            map[i] = String.format("\"%s\":\"%s\"", escapeString(k), objectToString(v));
+            map[i] = String.format("\"%s\":%s", escapeString(k), objectToString(v));
             i ++;
         }
         return String.format("{%s}", String.join(",", map));

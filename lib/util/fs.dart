@@ -13,8 +13,8 @@ Future<String> get _appPath async {
 }
 
 Future<File> fsGetAppFileReference(filepath) async {
-  final path = await _appPath;
-  return File("$path$filepath");
+  final base = await _appPath;
+  return File(path.join(base, filepath));
 }
 
 Future<String> fsReadAppFileAsString(filepath) async {
@@ -34,8 +34,8 @@ Future<void> fsWriteAppFileAsString(filepath, contents) async {
 }
 
 Future<Object> fsGetEntity(filepath) async {
-  final path = await _appPath;
-  final filename = "$path$filepath";
+  final base = await _appPath;
+  final filename = path.join(base, filepath);
   final T = await FileSystemEntity.type(filename);
   if (T == FileSystemEntityType.notFound) {
     return "notFound";
@@ -55,8 +55,8 @@ Future<Directory> fsMkdir(filepath) async {
 }
 
 Future<List<FileSystemEntity>> fsLs(filepath) async {
-  final path = await _appPath;
-  final filename = "$path$filepath";
+  final base = await _appPath;
+  final filename = path.join(base, filepath);
   final list = <FileSystemEntity>[];
   final T = await FileSystemEntity.type(filename);
   if (T == FileSystemEntityType.notFound) {
@@ -76,15 +76,17 @@ Future<List<FileSystemEntity>> fsLs(filepath) async {
 }
 
 Future<String> fsGetAppBaseDir(String app) async {
-  final path = await _appPath;
-  final appBaseDir = "${path}/apps/${app}";
+  // TODO: check ".." in app
+  final base = await _appPath;
+  final appBaseDir = path.join(base, "apps", app);
   return appBaseDir;
 }
 
 Future<bool> fsRemoveApp(String app) async {
+  // TODO: check ".." in app
   if (app == "") return false;
-  final path = await _appPath;
-  final appBaseDir = "${path}/apps/${app}";
+  final base = await _appPath;
+  final appBaseDir = path.join(base, "apps", app);
   final dir = Directory(appBaseDir);
   if (await dir.exists()) {
     await dir.delete(recursive: true);
@@ -93,10 +95,11 @@ Future<bool> fsRemoveApp(String app) async {
 }
 
 Future<bool> fsMoveApp(String app, String newname) async {
+  // TODO: check ".." in app and newname
   if (app == "" || newname == "" || app == newname) return false;
-  final path = await _appPath;
-  final appBaseDir = "${path}/apps/${app}";
-  final newBaseDir = "${path}/apps/${newname}";
+  final base = await _appPath;
+  final appBaseDir = path.join(base, "apps", app);;
+  final newBaseDir = path.join(base, "app", newname);;
   final dir = Directory(appBaseDir);
   if (await dir.exists()) {
     await dir.rename(newBaseDir);

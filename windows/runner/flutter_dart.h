@@ -17,10 +17,6 @@
 #include <algorithm>
 #include "utils.h"
 
-class JSONbase;
-class JSONstring;
-class JSONarray;
-class JSONobject;
 class NodeAppMonitor;
 class NodeBaseEventChannelHandler;
 
@@ -53,6 +49,7 @@ static std::wstring s2ws(const std::string& s)
 */
 
 // ref: https://stackoverflow.com/questions/2896600/how-to-replace-all-occurrences-of-a-character-in-string
+/*
 static int replaceAllW(std::wstring& str, const std::wstring& from, const std::wstring& to) {
     int count = 0;
     size_t start_pos = 0;
@@ -63,73 +60,7 @@ static int replaceAllW(std::wstring& str, const std::wstring& from, const std::w
     }
     return count;
 }
-
-class JSONbase {
-public:
-    JSONbase() {}
-    virtual ~JSONbase() = default;
-    virtual std::wstring toJSON() = 0;
-};
-class JSONstring: public JSONbase, public std::wstring {
-public:
-    JSONstring(const wchar_t *str) : std::wstring(str) {}
-    JSONstring(std::wstring &str) : std::wstring(str) {}
-    std::wstring toJSON() {
-        std::wstring* r = this;
-        replaceAllW(*r, std::wstring(L"\\"), std::wstring(L"\\\\"));
-        replaceAllW(*r, std::wstring(L"\""), std::wstring(L"\\\""));
-        return L"\"" + (*r) + L"\"";
-    }
-};
-class JSONarray : public JSONbase, public std::vector<JSONbase*> {
-public:
-    JSONarray() {}
-    std::wstring toJSON() {
-        std::vector<JSONbase*> *arr = this;
-        size_t cur = arr->size();
-        std::wostringstream r;
-        r << "[";
-        auto arrEnd = arr->end();
-        for (auto it = arr->begin(); it != arrEnd; it++) {
-            JSONbase *item = *it;
-            if (item) {
-                r << item->toJSON();
-            } else {
-                r << "null";
-            }
-            if (cur > 1) r << ",";
-            cur --;
-        }
-        r << "]";
-        return r.str();
-    }
-};
-class JSONobject : public JSONbase, public std::map<std::wstring, JSONbase*> {
-public:
-    JSONobject() {}
-    std::wstring toJSON() {
-        std::map<std::wstring, JSONbase*> *obj = this;
-        size_t cur = obj->size();
-        std::wostringstream r;
-        r << "{";
-        auto objEnd = obj->end();
-        for (auto it = obj->begin(); it != objEnd; it++) {
-            std::wstring key_ = it->first;
-            JSONstring key(key_);
-            JSONbase *item = it->second;
-            r << key.toJSON() << ":";
-            if (item) {
-                r << item->toJSON();
-            } else {
-                r << "null";
-            }
-            if (cur > 1) r << ",";
-            cur --;
-        }
-        r << "}";
-        return r.str();
-    }
-};
+*/
 
 class NodeAppMonitor {
 public:
@@ -211,25 +142,26 @@ public:
         this->Stop();
         return new NodeAppMonitor(this->name, this->cmd);
     }
-    std::wstring toJSONstr() {
-        JSONobject r;
-        JSONstring rstat(L"");
+    flutter::EncodableValue toJSONstr() {
+        std::string rstat = "none";
         switch (this->stat) {
             case NodeAppSTAT::RUNNING:
-                rstat += L"running";
+                rstat += "running";
                 break;
             case NodeAppSTAT::DEAD:
-                rstat += L"dead";
+                rstat += "dead";
                 break;
             case NodeAppSTAT::READY:
-                rstat += L"new";
+                rstat += "new";
                 break;
             case NodeAppSTAT::BORN:
             default:
-                rstat += L"none";
+                break;
         }
-        r.insert_or_assign(std::wstring(L"state"), &rstat);
-        return r.toJSON();
+        flutter::EncodableMap r = {
+                {flutter::EncodableValue("state"), flutter::EncodableValue(rstat)},
+        };
+        return flutter::EncodableValue(r);
     }
 
     bool IsRunning() { return this->stat == NodeAppSTAT::RUNNING; }
@@ -264,7 +196,7 @@ private:
 
 // ref: https://stackoverflow.com/questions/24764477/network-adapter-information-in-c
 // ref: https://learn.microsoft.com/zh-cn/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersaddresses?redirectedfrom=MSDN
-static int getIPAdresses(JSONobject &out) {
+static int getIPAdresses(flutter::EncodableMap& out) {
     int count = 0;
 
     char buf[32*1024];
@@ -284,15 +216,8 @@ static int getIPAdresses(JSONobject &out) {
             int n = (int)(pCurrAddresses->PhysicalAddressLength);
             if (n > 0) {
                 // pCurrAddresses->AdapterName is in a format like {xxxx-yyyy-zzzz...}
-                std::wstring name(pCurrAddresses->FriendlyName);
-                JSONarray* arr;
-                auto arr_ = out.find(name);
-                if (arr_ == out.end()) {
-                    arr = new JSONarray();
-                    // TODO: if arr == null
-                } else {
-                    arr = (JSONarray*)(arr_->second);
-                }
+                flutter::EncodableValue name(Utf8FromUtf16(pCurrAddresses->FriendlyName));
+                flutter::EncodableList arr;
                 for (IP_ADAPTER_UNICAST_ADDRESS* pUnicast = pCurrAddresses->FirstUnicastAddress; pUnicast != NULL; pUnicast = pUnicast->Next) {
                     wchar_t ipAddress[INET6_ADDRSTRLEN] = {0};
                     void* pAddr = nullptr;
@@ -309,8 +234,7 @@ static int getIPAdresses(JSONobject &out) {
                     // Convert the binary IP address to a string
                     if (pAddr) {
                         InetNtop(pUnicast->Address.lpSockaddr->sa_family, pAddr, ipAddress, sizeof(ipAddress));
-                        std::wstring ipstr(ipAddress);
-                        arr->push_back(new JSONstring(ipstr));
+                        arr.push_back(flutter::EncodableValue(Utf8FromUtf16(ipAddress)));
                     }
                 }
                 out.insert_or_assign(name, arr);
@@ -414,24 +338,16 @@ bool appRestart(const std::string &name) {
     services.insert_or_assign(name, newapp);
     return true;
 }
-std::string appStat(const std::string &name) {
+flutter::EncodableValue appStat(const std::string &name) {
     auto app_ = services.find(name);
-    if (app_ == services.end()) return std::string("{}");
+    if (app_ == services.end()) return flutter::EncodableValue(flutter::EncodableMap());
     NodeAppMonitor *app = app_->second;
-    return Utf8FromUtf16(app->toJSONstr().c_str());
+    return app->toJSONstr();
 }
-std::string utilGetIPs() {
-    JSONobject ips;
+flutter::EncodableValue utilGetIPs() {
+    flutter::EncodableMap ips;
     getIPAdresses(ips);
-    std::wstring r(ips.toJSON());
-    for (auto p = ips.begin(); p != ips.end(); p++) {
-        JSONarray *arr = (JSONarray*)(p->second);
-        for (auto i = arr->begin(); i != arr->end(); i++) {
-            delete *i;
-        }
-        delete arr;
-    }
-    return Utf8FromUtf16(r.c_str());
+    return flutter::EncodableValue(ips);
 }
 void utilBrowserOpen(const std::string &url) {
     if (url.rfind("http:", 0) != 0 && url.rfind("https:", 0) != 0) return;
@@ -458,7 +374,7 @@ void InitMethodChannel(flutter::FlutterEngine* flutter_instance) {
                     auto name_ = args->find(flutter::EncodableValue("name"));
                     if (name_ == args->end()) RETURN_BADARG_ERR(app.stat);
                     std::string name = std::get<std::string>(name_->second);
-                    result->Success(flutter::EncodableValue(appStat(name)));
+                    result->Success(appStat(name));
                 }
                 else if (call.method_name().compare("app.start") == 0) {
                     if (args == nullptr) RETURN_BADARG_ERR(app.start);
@@ -493,7 +409,7 @@ void InitMethodChannel(flutter::FlutterEngine* flutter_instance) {
                     result->Success();
                 }
                 else if (call.method_name().compare("util.ip") == 0) {
-                    result->Success(flutter::EncodableValue(utilGetIPs()));
+                    result->Success(utilGetIPs());
                 }
                 else if (call.method_name().compare("util.file.executable") == 0) {
                     // in windows, we may not need to implement this;

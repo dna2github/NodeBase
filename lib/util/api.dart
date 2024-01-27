@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
-import 'dart:convert';
 import 'dart:developer';
 
 class NodeBaseApi {
@@ -11,10 +12,12 @@ class NodeBaseApi {
       <interface>: ["<ipv6>", "<ipv4>", ...]
     } */
     try {
-      var json = jsonDecode(
-          (await api.invokeMethod('util.ip')) as String
-      );
-      return json;
+      var json = await api.invokeMethod('util.ip');
+      Map<String, dynamic> r = {};
+      json.forEach((key, value) {
+        r[key.toString()] = value;
+      });
+      return Future.value(r);
     } catch (e) {
       log("NodeBase [E] getIPs / ${e.toString()}");
       return {};
@@ -37,12 +40,12 @@ class NodeBaseApi {
       state: "none" | "new" | "running" | "dead"
     } */
     try {
-      var json = jsonDecode(
-          (await api.invokeMethod(
-              'app.stat', <String, dynamic>{"name": app}
-          )) as String
-      );
-      return json;
+      var json = await api.invokeMethod('app.stat', <String, dynamic>{"name": app});
+      Map<String, dynamic> r = {};
+      json.forEach((key, value) {
+        r[key.toString()] = value;
+      });
+      return r;
     } catch (e) {
       log("NodeBase [E] appStatus / ${e.toString()}");
       return {};

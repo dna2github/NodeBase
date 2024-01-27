@@ -3,21 +3,23 @@ package net.seven.nodebase.nodebase;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 public class Network {
-    public static JSONobject getIPs() {
+    public static HashMap<String, ArrayList<String>> getIPs() {
         return getIPsFromAndroidApi();
     }
 
-    public static JSONobject getIPsFromAndroidApi() {
-        JSONobject r = new JSONobject();
+    public static HashMap<String, ArrayList<String>> getIPsFromAndroidApi() {
+        HashMap<String, ArrayList<String>> r = new HashMap<>();
         try {
             for (NetworkInterface nic : Collections.list(NetworkInterface.getNetworkInterfaces())) {
                 String nic_name = nic.getName();
                 List<InterfaceAddress> nic_addr = nic.getInterfaceAddresses();
-                JSONarray ips = new JSONarray();
+                ArrayList<String> ips = new ArrayList<>();
                 for (InterfaceAddress ia : nic_addr) {
                     String addr = ia.getAddress().getHostAddress();
                     // skip the address <ip>%<name>
@@ -29,7 +31,7 @@ public class Network {
             Logger.d(
                     "NodeBase",
                     "getIPsFromAndroidApi",
-                    r.toJSONstring()
+                    r.toString()
             );
         } catch (SocketException e) {
             Logger.e(

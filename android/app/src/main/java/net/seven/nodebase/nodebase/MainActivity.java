@@ -6,6 +6,8 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
@@ -59,7 +61,7 @@ public class MainActivity extends FlutterActivity {
                             result.error("app.stat", "empty name", null);
                             return;
                         }
-                        String stat = getNodeAppStatus(name);
+                        var stat = getNodeAppStatus(name);
                         if (stat == null) {
                             result.error("app.stat", "no stat", null);
                             return;
@@ -67,7 +69,7 @@ public class MainActivity extends FlutterActivity {
                         result.success(stat);
                     }
                     case "util.ip" -> {
-                        String ipJsonString = getIPs();
+                        var ipJsonString = getIPs();
                         result.success(ipJsonString);
                     }
                     case "util.browser.open" -> {
@@ -123,10 +125,10 @@ public class MainActivity extends FlutterActivity {
         return ChannelResult.OK;
     }
 
-    public String getNodeAppStatus(String name) {
+    public HashMap<String, Object> getNodeAppStatus(String name) {
         // TODO get NodeMonitor and assemble data as json
         NodeAppMonitor app = NodeAppService.getNodeApp(name);
-        JSONobject json = new JSONobject();
+        HashMap<String, Object> json = new HashMap<>();
         String state = "none";
         if (app != null) {
             if (app.nodebaseIsReady()) state = "new";
@@ -134,12 +136,12 @@ public class MainActivity extends FlutterActivity {
             else if (app.nodebaseIsDead()) state = "dead";
             json.put("state", state);
         }
-        return json.toJSONstring();
+        return json;
     }
 
-    public String getIPs() {
-        JSONobject json = Network.getIPs();
-        return json.toJSONstring();
+    public HashMap<String, ArrayList<String>> getIPs() {
+        var json = Network.getIPs();
+        return json;
     }
 
     public boolean fileExecutablize(String fname) {

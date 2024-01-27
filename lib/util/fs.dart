@@ -68,9 +68,9 @@ Future<List<FileSystemEntity>> fsLs(filepath) async {
   } else {
     final dir = Directory(filename);
     final entities = await dir.list(recursive: false, followLinks: false).toList();
-    entities.forEach((FileSystemEntity entity) {
+    for (var entity in entities) {
       list.add(entity);
-    });
+    }
   }
   return list;
 }
@@ -98,8 +98,8 @@ Future<bool> fsMoveApp(String app, String newname) async {
   // TODO: check ".." in app and newname
   if (app == "" || newname == "" || app == newname) return false;
   final base = await _appPath;
-  final appBaseDir = path.join(base, "apps", app);;
-  final newBaseDir = path.join(base, "app", newname);;
+  final appBaseDir = path.join(base, "apps", app);
+  final newBaseDir = path.join(base, "app", newname);
   final dir = Directory(appBaseDir);
   if (await dir.exists()) {
     await dir.rename(newBaseDir);

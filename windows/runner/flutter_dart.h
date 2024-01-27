@@ -24,44 +24,6 @@ enum NodeAppSTAT {
     BORN, READY, RUNNING, DEAD
 };
 
-/*
- * we already have `Utf8FromUtf16` in the utils.h, which provided by Flutter generator
-// ref: https://codereview.stackexchange.com/questions/419/converting-between-stdwstring-and-stdstring
-static std::string ws2s(const std::wstring& s)
-{
-    int len;
-    int slength = (int)s.length() + 1;
-    len = WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, 0, 0, 0, 0);
-    std::string r(len, '\0');
-    WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, &r[0], len, 0, 0);
-    return r;
-}
- * in addition, we add an impl to convert utf8 to utf16 as `Utf8ToUtf16`
-static std::wstring s2ws(const std::string& s)
-{
-    int len;
-    int slength = (int)s.length() + 1;
-    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-    std::wstring r(len, L'\0');
-    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, &r[0], len);
-    return r;
-}
-*/
-
-// ref: https://stackoverflow.com/questions/2896600/how-to-replace-all-occurrences-of-a-character-in-string
-/*
-static int replaceAllW(std::wstring& str, const std::wstring& from, const std::wstring& to) {
-    int count = 0;
-    size_t start_pos = 0;
-    while((start_pos = str.find(from, start_pos)) != std::wstring::npos) {
-        str.replace(start_pos, from.length(), to);
-        start_pos += to.length();
-        count++;
-    }
-    return count;
-}
-*/
-
 class NodeAppMonitor {
 public:
     NodeAppMonitor(const std::string &name, const std::string &cmd) {

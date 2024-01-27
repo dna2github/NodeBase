@@ -9,6 +9,7 @@ import java.io.File;
 
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
+import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 
@@ -90,6 +91,11 @@ public class MainActivity extends FlutterActivity {
                 }
             }
         });
+
+        new EventChannel(
+                flutterEngine.getDartExecutor().getBinaryMessenger(),
+                "net.seven.nodebase/event"
+        ).setStreamHandler(NodeAppService.getEventHandler());
     }
 
     public ChannelResult startNodeApp(String name, String cmd) {

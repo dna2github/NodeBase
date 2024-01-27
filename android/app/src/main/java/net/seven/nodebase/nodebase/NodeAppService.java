@@ -3,7 +3,12 @@ package net.seven.nodebase.nodebase;
 import java.util.HashMap;
 
 public class NodeAppService {
+    private static final NodeBaseEventHandler eventHandler = new NodeBaseEventHandler();
     private static final HashMap<String, NodeAppMonitor> services = new HashMap<>();
+
+    public static NodeBaseEventHandler getEventHandler() {
+        return eventHandler;
+    }
 
     public static int getRunningNodeAppCount() {
         int count = 0;

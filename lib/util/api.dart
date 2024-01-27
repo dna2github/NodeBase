@@ -4,6 +4,7 @@ import 'dart:developer';
 
 class NodeBaseApi {
   static const api = MethodChannel('net.seven.nodebase/app');
+  static const event = EventChannel('net.seven.nodebase/event');
 
   static Future<Map<String, dynamic>> apiUtilGetIPs() async {
     /* {

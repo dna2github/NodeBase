@@ -4,6 +4,8 @@
 #include <flutter/standard_method_codec.h>
 #include <flutter/method_channel.h>
 #include <flutter/method_result_functions.h>
+#include <flutter/event_channel.h>
+#include <flutter/event_stream_handler_functions.h>
 
 #include <string>
 #include <mutex>
@@ -14,6 +16,13 @@
 #include <numeric>
 #include <algorithm>
 #include "utils.h"
+
+class JSONbase;
+class JSONstring;
+class JSONarray;
+class JSONobject;
+class NodeAppMonitor;
+class NodeBaseEventChannelHandler;
 
 enum NodeAppSTAT {
     BORN, READY, RUNNING, DEAD
@@ -276,7 +285,6 @@ static int getIPAdresses(JSONobject &out) {
             if (n > 0) {
                 // pCurrAddresses->AdapterName is in a format like {xxxx-yyyy-zzzz...}
                 std::wstring name(pCurrAddresses->FriendlyName);
-                printf("%wS ??????????\n", name.c_str());
                 JSONarray* arr;
                 auto arr_ = out.find(name);
                 if (arr_ == out.end()) {
@@ -317,8 +325,60 @@ static int getIPAdresses(JSONobject &out) {
     return count;
 }
 
+class NodeBaseEventChannelHandler {
+public:
+    NodeBaseEventChannelHandler(std::string&& channel_name, flutter::FlutterEngine* flutter_instance) {
+        auto event_channel =
+                std::make_unique<flutter::EventChannel<>>(
+                        flutter_instance->messenger(), channel_name,
+                        &flutter::StandardMethodCodec::GetInstance());
+
+        auto event_channel_handler = std::make_unique<
+                                     flutter::StreamHandlerFunctions<flutter::EncodableValue>>(
+                [this](
+                        const flutter::EncodableValue* arguments,
+                        std::unique_ptr<flutter::EventSink<flutter::EncodableValue>>&& events
+                ) -> std::unique_ptr<flutter::StreamHandlerError<flutter::EncodableValue>> {
+                    std::string name = EncodableValue2String(arguments);
+                    this->sink.insert_or_assign(name, std::move(events));
+                    return nullptr;
+                },
+                [this](const flutter::EncodableValue* arguments)
+                -> std::unique_ptr<flutter::StreamHandlerError<flutter::EncodableValue>> {
+                    // TODO: replace as find and erase
+                    std::string name = EncodableValue2String(arguments);
+                    this->sink.insert_or_assign(name, nullptr);
+                    return nullptr;
+                });
+        event_channel->SetStreamHandler(std::move(event_channel_handler));
+    }
+
+    void postMessage(std::string&& name, std::string&& message) {
+        auto target_ = this->sink.find(name);
+        if (target_ == this->sink.end()) return;
+        if (!target_->second) return;
+        //auto target = target_->second;
+        target_->second->Success(flutter::EncodableValue(message));
+    }
+private:
+    std::string EncodableValue2String(const flutter::EncodableValue* val) {
+        if (val->IsNull()) {
+            return std::string("");
+        }
+
+        if (std::holds_alternative<std::string>(*val)) {
+            return std::get<std::string>(*val);
+        }
+
+        return std::string("");
+    }
+private:
+    std::map<std::string, std::unique_ptr<flutter::EventSink<flutter::EncodableValue>>> sink;
+};
+
 static std::map<std::string, NodeAppMonitor*> services;
 static std::mutex service_lock;
+static std::unique_ptr<NodeBaseEventChannelHandler> eventHandler;
 
 void appStart(const std::string &name, const std::string &cmd) {
     std::lock_guard<std::mutex> guard(service_lock);
@@ -371,7 +431,6 @@ std::string utilGetIPs() {
         }
         delete arr;
     }
-    //return "{\"hello\":[\"aaa\"]}";
     return Utf8FromUtf16(r.c_str());
 }
 void utilBrowserOpen(const std::string &url) {
@@ -461,4 +520,9 @@ void InitMethodChannel(flutter::FlutterEngine* flutter_instance) {
             });
 }
 #undef RETURN_BADARG_ERR
+
+void InitEventChannel(flutter::FlutterEngine* flutter_instance) {
+    eventHandler = std::make_unique<NodeBaseEventChannelHandler>(
+            std::string("net.seven.nodebase/event"), flutter_instance);
+}
 #endif // _FLUTTER_DART_

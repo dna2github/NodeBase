@@ -35,6 +35,7 @@ bool FlutterWindow::OnCreate() {
   }
   RegisterPlugins(flutter_controller_->engine());
   InitMethodChannel(flutter_controller_->engine());
+  InitEventChannel(flutter_controller_->engine());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {

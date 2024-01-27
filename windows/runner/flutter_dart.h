@@ -104,17 +104,17 @@ public:
         this->Stop();
         return new NodeAppMonitor(this->name, this->cmd);
     }
-    flutter::EncodableValue toJSONstr() {
+    flutter::EncodableValue toJSON() {
         std::string rstat = "none";
         switch (this->stat) {
             case NodeAppSTAT::RUNNING:
-                rstat += "running";
+                rstat = "running";
                 break;
             case NodeAppSTAT::DEAD:
-                rstat += "dead";
+                rstat = "dead";
                 break;
             case NodeAppSTAT::READY:
-                rstat += "new";
+                rstat = "new";
                 break;
             case NodeAppSTAT::BORN:
             default:
@@ -304,7 +304,7 @@ flutter::EncodableValue appStat(const std::string &name) {
     auto app_ = services.find(name);
     if (app_ == services.end()) return flutter::EncodableValue(flutter::EncodableMap());
     NodeAppMonitor *app = app_->second;
-    return app->toJSONstr();
+    return app->toJSON();
 }
 flutter::EncodableValue utilGetIPs() {
     flutter::EncodableMap ips;

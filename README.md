@@ -10,12 +10,12 @@ For previous mature version, please explore source code on
 
 ## Rewrite Progress
 
-[x] migrate kotlin service code
-[x] implement windows adapter for MethodChannel and EventChannel
-[ ] rewrite new design UI in dart
-[ ] implement linux adapter
-[ ] implement macosx adapter
-[ ] implement web+ios adapter
+- [x] migrate kotlin service code
+- [x] implement windows adapter for MethodChannel and EventChannel
+- [ ] rewrite new design UI in dart
+- [ ] implement linux adapter
+- [ ] implement macosx adapter
+- [ ] implement web+ios adapter
 
 ## How to use
 
@@ -72,12 +72,13 @@ This project is a starting point for a Flutter application.
 
 A few resources to get you started if this is your first Flutter project:
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
 
 ##### NodeJS/Python binary for ARM
 
@@ -130,26 +131,4 @@ exec ${BASE}/bin/go run $@
 create a new platform in NodeBase and download go wrapper from `file:///sdcard/go`;
 
 then write a tiny server to have a try. ref: https://github.com/stallpool/halfbase/blob/master/golang/tinyserver/main.go
-
-##### Notice
-
-currently NodeBase support kill a program with 1-level children, for example `go run main.go` will spawn a child process `main`;
-if click on `stop` button, NodeBase can kill the `go run` and its child `main`.
-
-if remove `exec` in the `go` wrapper shell script, the shell script will run in `sh`, it spawn `go run` and the `go run` spawn `main`;
-when `stop` the application, NodeBase will merely kill `sh` and its child `go run`; but `main` will still be running there,
-which may cause next `start` failure (like port has already been used) and need to kill whole NodeBase for cleanup.
-
-## Flutter Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
 

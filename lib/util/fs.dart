@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/cupertino.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
@@ -164,6 +167,71 @@ Future<void> fsDownload(String filename, String url) async {
     res.pipe(File(filename).openWrite());
   } finally {
     client.close();
+  }
+}
+
+Future<void> fsProgressDownload(
+    String filename, String url,
+    StreamController progressToken,
+    StreamController cancelToken) async {
+  // ref: filled by GPT 4 turbo and optimized
+  final httpClient = HttpClient();
+  try {
+    // Parse the URL
+    final uri = Uri.parse(url);
+    // Open a request
+    final request = await httpClient.getUrl(uri);
+    // Send the request
+    final response = await request.close();
+
+    // Check if the response is OK (status code 200)
+    if (response.statusCode == 200) {
+      // Get the total length of the file
+      final contentLength = response.contentLength;
+      int downloadedLength = 0;
+
+      // Create a new file (overwrite if exists)
+      final file = File(filename);
+      final fileSink = file.openWrite();
+
+      // Listen for response data
+      final subscription = response.listen(
+            (List<int> chunk) {
+          // Update the downloaded length
+          downloadedLength += chunk.length;
+          // Write the chunk to file
+          fileSink.add(chunk);
+
+          // Calculate and print the download progress
+          double progress_rate = downloadedLength / contentLength!;
+          progressToken.add([downloadedLength, contentLength, progress_rate]);
+          debugPrint('Download progress: ${(progress_rate * 100).toStringAsFixed(2)}%');
+        },
+        onDone: () async {
+          // Close the fileSink to ensure all bytes are written
+          await fileSink.close();
+          debugPrint('Download completed: $filename');
+        },
+        onError: (e) {
+          debugPrint('Error: $e');
+        },
+        cancelOnError: true,
+      );
+
+      cancelToken.stream.listen((_) {
+        subscription.cancel();
+        fileSink.close();
+        httpClient.close();
+      });
+    } else {
+      debugPrint('Error: Server returned status code ${response.statusCode}');
+    }
+  } catch (e) {
+    debugPrint('Error: $e');
+  } finally {
+    progressToken.close();
+    cancelToken.close();
+    httpClient.close();
   }
 }
 

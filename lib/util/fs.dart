@@ -53,8 +53,8 @@ Future<Object> fsGetEntity(filepath) async {
 }
 
 Future<Directory> fsMkdir(filepath) async {
-  final path = await _appPath;
-  return await Directory("$path$filepath").create(recursive: true);
+  final base = await _appPath;
+  return await Directory(path.join(base, filepath)).create(recursive: true);
 }
 
 Future<List<FileSystemEntity>> fsLs(filepath) async {

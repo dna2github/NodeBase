@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as path;
@@ -26,7 +25,7 @@ Future<String> fsReadAppFileAsString(filepath) async {
     String contents = await file.readAsString();
     return contents;
   } catch (e) {
-    log("NodeBase [E] fsReadAppFileAsString / ${e.toString()}");
+    log("NodeBase [E] fsReadAppFileAsString ... ${e.toString()}");
     return "";
   }
 }
@@ -111,50 +110,55 @@ Future<bool> fsMoveApp(String app, String newname) async {
 }
 
 Future<void> fsZipFiles(String zipFilename, List<File> files) async {
-  // TODO: try...catch...
+  try {
+    // Create an empty archive
+    final archive = Archive();
 
-  // Create an empty archive
-  final archive = Archive();
+    for (final file in files) {
+      // Read the file bytes
+      final bytes = file.readAsBytesSync();
 
-  for (final file in files) {
-    // Read the file bytes
-    final bytes = file.readAsBytesSync();
+      // Add the file to the archive
+      archive.addFile(ArchiveFile(
+        path.basename(file.path), // File name
+        bytes.length, // File size
+        bytes, // File data
+      ));
+    }
 
-    // Add the file to the archive
-    archive.addFile(ArchiveFile(
-      path.basename(file.path), // File name
-      bytes.length, // File size
-      bytes, // File data
-    ));
+    // Encode the archive to Zip
+    final zipData = ZipEncoder().encode(archive);
+
+    // Write the zipped bytes to a file
+    File(zipFilename)
+      ..createSync(recursive: true) // Create the file if it doesn't exist
+      ..writeAsBytesSync(zipData!);
+  } catch(e) {
+    log("NodeBase [E] fsZipFiles ... ${e.toString()}");
   }
-
-  // Encode the archive to Zip
-  final zipData = ZipEncoder().encode(archive);
-
-  // Write the zipped bytes to a file
-  File(zipFilename)
-    ..createSync(recursive: true) // Create the file if it doesn't exist
-    ..writeAsBytesSync(zipData!);
 }
 
 Future<void> fsUnzipFiles(String zipFilename, String dstDir) async {
-  // TODO: try...catch...
-  final bytes = File(zipFilename).readAsBytesSync();
+  try {
+    final bytes = File(zipFilename).readAsBytesSync();
 
-  // Decode the Zip archive
-  final archive = ZipDecoder().decodeBytes(bytes);
+    // Decode the Zip archive
+    final archive = ZipDecoder().decodeBytes(bytes);
 
-  for (final file in archive) {
-    final filename = file.name;
-    if (file.isFile) {
-      final data = file.content as List<int>;
-      File(path.join(dstDir, filename))
-        ..createSync(recursive: true)
-        ..writeAsBytesSync(data);
-    } else {
-      Directory(path.join(dstDir, filename))
-        .createSync(recursive: true);
+    for (final file in archive) {
+      final filename = file.name;
+      if (file.isFile) {
+        final data = file.content as List<int>;
+        File(path.join(dstDir, filename))
+          ..createSync(recursive: true)
+          ..writeAsBytesSync(data);
+      } else {
+        Directory(path.join(dstDir, filename))
+            .createSync(recursive: true);
+      }
     }
+  } catch (e) {
+    log("NodeBase [E] fsUnzipFiles ... ${e.toString()}");
   }
 }
 
@@ -203,17 +207,17 @@ Future<void> fsProgressDownload(
           fileSink.add(chunk);
 
           // Calculate and print the download progress
-          double progress_rate = downloadedLength / contentLength!;
-          progressToken.add([downloadedLength, contentLength, progress_rate]);
-          debugPrint('Download progress: ${(progress_rate * 100).toStringAsFixed(2)}%');
+          double progressRate = downloadedLength / contentLength!;
+          progressToken.add([downloadedLength, contentLength, progressRate]);
+          log('NodeBase [D] fsProgressDownload ... progress ${(progressRate * 100).toStringAsFixed(2)}%');
         },
         onDone: () async {
           // Close the fileSink to ensure all bytes are written
           await fileSink.close();
-          debugPrint('Download completed: $filename');
+          log('NodeBase [D] fsProgressDownload ... complete $filename');
         },
         onError: (e) {
-          debugPrint('Error: $e');
+          log('NodeBase [E] fsProgressDownload ... $e');
         },
         cancelOnError: true,
       );
@@ -224,10 +228,10 @@ Future<void> fsProgressDownload(
         httpClient.close();
       });
     } else {
-      debugPrint('Error: Server returned status code ${response.statusCode}');
+      log('NodeBase [E] fsProgressDownload ... http ${response.statusCode}');
     }
   } catch (e) {
-    debugPrint('Error: $e');
+    log('NodeBase [E] fsProgressDownload ... $e');
   } finally {
     progressToken.close();
     cancelToken.close();

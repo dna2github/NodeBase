@@ -35,6 +35,15 @@ class NodeBaseApi {
     }
   }
 
+  static Future<String> apiUtilGetArch() async {
+    try {
+      return await api.invokeMethod("util.arch");
+    } catch(e) {
+      log("NodeBase [E] utilGetArch / ${e.toString()}");
+      return "";
+    }
+  }
+
   static Future<Map<String, dynamic>> apiAppStatus(String app) async {
     /* {
       state: "none" | "new" | "running" | "dead"

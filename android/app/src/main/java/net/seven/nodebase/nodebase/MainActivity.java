@@ -90,6 +90,9 @@ public class MainActivity extends FlutterActivity {
                         fileExecutablize(fname);
                         result.success(true);
                     }
+                    case "util.arch" -> {
+                        result.success(External.getArch());
+                    }
                 }
             }
         });

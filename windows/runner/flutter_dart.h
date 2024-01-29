@@ -315,6 +315,32 @@ void utilBrowserOpen(const std::string &url) {
     if (url.rfind("http:", 0) != 0 && url.rfind("https:", 0) != 0) return;
     ShellExecuteA(0, 0, url.c_str(), 0, 0 , SW_SHOW );
 }
+flutter::EncodableValue utilGetArch() {
+    std::string arch("windows-");
+    SYSTEM_INFO si;
+    // XXX: GetSystemInfo(&si) for old windows, maybe we can use LoadLibrary for test
+    GetNativeSystemInfo(&si);
+    switch(si.wProcessorArchitecture) {
+        // compatible with GetSystemInfo
+        case PROCESSOR_ARCHITECTURE_AMD64:
+            arch += "x64|x86";
+            break;
+        case PROCESSOR_ARCHITECTURE_INTEL:
+            arch += "x86";
+            break;
+        // new
+        case PROCESSOR_ARCHITECTURE_ARM:
+            arch += "arm";
+            break;
+        case PROCESSOR_ARCHITECTURE_ARM64:
+            arch += "arm64|arm";
+            break;
+        case PROCESSOR_ARCHITECTURE_IA64:
+            arch += "x64|x86";
+            break;
+    }
+    return flutter::EncodableValue(arch);
+}
 
 #define RETURN_BADARG_ERR(x) { result->Error("BAD_ARGS", "Invalid argument type for '" #x "'"); return; }
 void InitMethodChannel(flutter::FlutterEngine* flutter_instance) {
@@ -391,6 +417,9 @@ void InitMethodChannel(flutter::FlutterEngine* flutter_instance) {
                     std::string url = std::get<std::string>(url_->second);
                     utilBrowserOpen(url);
                     result->Success();
+                }
+                else if (call.method_name().compare("util.arch") == 0) {
+                    result->Success(utilGetArch());
                 }
                 else {
                     result->NotImplemented();

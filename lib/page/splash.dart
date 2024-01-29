@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../util/event.dart' as event;
+import '../ctrl/nodebase.dart' as nodebase;
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -17,7 +18,7 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    // TODO: trigger app init process in controller service
+    nodebase.instance.initializeApp();
     initListener = event.initializeToken.stream.listen((event) {
       if (!initCompleter.isCompleted) {
         initCompleter.complete();

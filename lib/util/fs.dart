@@ -166,6 +166,13 @@ Future<void> fsUnzipFiles(String zipFilename, String dstDir) async {
   }
 }
 
+Future<void> fsGuaranteeDir(String filename) async {
+  final dir = Directory(path.dirname(filename));
+  if (!dir.existsSync()) {
+    dir.create(recursive: true);
+  }
+}
+
 Future<void> fsDownload(String filename, String url) async {
   var urlobj = Uri.parse(url);
   var client = HttpClient();

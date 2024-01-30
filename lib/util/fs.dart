@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:path_provider/path_provider.dart';
 import 'package:archive/archive.dart';
+import 'package:nodebase/util/api.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'dart:developer';
@@ -12,10 +12,9 @@ import 'dart:developer';
 var _appPath_ = "";
 Future<String> get _appPath async {
   if (_appPath_ != "") return _appPath_;
-  var directory = await getApplicationDocumentsDirectory();
-  _appPath_ = directory.path;
+  _appPath_ = await NodeBaseApi.apiUtilGetWorkspacePath();
   log("NodeBase [I] app path: $_appPath_");
-  return directory.path;
+  return _appPath_;
 }
 
 Future<File> fsGetAppFileReference(filepath) async {

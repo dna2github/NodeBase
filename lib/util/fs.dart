@@ -9,8 +9,12 @@ import 'dart:developer';
 // getApplicationDocumentsDirectory -> /data/data/app/...
 // getExternalStorageDirectory      -> /storage/sdcard-external/android/data/app/...
 
+var _appPath_ = "";
 Future<String> get _appPath async {
-  final directory = await getApplicationDocumentsDirectory();
+  if (_appPath_ != "") return _appPath_;
+  var directory = await getApplicationDocumentsDirectory();
+  _appPath_ = directory.path;
+  log("NodeBase [I] app path: $_appPath_");
   return directory.path;
 }
 

@@ -1,6 +1,8 @@
 package net.seven.nodebase.nodebase;
 
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -132,6 +134,12 @@ public class NodeAppMonitor extends Thread {
 
     @Override
     public void run() {
+        Handler uiRunner;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            uiRunner = Handler.createAsync(Looper.getMainLooper());
+        } else {
+            uiRunner = new Handler(Looper.getMainLooper());
+        }
         try {
             this.nodebaseStat = STAT.READY;
             // TODO event/onReady
@@ -159,6 +167,17 @@ public class NodeAppMonitor extends Thread {
                             "started (%d / %s)",
                             getId(), this.nodebaseName)
             );
+
+            uiRunner.post(new Runnable() {
+                @Override
+                public void run() {
+                    ArrayList<String> r = new ArrayList<>();
+                    r.add("start");
+                    r.add(nodebaseName);
+                    NodeAppService.getEventHandler().postMessage("app", r);
+                }
+            });
+
             this.nodebaseProcess.waitFor();
         } catch (IOException e) {
             Logger.e(
@@ -192,6 +211,16 @@ public class NodeAppMonitor extends Thread {
                             "stopped (%d / %s)",
                             getId(), this.nodebaseName)
             );
+
+            uiRunner.post(new Runnable() {
+                @Override
+                public void run() {
+                    ArrayList<String> r = new ArrayList<>();
+                    r.add("stop");
+                    r.add(nodebaseName);
+                    NodeAppService.getEventHandler().postMessage("app", r);
+                }
+            });
         }
     }
 }

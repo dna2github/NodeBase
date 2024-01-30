@@ -22,7 +22,7 @@ public class NodeBaseEventHandler implements EventChannel.StreamHandler {
         }
     }
 
-    public synchronized void postMessage(String name, String message) {
+    public synchronized void postMessage(String name, Object message) {
         EventChannel.EventSink ch = sink.get(name);
         if (ch == null) return;
         ch.success(message);

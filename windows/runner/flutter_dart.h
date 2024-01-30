@@ -19,6 +19,7 @@
 
 class NodeAppMonitor;
 class NodeBaseEventChannelHandler;
+void utilEventPostMessage(std::string&& name, flutter::EncodableValue&& val);
 
 enum NodeAppSTAT {
     BORN, READY, RUNNING, DEAD
@@ -75,10 +76,25 @@ public:
             return;
         }
         this->stat = NodeAppSTAT::RUNNING;
+
+        {
+            flutter::EncodableList r;
+            r.push_back(flutter::EncodableValue("start"));
+            r.push_back(flutter::EncodableValue(name));
+            utilEventPostMessage("app", flutter::EncodableValue(r));
+        }
+
         WaitForSingleObject( this->pi.hProcess, INFINITE );
         this->stat = NodeAppSTAT::DEAD;
         CloseHandle( this->pi.hProcess );
         CloseHandle( this->pi.hThread );
+
+        {
+            flutter::EncodableList r;
+            r.push_back(flutter::EncodableValue("stop"));
+            r.push_back(flutter::EncodableValue(name));
+            utilEventPostMessage("app", flutter::EncodableValue(r));
+        }
     }
 
     void Stop() {
@@ -239,12 +255,12 @@ public:
         event_channel->SetStreamHandler(std::move(event_channel_handler));
     }
 
-    void postMessage(std::string&& name, std::string&& message) {
+    void postMessage(std::string&& name, flutter::EncodableValue message) {
         auto target_ = this->sink.find(name);
         if (target_ == this->sink.end()) return;
         if (!target_->second) return;
         //auto target = target_->second;
-        target_->second->Success(flutter::EncodableValue(message));
+        target_->second->Success(message);
     }
 private:
     std::string EncodableValue2String(const flutter::EncodableValue* val) {
@@ -265,6 +281,11 @@ private:
 static std::map<std::string, NodeAppMonitor*> services;
 static std::mutex service_lock;
 static std::unique_ptr<NodeBaseEventChannelHandler> eventHandler;
+
+void utilEventPostMessage(std::string&& name, flutter::EncodableValue&& val) {
+    if (eventHandler == nullptr) return;
+    eventHandler->postMessage(std::move(name), val);
+}
 
 void appStart(const std::string &name, const std::string &cmd) {
     std::lock_guard<std::mutex> guard(service_lock);

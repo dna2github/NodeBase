@@ -341,6 +341,18 @@ flutter::EncodableValue utilGetArch() {
     }
     return flutter::EncodableValue(arch);
 }
+flutter::EncodableValue utilWorkspaceBaseDir() {
+    TCHAR buf[1024];
+    if (!GetModuleFileName(NULL, buf, 1024)) return flutter::EncodableValue(std::string(""));
+    buf[1023] = 0;
+    TCHAR* last = wcsrchr(buf, L'\\');
+    if (last == nullptr || last == buf || last == &(buf[1]) || last == &(buf[2])) {
+        // not found, buf = "\\", buf = "\\\\", buf = "c:\\"
+        return flutter::EncodableValue(std::string(""));
+    }
+    last[0] = 0;
+    return flutter::EncodableValue(Utf8FromUtf16(buf));
+}
 
 #define RETURN_BADARG_ERR(x) { result->Error("BAD_ARGS", "Invalid argument type for '" #x "'"); return; }
 void InitMethodChannel(flutter::FlutterEngine* flutter_instance) {
@@ -420,6 +432,9 @@ void InitMethodChannel(flutter::FlutterEngine* flutter_instance) {
                 }
                 else if (call.method_name().compare("util.arch") == 0) {
                     result->Success(utilGetArch());
+                }
+                else if (call.method_name().compare("util.workspace") == 0) {
+                    result->Success(utilWorkspaceBaseDir());
                 }
                 else {
                     result->NotImplemented();

@@ -93,6 +93,9 @@ public class MainActivity extends FlutterActivity {
                     case "util.arch" -> {
                         result.success(External.getArch());
                     }
+                    case "util.workspace" -> {
+                        result.success(workspaceBaseDir());
+                    }
                 }
             }
         });
@@ -150,5 +153,9 @@ public class MainActivity extends FlutterActivity {
     public boolean fileExecutablize(String fname) {
         File f = new File(fname);
         return f.setExecutable(true, true);
+    }
+
+    public String workspaceBaseDir() {
+        return getContext().getApplicationInfo().dataDir;
     }
 }

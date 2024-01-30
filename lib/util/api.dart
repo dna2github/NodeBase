@@ -44,6 +44,15 @@ class NodeBaseApi {
     }
   }
 
+  static Future<String> apiUtilGetWorkspacePath() async {
+    try {
+      return await api.invokeMethod("util.workspace");
+    } catch(e) {
+      log("NodeBase [E] utilGetWorkspacePath / ${e.toString()}");
+      return "";
+    }
+  }
+
   static Future<Map<String, dynamic>> apiAppStatus(String app) async {
     /* {
       state: "none" | "new" | "running" | "dead"

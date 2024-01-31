@@ -283,7 +283,7 @@ public:
     }
 private:
     std::string EncodableValue2String(const flutter::EncodableValue* val) {
-        if (val->IsNull()) {
+        if (!val || val->IsNull()) {
             return std::string("");
         }
 

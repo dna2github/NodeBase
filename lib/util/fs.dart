@@ -1,10 +1,12 @@
 import 'dart:async';
-
-import 'package:archive/archive.dart';
-import 'package:nodebase/util/api.dart';
-import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'dart:developer';
+
+import 'package:archive/archive.dart';
+import 'package:crypto/crypto.dart';
+import 'package:path/path.dart' as path;
+
+import './api.dart';
 
 // getApplicationDocumentsDirectory -> /data/data/app/...
 // getExternalStorageDirectory      -> /storage/sdcard-external/android/data/app/...
@@ -15,6 +17,10 @@ Future<String> get _appPath async {
   _appPath_ = await NodeBaseApi.apiUtilGetWorkspacePath();
   log("NodeBase [I] app path: $_appPath_");
   return _appPath_;
+}
+
+Future<String> fsGetBaseDir() async {
+  return await _appPath;
 }
 
 Future<File> fsGetAppFileReference(filepath) async {
@@ -249,3 +255,9 @@ Future<void> fsProgressDownload(
   }
 }
 
+Future<String> fsCalcHash(String filename) async {
+  final f = File(filename);
+  if (!f.existsSync()) return "";
+  final digest = await sha256.bind(f.openRead()).first;
+  return digest.toString();
+}

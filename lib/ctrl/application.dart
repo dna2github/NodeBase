@@ -34,12 +34,6 @@ class ApplicationProcess {
 }
 
 class Application {
-  static final Finalizer<Application> _finalizer =
-    Finalizer((Application instance) {
-      instance.listener.cancel();
-      instance.runtime.forEach((_, app) => app.stop());
-    });
-
   late StreamSubscription listener;
 
   Application({
@@ -60,7 +54,6 @@ class Application {
         }
       }
     });
-    _finalizer.attach(this, this, detach: this);
   }
 
   void startProcess(String name, List<String> cmd, Map<String, String> env) {
@@ -82,6 +75,11 @@ class Application {
       if (!app.isDead()) r.add(app);
     });
     return r;
+  }
+
+  void dispose() {
+    listener.cancel();
+    runtime.forEach((_, app) => app.stop());
   }
 
   String baseDir;

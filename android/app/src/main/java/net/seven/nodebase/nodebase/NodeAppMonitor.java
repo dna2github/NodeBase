@@ -7,6 +7,7 @@ import android.os.Looper;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Locale;
 
 public class NodeAppMonitor extends Thread {
@@ -22,11 +23,14 @@ public class NodeAppMonitor extends Thread {
     private Process nodebaseProcess;
     private final String nodebaseName;
     private final String[] nodebaseCmd;
+    private final HashMap<String, String> nodebaseEnv;
 
-    public NodeAppMonitor(String name, String[] cmd) {
+    public NodeAppMonitor(String name, String[] cmd, HashMap<String, String> env) {
         super();
         this.nodebaseName = name;
         this.nodebaseCmd = cmd;
+        this.nodebaseEnv = new HashMap<>();
+        if (env != null) this.nodebaseEnv.putAll(env);
         this.nodebaseStat = STAT.BORN;
         this.nodebaseProcess = null;
     }
@@ -127,7 +131,7 @@ public class NodeAppMonitor extends Thread {
 
     public NodeAppMonitor nodebaseRestart() {
         this.nodebaseStop();
-        NodeAppMonitor m = new NodeAppMonitor(this.nodebaseName, this.nodebaseCmd);
+        NodeAppMonitor m = new NodeAppMonitor(this.nodebaseName, this.nodebaseCmd, this.nodebaseEnv);
         m.start();
         return m;
     }
@@ -157,7 +161,11 @@ public class NodeAppMonitor extends Thread {
             // when stop the service, it guarantees that no race condition for
             // setting nodebaseStat
             this.nodebaseStat = STAT.RUNNING;
-            this.nodebaseProcess = Runtime.getRuntime().exec(this.nodebaseCmd);
+            ProcessBuilder build = new ProcessBuilder(this.nodebaseCmd);
+            // XXX: do we need to check some important variable should not be changed
+            //      e.g. HOME, USER, PWD, ...
+            build.environment().putAll(this.nodebaseEnv);
+            this.nodebaseProcess = build.start();
             // TODO event/onStart
             Logger.i(
                     "NodeBase",

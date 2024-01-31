@@ -13,8 +13,6 @@
 #include <map>
 #include <vector>
 #include <thread>
-#include <numeric>
-#include <algorithm>
 #include "utils.h"
 
 class NodeAppMonitor;
@@ -27,9 +25,10 @@ enum NodeAppSTAT {
 
 class NodeAppMonitor {
 public:
-    NodeAppMonitor(const std::string &name, const std::string &cmd) {
+    NodeAppMonitor(const std::string &name, const std::vector<std::string> &cmd, const std::map<std::string, std::string> &env) {
         this->name = name;
         this->cmd = cmd;
+        this->env = env;
         this->stat = NodeAppSTAT::BORN;
         ZeroMemory(&this->pi, sizeof(this->pi));
         this->pth = std::thread(NodeAppMonitor::Run, this);
@@ -42,18 +41,12 @@ public:
     void Start() {
         this->stat = NodeAppSTAT::READY;
         STARTUPINFO si;
-        ZeroMemory(&si, sizeof(si));
+        SecureZeroMemory(&si, sizeof(si));
         si.cb = sizeof(si);
-        ZeroMemory(&this->pi, sizeof(this->pi));
-        std::vector<std::string> cmdL;
-        this->SplitCmd(cmdL, this->cmd);
-        std::wstring prog = Utf8ToUtf16(cmdL.at(0).c_str());
-        cmdL.erase(cmdL.begin());
-        std::wstring cmdLine = Utf8ToUtf16(
-                std::accumulate(
-                        cmdL.begin(), cmdL.end(), std::string(" ")
-                ).c_str()
-        );
+        SecureZeroMemory(&this->pi, sizeof(this->pi));
+        std::wstring prog = Utf8ToUtf16((*(this->cmd.begin())).c_str());
+        std::wstring cmdLine = this->BuildCommandLine();
+        std::wstring envStr = this->BuildEnvironment();
         // ref: https://forums.codeguru.com/showthread.php?514716-std-string-to-LPSTR
         LPWSTR cmdLineAdapter = &cmdLine.front();
         if (!CreateProcess(
@@ -61,9 +54,9 @@ public:
                 cmdLineAdapter,
                 nullptr,
                 nullptr,
-                FALSE,
-                0,
-                nullptr,
+                TRUE,
+                CREATE_UNICODE_ENVIRONMENT,
+                this->env.size() == 0 ? nullptr : (LPVOID)(envStr.c_str()),
                 nullptr,
                 &si,
                 &pi)
@@ -118,7 +111,7 @@ public:
 
     NodeAppMonitor* restart() {
         this->Stop();
-        return new NodeAppMonitor(this->name, this->cmd);
+        return new NodeAppMonitor(this->name, this->cmd, this->env);
     }
     flutter::EncodableValue toJSON() {
         std::string rstat = "none";
@@ -146,28 +139,54 @@ public:
     bool IsDead() { return this->stat == NodeAppSTAT::DEAD; }
 
     std::string GetName() { return this->name; }
-    std::string GetCmd() { return this->cmd; }
+    std::vector<std::string> GetCmd() { return this->cmd; }
+    std::map<std::string, std::string> GetEnv() { return this->env; }
 private:
-    int SplitCmd(std::vector<std::string> &vec, const std::string &cmdx0) {
+    static void Run(NodeAppMonitor* app) {
+        app->Start();
+    }
+
+    std::wstring BuildCommandLine() {
+        std::wostringstream os;
+        // process command line to deal with space and special characters
+        // e.g. convert 'a "\b c' into '"a ""\\b c"'
+        for (auto i = this->cmd.begin(); i != this->cmd.end(); i++) {
+            std::wstring one = Utf8ToUtf16(i->c_str());
+            this->replaceAllW(one, L"\\", L"\\\\");
+            this->replaceAllW(one, L"\"", L"\"\"");
+            os << L'"' << one << L'"' << L' ';
+        }
+        return os.str();
+    }
+
+    std::wstring BuildEnvironment() {
+        std::wostringstream os;
+        // TODO+XXX: process env to deal with space and special characters
+        for (auto i = this->env.begin(); i != this->env.end(); i++) {
+            os << Utf8ToUtf16(i->first.c_str()) << L'=';
+            os << Utf8ToUtf16(i->second.c_str()) << L'\x00';
+        }
+        os << L'\x00';
+        return os.str();
+    }
+
+    // ref: https://stackoverflow.com/questions/2896600/how-to-replace-all-occurrences-of-a-character-in-string
+    int replaceAllW(std::wstring& str, const std::wstring& from, const std::wstring& to) {
         int count = 0;
-        std::stringstream spliter(cmdx0);
-        std::string item;
-        vec.clear();
-        while (std::getline(spliter, item, '\x01')) {
-            vec.push_back(item);
+        size_t start_pos = 0;
+        while((start_pos = str.find(from, start_pos)) != std::wstring::npos) {
+            str.replace(start_pos, from.length(), to);
+            start_pos += to.length();
             count++;
         }
         return count;
     }
 
-    static void Run(NodeAppMonitor* app) {
-        app->Start();
-    }
-
 private:
     NodeAppSTAT stat;
     std::string name;
-    std::string cmd;
+    std::vector<std::string> cmd;
+    std::map<std::string, std::string> env;
     std::thread pth;
     PROCESS_INFORMATION pi;
 };
@@ -284,10 +303,24 @@ static std::unique_ptr<NodeBaseEventChannelHandler> eventHandler;
 
 void utilEventPostMessage(std::string&& name, flutter::EncodableValue&& val) {
     if (eventHandler == nullptr) return;
+    /*
+     * XXX: annoying warning but no non-hacking solution yet,
+     *      need help from `fml` namespace
+     * general idea:
+     * - when init channels, get current thread id
+     * - using the thread id to get task runner
+     * - do post task here
+     * [eventHandler=eventHandler.get(),name=std::move(name),val]() {...};
+     *
+     * The 'net.seven.nodebase/event' channel sent a message from native to Flutter on
+     * a non-platform thread. Platform channel messages must be sent on the platform
+     * thread. Failure to do so may result in data loss or crashes, and must be fixed
+     * in the plugin or application code creating that channel.
+     */
     eventHandler->postMessage(std::move(name), val);
 }
 
-void appStart(const std::string &name, const std::string &cmd) {
+void appStart(const std::string &name, const std::vector<std::string> &cmd, const std::map<std::string, std::string> &env) {
     std::lock_guard<std::mutex> guard(service_lock);
     auto app_ = services.find(name);
     NodeAppMonitor *app;
@@ -296,7 +329,7 @@ void appStart(const std::string &name, const std::string &cmd) {
         services.erase(name);
         delete app;
     }
-    app = new NodeAppMonitor(name, cmd);
+    app = new NodeAppMonitor(name, cmd, env);
     // TODO: if (!app) {} // memory allocate failure
     services.insert_or_assign(name, app);
 }
@@ -403,9 +436,26 @@ void InitMethodChannel(flutter::FlutterEngine* flutter_instance) {
                     if (name_ == args->end()) RETURN_BADARG_ERR(app.start);
                     auto cmd_ = args->find(flutter::EncodableValue("cmd"));
                     if (cmd_ == args->end()) RETURN_BADARG_ERR(app.start);
+                    auto env_ = args->find(flutter::EncodableValue("env"));
+                    if (env_ == args->end()) RETURN_BADARG_ERR(app.start);
                     std::string name = std::get<std::string>(name_->second);
-                    std::string cmd = std::get<std::string>(cmd_->second);
-                    appStart(name, cmd);
+
+                    flutter::EncodableList cmdRaw = std::get<flutter::EncodableList>(cmd_->second);
+                    std::vector<std::string> cmd;
+                    cmd.reserve(cmdRaw.size());
+                    for (const auto &val : cmdRaw) {
+                        cmd.push_back(std::get<std::string>(val));
+                    }
+
+                    flutter::EncodableMap envRaw = std::get<flutter::EncodableMap>(env_->second);
+                    std::map<std::string, std::string> env;
+                    for (const auto &val : envRaw) {
+                        env.insert_or_assign(
+                                std::get<std::string>(val.first),
+                                std::get<std::string>(val.second)
+                        );
+                    }
+                    appStart(name, cmd, env);
                     result->Success();
                 }
                 else if (call.method_name().compare("app.restart") == 0) {

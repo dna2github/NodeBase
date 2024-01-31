@@ -70,10 +70,14 @@ class NodeBaseApi {
     }
   }
 
-  static Future<void> apiAppStart(String app, List<String> cmd) async {
+  static Future<void> apiAppStart(
+      String app,
+      List<String> cmd,
+      { Map<String, String> env = const {} }
+  ) async {
     try {
       await api.invokeMethod(
-          'app.start', <String, dynamic>{"name": app, "cmd": cmd.join("\x01")}
+          'app.start', <String, dynamic>{"name": app, "cmd": cmd, "env": env}
       );
     } catch (e) {
       log("NodeBase [E] appStart / ${e.toString()}");

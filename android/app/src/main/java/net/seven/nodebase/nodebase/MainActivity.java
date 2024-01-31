@@ -32,12 +32,13 @@ public class MainActivity extends FlutterActivity {
                 switch(call.method) {
                     case "app.start" -> {
                         String name = call.argument("name");
-                        String cmd = call.argument("cmd");
-                        if (name == null || cmd == "" || cmd.length() == 0) {
+                        ArrayList<String> cmd = call.argument("cmd");
+                        HashMap<String, String> env = call.argument("env");
+                        if (name == null || cmd == null || cmd.size() == 0) {
                             result.error("app.start", "empty name or cmd", null);
                             return;
                         }
-                        if (startNodeApp(name, cmd) == ChannelResult.OK) {
+                        if (startNodeApp(name, cmd, env) == ChannelResult.OK) {
                             result.success(true);
                         } else {
                             result.error("app.start", "internal error", null);
@@ -106,14 +107,16 @@ public class MainActivity extends FlutterActivity {
         ).setStreamHandler(NodeAppService.getEventHandler());
     }
 
-    public ChannelResult startNodeApp(String name, String cmd) {
+    public ChannelResult startNodeApp(String name, ArrayList<String> cmd, HashMap<String, String> env) {
         Logger.i(
                 "NodeBase",
                 "startNodeApp",
                 String.format("start node app (%s) -> %s", name, cmd));
         Intent it = new Intent(getContext(), ForegroundNodeService.class);
         ContextCompat.startForegroundService(getContext(), it);
-        NodeAppService.startNodeApp(name, cmd.split("\u0001"));
+        String[] cmd_ = new String[cmd.size()];
+        cmd.toArray(cmd_);
+        NodeAppService.startNodeApp(name, cmd_, env);
         return ChannelResult.OK;
     }
 

@@ -18,7 +18,7 @@ public class NodeAppService {
         return count;
     }
 
-    public static void startNodeApp(String name, String[] cmd) {
+    public static void startNodeApp(String name, String[] cmd, HashMap<String, String> env) {
         synchronized (services) {
             NodeAppMonitor app;
             if (services.containsKey(name)) {
@@ -26,7 +26,7 @@ public class NodeAppService {
                 if (app != null && !app.nodebaseIsDead()) return;
                 // only process if the service is null/dead
             }
-            app = new NodeAppMonitor(name, cmd);
+            app = new NodeAppMonitor(name, cmd, env);
             app.nodebaseStart();
             services.put(name, app);
         }

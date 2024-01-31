@@ -223,7 +223,7 @@ Future<void> fsProgressDownload(
           fileSink.add(chunk);
 
           // Calculate and print the download progress
-          double progressRate = downloadedLength / contentLength!;
+          double progressRate = contentLength == 0 ? 1 : (downloadedLength / contentLength);
           progressToken.add([downloadedLength, contentLength, progressRate]);
           log('NodeBase [D] fsProgressDownload ... progress ${(progressRate * 100).toStringAsFixed(2)}%');
         },

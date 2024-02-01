@@ -24,14 +24,11 @@ Future<String> fsGetBaseDir() async {
   return await _appPath;
 }
 
-Future<File> fsGetAppFileReference(filepath) async {
-  final base = await _appPath;
-  return File(path.join(base, filepath));
-}
-
-Future<String> fsReadAppFileAsString(filepath) async {
+Future<String> fsReadFileAsString(filepath) async {
   try {
-    final file = await fsGetAppFileReference(filepath);
+    final baseDir = await _appPath;
+    if (!filepath.startsWith(baseDir)) return "";
+    final file = File(filepath);
     String contents = await file.readAsString();
     return contents;
   } catch (e) {
@@ -40,15 +37,19 @@ Future<String> fsReadAppFileAsString(filepath) async {
   }
 }
 
-Future<void> fsWriteAppFileAsString(filepath, contents) async {
-  final file = await fsGetAppFileReference(filepath);
+Future<void> fsWriteFileAsString(filepath, contents) async {
+  final baseDir = await _appPath;
+  if (!filepath.startsWith(baseDir)) return;
+  final file = File(filepath);
   file.writeAsString(contents);
 }
 
 Future<Map<String, dynamic>> fsReadFileAsJson(String filepath) async {
   Map<String, dynamic> r = {};
   try {
-    final text = await fsReadAppFileAsString(filepath);
+    final baseDir = await _appPath;
+    if (!filepath.startsWith(baseDir)) return r;
+    final text = await fsReadFileAsString(filepath);
     r = jsonDecode(text);
   } catch(e) {
     log("NodeBase [E] fsReadFileAsString ... $e");
@@ -57,11 +58,11 @@ Future<Map<String, dynamic>> fsReadFileAsJson(String filepath) async {
 }
 
 Future<File> fsWriteFileAsJson(String filepath, Map<String, dynamic> config) async {
-  final f = await fsGetAppFileReference(filepath);
+  final f = File(filepath);
   try {
     await fsGuaranteeDir(f.path);
     final text = jsonEncode(config);
-    await fsWriteAppFileAsString(filepath, text);
+    await fsWriteFileAsString(filepath, text);
   } catch(e) {
     log("NodeBase [E] fsWriteFileAsString ... $e");
   }
@@ -254,15 +255,18 @@ Future<void> fsProgressDownload(
         onDone: () async {
           // Close the fileSink to ensure all bytes are written
           await fileSink.close();
+          progressToken.add([-1, contentLength, 1]);
           log('NodeBase [D] fsProgressDownload ... complete $filename');
         },
         onError: (e) {
+          progressToken.add([-1, contentLength, -1]);
           log('NodeBase [E] fsProgressDownload ... $e');
         },
         cancelOnError: true,
       );
 
       cancelToken.stream.listen((_) {
+        progressToken.add([-1, contentLength, -1]);
         subscription.cancel();
         fileSink.close();
         httpClient.close();
@@ -283,5 +287,10 @@ Future<String> fsCalcHash(String filename) async {
   final f = File(filename);
   if (!f.existsSync()) return "";
   final digest = await sha256.bind(f.openRead()).first;
+  return digest.toString();
+}
+
+Future<String> fsCalcStringHash(String text) async {
+  final digest = sha256.convert(utf8.encode(text));
   return digest.toString();
 }

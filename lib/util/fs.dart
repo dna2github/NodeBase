@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:developer';
 
@@ -42,6 +43,29 @@ Future<String> fsReadAppFileAsString(filepath) async {
 Future<void> fsWriteAppFileAsString(filepath, contents) async {
   final file = await fsGetAppFileReference(filepath);
   file.writeAsString(contents);
+}
+
+Future<Map<String, dynamic>> fsReadFileAsJson(String filepath) async {
+  Map<String, dynamic> r = {};
+  try {
+    final text = await fsReadAppFileAsString(filepath);
+    r = jsonDecode(text);
+  } catch(e) {
+    log("NodeBase [E] fsReadFileAsString ... $e");
+  }
+  return r;
+}
+
+Future<File> fsWriteFileAsJson(String filepath, Map<String, dynamic> config) async {
+  final f = await fsGetAppFileReference(filepath);
+  try {
+    await fsGuaranteeDir(f.path);
+    final text = jsonEncode(config);
+    await fsWriteAppFileAsString(filepath, text);
+  } catch(e) {
+    log("NodeBase [E] fsWriteFileAsString ... $e");
+  }
+  return f;
 }
 
 Future<Object> fsGetEntity(filepath) async {

@@ -2,9 +2,9 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'package:nodebase/util/api.dart';
 import 'package:path/path.dart' as path;
 
+import '../util/api.dart';
 import '../util/fs.dart';
 import '../util/event.dart' as event;
 

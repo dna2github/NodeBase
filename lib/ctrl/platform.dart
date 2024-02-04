@@ -344,21 +344,37 @@ class Platform {
     dir.delete(recursive: true);
   }
 
-  Future<List<String>> listAvailablePlatformList() async {
+  Future<Map<String, List<String>>> listAvailablePlatformList() async {
     final filename = path.join(_getEtcBaseDir(), "nodebase", "plm-$os-$arch.json");
     final config = await fsReadFileAsJson(filename);
-    List<String> r = [];
+    Map<String, List<String>> r = {};
     for (final one in config["items"] ?? []) {
-      r.add(one.toString());
+      final onestr = one.toString();
+      final i = onestr.indexOf('-');
+      final name = onestr.substring(0, i);
+      final version = onestr.substring(i+1);
+      if (r.containsKey(name)) {
+        r[name]?.add(version);
+      } else {
+        r[name] = [version];
+      }
     }
     return r;
   }
-  Future<List<String>> listInstalledPlatformList() async {
+  Future<Map<String, List<String>>> listInstalledPlatformList() async {
     final filename = path.join(_getEtcBaseDir(), "nodebase", "plm-list.json");
     final config = await fsReadFileAsJson(filename);
-    List<String> r = [];
+    Map<String, List<String>> r = {};
     for (final one in config["items"] ?? []) {
-      r.add(one.toString());
+      final onestr = one.toString();
+      final i = onestr.indexOf('-');
+      final name = onestr.substring(0, i);
+      final version = onestr.substring(i+1);
+      if (r.containsKey(name)) {
+        r[name]?.add(version);
+      } else {
+        r[name] = [version];
+      }
     }
     return r;
   }

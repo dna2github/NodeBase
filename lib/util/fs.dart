@@ -221,6 +221,7 @@ Future<void> fsProgressDownload(
     StreamController cancelToken) async {
   // ref: filled by GPT 4 turbo and optimized
   final httpClient = HttpClient();
+  final done = Completer();
   try {
     // Parse the URL
     final uri = Uri.parse(url);
@@ -249,37 +250,43 @@ Future<void> fsProgressDownload(
 
           // Calculate and print the download progress
           double progressRate = contentLength == 0 ? 1 : (downloadedLength / contentLength);
-          if (!progressToken.isClosed) progressToken.add([downloadedLength, contentLength, progressRate]);
+          progressToken.add([downloadedLength, contentLength, progressRate]);
           log('NodeBase [D] fsProgressDownload ... progress ${(progressRate * 100).toStringAsFixed(2)}%');
         },
         onDone: () async {
           // Close the fileSink to ensure all bytes are written
           await fileSink.close();
-          if (!progressToken.isClosed) progressToken.add([-1, contentLength, 1]);
+          progressToken.add([-1, contentLength, 1]);
           log('NodeBase [D] fsProgressDownload ... complete $filename');
+          done.complete();
         },
         onError: (e) {
-          if (!progressToken.isClosed) progressToken.add([-1, contentLength, -1]);
+          progressToken.add([-1, contentLength, -1]);
           log('NodeBase [E] fsProgressDownload ... $e');
+          done.complete('error');
         },
         cancelOnError: true,
       );
 
       cancelToken.stream.listen((_) {
-        if (!progressToken.isClosed) progressToken.add([-1, contentLength, -1]);
+        progressToken.add([-1, contentLength, -1]);
         subscription.cancel();
         fileSink.close();
+        done.complete('cancel');
         httpClient.close();
       });
     } else {
       log('NodeBase [E] fsProgressDownload ... http ${response.statusCode}');
+      done.complete('error');
     }
   } catch (e) {
-    log('NodeBase [E] fsProgressDownload ... $e');
+    log('NodeBase [E] fsProgressDownload ... $e - $url');
+    done.complete('error');
   } finally {
-    progressToken.close();
-    cancelToken.close();
+    await done.future;
     httpClient.close();
+    await progressToken.close();
+    await cancelToken.close();
   }
 }
 

@@ -4,7 +4,8 @@ import '../util/fs.dart';
 import '../util/api.dart';
 import '../util/event.dart' as event;
 
-const defaultPlatformBaseUrl = "https://raw.githubusercontent.com/wiki/dna2github/NodeBase/market/v1";
+//const defaultPlatformBaseUrl = "https://raw.githubusercontent.com/wiki/dna2github/NodeBase/market/v1";
+const defaultPlatformBaseUrl = "http://127.0.0.1:8000";
 
 class NodeBaseController {
   late Application application;
@@ -21,6 +22,10 @@ class NodeBaseController {
     application = Application(baseDir: appBaseDir);
     // TODO: read user settings, app list, platform list
     //       get latest app, platform list from remote
+    await platform.downloadNodeBaseJson();
+    // TODO: check platform version; if no change, skip download list
+    await platform.downloadApplicationListJson();
+    await platform.downloadPlatformListJson();
     event.initializeToken.add(true);
   }
 }

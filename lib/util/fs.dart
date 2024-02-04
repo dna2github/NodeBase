@@ -249,24 +249,24 @@ Future<void> fsProgressDownload(
 
           // Calculate and print the download progress
           double progressRate = contentLength == 0 ? 1 : (downloadedLength / contentLength);
-          progressToken.add([downloadedLength, contentLength, progressRate]);
+          if (!progressToken.isClosed) progressToken.add([downloadedLength, contentLength, progressRate]);
           log('NodeBase [D] fsProgressDownload ... progress ${(progressRate * 100).toStringAsFixed(2)}%');
         },
         onDone: () async {
           // Close the fileSink to ensure all bytes are written
           await fileSink.close();
-          progressToken.add([-1, contentLength, 1]);
+          if (!progressToken.isClosed) progressToken.add([-1, contentLength, 1]);
           log('NodeBase [D] fsProgressDownload ... complete $filename');
         },
         onError: (e) {
-          progressToken.add([-1, contentLength, -1]);
+          if (!progressToken.isClosed) progressToken.add([-1, contentLength, -1]);
           log('NodeBase [E] fsProgressDownload ... $e');
         },
         cancelOnError: true,
       );
 
       cancelToken.stream.listen((_) {
-        progressToken.add([-1, contentLength, -1]);
+        if (!progressToken.isClosed) progressToken.add([-1, contentLength, -1]);
         subscription.cancel();
         fileSink.close();
         httpClient.close();

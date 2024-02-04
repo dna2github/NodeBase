@@ -66,6 +66,7 @@ import '../util/event.dart' as event;
  * /workspace/etc/plm/<hash>(<name>-<version>)/...
  * - name
  * - version
+ * - source
  * - executable
  *    - filename
  *    - type=exe,none
@@ -113,6 +114,7 @@ class Platform {
     final signal = StreamController();
     final done = Completer();
     cancel ??= StreamController();
+    await fsGuaranteeDir(targetFilename);
     event.platformToken.add([name, targetFilename, 0]);
     final download = fsProgressDownload(targetFilename, url, signal, cancel);
     signal.stream.listen((message) {
@@ -189,6 +191,7 @@ class Platform {
     }
   }
   Future<void> downloadApplicationMetaJson(String name, String version, {StreamController? cancel}) async {
+    // python3 -c 'from hashlib import sha256; x="node-v20.11.0";print(x, sha256(x.encode("utf-8")).hexdigest())'
     final hash = await fsCalcStringHash("$name-$version");
     final tmpFilename = path.join(_getTmpBaseDir(), "app-$hash-meta.json");
     final doing = downloadQueue[tmpFilename];
@@ -197,7 +200,7 @@ class Platform {
     downloadQueue[tmpFilename] = action.future;
     try {
       await _downloadFile("app-$name-$version.json", "$baseUrl/app/$os/$arch/$hash.json", tmpFilename, cancel);
-      final targetFilename = path.join(_getEtcBaseDir(), "app", "$hash.json");
+      final targetFilename = path.join(_getEtcBaseDir(), "app", hash, "meta.json");
       await fsGuaranteeDir(targetFilename);
       final tmpFile = File(tmpFilename);
       await tmpFile.copy(targetFilename);
@@ -218,7 +221,7 @@ class Platform {
     downloadQueue[tmpFilename] = action.future;
     try {
       await _downloadFile("plm-$name-$version.json", "$baseUrl/plm/$os/$arch/$hash.json", tmpFilename, cancel);
-      final targetFilename = path.join(_getEtcBaseDir(), "app", "$hash.json");
+      final targetFilename = path.join(_getEtcBaseDir(), "plm", hash, "meta.json");
       await fsGuaranteeDir(targetFilename);
       final tmpFile = File(tmpFilename);
       await tmpFile.copy(targetFilename);
@@ -344,16 +347,28 @@ class Platform {
   Future<List<String>> listAvailablePlatformList() async {
     final filename = path.join(_getEtcBaseDir(), "nodebase", "plm-$os-$arch.json");
     final config = await fsReadFileAsJson(filename);
-    return config["items"] ?? [];
+    List<String> r = [];
+    for (final one in config["items"] ?? []) {
+      r.add(one.toString());
+    }
+    return r;
   }
   Future<List<String>> listInstalledPlatformList() async {
     final filename = path.join(_getEtcBaseDir(), "nodebase", "plm-list.json");
     final config = await fsReadFileAsJson(filename);
-    return config["items"] ?? [];
+    List<String> r = [];
+    for (final one in config["items"] ?? []) {
+      r.add(one.toString());
+    }
+    return r;
   }
   Future<List<String>> listPlatformExecutableList(String name, String version) async {
     final meta = await readPlatformMetaJson(name, version);
-    return meta["executable"] ?? [];
+    List<String> r = [];
+    for (final one in meta["executable"] ?? []) {
+      r.add(one.toString());
+    }
+    return r;
   }
   Future<Map<String, dynamic>> readPlatformConfig(String name, String version) async {
     final hash = await fsCalcStringHash("$name-$version");

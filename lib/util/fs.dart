@@ -222,6 +222,7 @@ Future<void> fsProgressDownload(
   // ref: filled by GPT 4 turbo and optimized
   final httpClient = HttpClient();
   final done = Completer();
+  bool canCancel = false;
   try {
     // Parse the URL
     final uri = Uri.parse(url);
@@ -268,6 +269,7 @@ Future<void> fsProgressDownload(
         cancelOnError: true,
       );
 
+      canCancel = true;
       cancelToken.stream.listen((_) {
         progressToken.add([-1, contentLength, -1]);
         subscription.cancel();
@@ -286,7 +288,8 @@ Future<void> fsProgressDownload(
     await done.future;
     httpClient.close();
     await progressToken.close();
-    await cancelToken.close();
+    // if no stream listener, it will hang there
+    if (canCancel) await cancelToken.close();
   }
 }
 

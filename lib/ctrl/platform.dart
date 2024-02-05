@@ -94,6 +94,10 @@ class Platform {
   String _getPlatformBaseDir() => path.join(baseDir, "workspace", "plm");
 
   void changeBaseUrl(String url) { baseUrl = url; }
+  Future<bool> isSupported() async {
+    final config = await readNodeBaseJson();
+    return config.containsKey("platform-$os-$arch");
+  }
 
   Future<Map<String, dynamic>> readNodeBaseJson() async =>
       fsReadFileAsJson(path.join(_getEtcBaseDir(), "nodebase", "nodebase.json"));
@@ -286,7 +290,7 @@ class Platform {
         await NodeBaseApi.apiUtilMarkExecutable(targetFilename);
       }
       await tmpFile.delete();
-      await _configListRemove("plm-list.json", name, version);
+      await _configListAdd("plm-list.json", name, version);
     } catch (e) {
       action.completeError(e);
     } finally {
@@ -297,7 +301,11 @@ class Platform {
   Future<void> _configListAdd(String target, String name, String version) async {
     final filename = path.join(_getEtcBaseDir(), "nodebase", target);
     final config = await fsReadFileAsJson(filename);
-    List<String> list = config["items"] ?? [];
+    List<dynamic> list_ = config["items"] ?? [];
+    List<String> list = [];
+    for (final one in list_) {
+      list.add(one.toString());
+    }
     final addone = "$name-$version";
     if (!list.contains(addone)) list.add(addone);
     config["items"] = list;
@@ -306,7 +314,11 @@ class Platform {
   Future<void> _configListRemove(String target, String name, String version) async {
     final filename = path.join(_getEtcBaseDir(), "nodebase", target);
     final config = await fsReadFileAsJson(filename);
-    List<String> list = config["items"] ?? [];
+    List<dynamic> list_ = config["items"] ?? [];
+    List<String> list = [];
+    for (final one in list_) {
+      list.add(one.toString());
+    }
     final addone = "$name-$version";
     int i = list.indexOf(addone);
     if (i >= 0) {
@@ -316,15 +328,39 @@ class Platform {
     await fsWriteFileAsJson(filename, config);
   }
 
-  Future<List<String>> listAvailableApplicationList() async {
+  Future<Map<String, List<String>>> listAvailableApplicationList() async {
     final filename = path.join(_getEtcBaseDir(), "nodebase", "app-$os-$arch.json");
     final config = await fsReadFileAsJson(filename);
-    return config["items"] ?? [];
+    Map<String, List<String>> r = {};
+    for (final one in config["items"] ?? []) {
+      final onestr = one.toString();
+      final i = onestr.indexOf('-');
+      final name = onestr.substring(0, i);
+      final version = onestr.substring(i+1);
+      if (r.containsKey(name)) {
+        r[name]?.add(version);
+      } else {
+        r[name] = [version];
+      }
+    }
+    return r;
   }
-  Future<List<String>> listInstalledApplicationList() async {
+  Future<Map<String, List<String>>> listInstalledApplicationList() async {
     final filename = path.join(_getEtcBaseDir(), "nodebase", "app-list.json");
     final config = await fsReadFileAsJson(filename);
-    return config["items"] ?? [];
+    Map<String, List<String>> r = {};
+    for (final one in config["items"] ?? []) {
+      final onestr = one.toString();
+      final i = onestr.indexOf('-');
+      final name = onestr.substring(0, i);
+      final version = onestr.substring(i+1);
+      if (r.containsKey(name)) {
+        r[name]?.add(version);
+      } else {
+        r[name] = [version];
+      }
+    }
+    return r;
   }
   Future<Map<String, dynamic>> readApplicationConfig(String name, String version) async {
     final hash = await fsCalcStringHash("$name-$version");
@@ -341,7 +377,7 @@ class Platform {
     final dir = Directory(path.join(_getApplicationBaseDir(), hash));
     await _configListRemove("app-list.json", name, version);
     if (!dir.existsSync()) return;
-    dir.delete(recursive: true);
+    await dir.delete(recursive: true);
   }
 
   Future<Map<String, List<String>>> listAvailablePlatformList() async {
@@ -401,6 +437,8 @@ class Platform {
     final dir = Directory(path.join(_getPlatformBaseDir(), hash));
     await _configListRemove("plm-list.json", name, version);
     if (!dir.existsSync()) return;
-    dir.delete(recursive: true);
+    // XXX: by default, on windows, MAX_PATh = 260, if too long, will fail
+    // ref: https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
+    await dir.delete(recursive: true);
   }
 }

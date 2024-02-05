@@ -10,6 +10,7 @@ const defaultPlatformBaseUrl = "http://127.0.0.1:8000";
 class NodeBaseController {
   late Application application;
   late Platform platform;
+  bool isSupported = false;
 
   Future<void> initializeApp() async {
     final parts = (await NodeBaseApi.apiUtilGetArch()).split("|")[0].split("-");
@@ -26,6 +27,8 @@ class NodeBaseController {
     // TODO: check platform version; if no change, skip download list
     await platform.downloadApplicationListJson();
     await platform.downloadPlatformListJson();
+
+    isSupported = await platform.isSupported();
     event.initializeToken.add(true);
   }
 }

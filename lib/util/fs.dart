@@ -199,7 +199,7 @@ Future<void> fsUnzipFiles(String zipFilename, String dstDir) async {
 Future<void> fsGuaranteeDir(String filename) async {
   final dir = Directory(path.dirname(filename));
   if (!dir.existsSync()) {
-    dir.create(recursive: true);
+    await dir.create(recursive: true);
   }
 }
 

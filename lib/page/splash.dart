@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:nodebase/page/notSupported.dart';
 import '../util/event.dart' as event;
 import '../ctrl/nodebase.dart' as nodebase;
 
@@ -25,12 +26,13 @@ class _SplashPageState extends State<SplashPage> {
       }
     });
     splashWait().then((_) {
-      // TODO: go to correct page according to current state
-      // Navigator.pushAndRemoveUntil(
-      //    context,
-      //    MaterialPageRoute(builder: (context) => NextPage()),
-      //    (Route<dynamic> route) => false,
-      // )
+      if (!nodebase.instance.isSupported) {
+        Navigator.pushAndRemoveUntil(
+           context,
+           MaterialPageRoute(builder: (context) => const NotSupportedPage()),
+           (Route<dynamic> route) => false,
+        );
+      }
     });
     // debug: Future.delayed(const Duration(seconds: 8)).then((_) => event.initializeToken.add(true));
   }

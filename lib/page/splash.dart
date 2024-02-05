@@ -55,7 +55,6 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return const Scaffold(
       body: Center(
         child: Column(

@@ -8,19 +8,22 @@ class ApplicationProcess {
   ApplicationProcess({
     required this.name,
     required this.cmd,
+    this.platform = "-",
+    this.env = const {},
   });
 
   String name;
   List<String> cmd;
-  Map<String, String> env = {};
+  Map<String, String> env;
+  String platform;
   String state = "new";
 
-  void start() {
-    NodeBaseApi.apiAppStart(name, cmd, env: env);
+  Future<void> start() async {
+    await NodeBaseApi.apiAppStart(name, cmd, env: env);
   }
 
-  void stop() {
-    NodeBaseApi.apiAppStop(name);
+  Future<void> stop() async {
+    await NodeBaseApi.apiAppStop(name);
   }
 
   Future<String> syncState() async {
@@ -57,8 +60,7 @@ class Application {
   }
 
   void startProcess(String name, List<String> cmd, Map<String, String> env) {
-    final app = ApplicationProcess(name: name, cmd: cmd);
-    app.env = env;
+    final app = ApplicationProcess(name: name, cmd: cmd, env: env);
     // XXX: if we want sandbox to run applications,
     //      on windows, MacOS, maybe consider cygwin, winehq, WSL and docker impl
     //      on Linux, Android, consider proot

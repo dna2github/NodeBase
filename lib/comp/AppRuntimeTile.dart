@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import './util.dart';
 import '../ctrl/application.dart';
@@ -44,7 +42,11 @@ class _AppRuntimeTileState extends State<AppRuntimeTile> {
             showInfo(context);
           }, icon: const Icon(Icons.info_outline)),
           IconButton(onPressed: () {
-            confirmStop(context).then((confirmed) {
+            showConfirmDialog(
+                context,
+                "Stop Application",
+                "Do you confirm to stop the application \"${widget.process.name}\""
+            ).then((confirmed) {
               if (!confirmed) return;
               widget.process.stop().then((_) {
                 generateSnackBar(
@@ -90,26 +92,5 @@ class _AppRuntimeTileState extends State<AppRuntimeTile> {
             child: const Text("OK")),
       ],
     ));
-  }
-
-  Future<bool> confirmStop(BuildContext context) async {
-    final ok = Completer<bool>();
-    final dialog = AlertDialog(
-      title: const Text("Stop Application"),
-      shape: BeveledRectangleBorder(),
-      content: Text("Do you confirm to stop the application \"${widget.process.name}\""),
-      actions: [
-        TextButton(onPressed: () {
-          Navigator.of(context).pop();
-          ok.complete(false);
-        }, child: const Text("Cancel")),
-        ElevatedButton(onPressed: () {
-          Navigator.of(context).pop();
-          ok.complete(true);
-        }, child: const Text("Stop")),
-      ],
-    );
-    showDialog(context: context, builder: (_) => dialog);
-    return ok.future;
   }
 }

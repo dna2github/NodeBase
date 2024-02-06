@@ -75,6 +75,16 @@ import '../util/event.dart' as event;
  * /workspace/plm/...
  */
 
+class _DownloadItem {
+  _DownloadItem({
+    required this.action,
+    required this.cancel,
+  });
+
+  final Completer action;
+  final StreamController cancel;
+}
+
 class Platform {
   Platform({
     required this.baseUrl,
@@ -86,7 +96,7 @@ class Platform {
   String os;
   String arch;
 
-  Map<String, Future> downloadQueue = {};
+  final Map<String, _DownloadItem> _downloadQueue = {};
 
   String _getEtcBaseDir() => path.join(baseDir, "workspace", "etc");
   String _getTmpBaseDir() => path.join(baseDir, "workspace", "tmp");
@@ -116,7 +126,6 @@ class Platform {
       String targetFilename,
       StreamController? cancel) async {
     final signal = StreamController();
-    final done = Completer();
     cancel ??= StreamController();
     await fsGuaranteeDir(targetFilename);
     event.platformToken.add([name, targetFilename, 0]);
@@ -130,16 +139,15 @@ class Platform {
         event.platformToken.add([name, targetFilename, progress]);
       }
     });
-    download.onError((error, stackTrace) => done.completeError(error!, stackTrace));
-    download.then((_) => done.complete());
-    return done.future;
+    return download;
   }
   Future<void> downloadNodeBaseJson({StreamController? cancel}) async {
     final tmpFilename = path.join(_getTmpBaseDir(), "nodebase.json");
-    final doing = downloadQueue[tmpFilename];
-    if (doing != null) return await doing;
+    final doing = _downloadQueue[tmpFilename];
+    if (doing != null) return await doing.action.future;
     final action = Completer();
-    downloadQueue[tmpFilename] = action.future;
+    cancel ??= StreamController();
+    _downloadQueue[tmpFilename] = _DownloadItem(action: action, cancel: cancel);
     try {
       await _downloadFile("nodebase.json", "$baseUrl/nodebase.json", tmpFilename, cancel);
       final targetFilename = path.join(_getEtcBaseDir(), "nodebase", "nodebase.json");
@@ -151,15 +159,16 @@ class Platform {
     } catch (e) {
       action.completeError(e);
     } finally {
-      downloadQueue.remove(tmpFilename);
+      _downloadQueue.remove(tmpFilename);
     }
   }
   Future<void> downloadApplicationListJson({StreamController? cancel}) async {
     final tmpFilename = path.join(_getTmpBaseDir(), "app-$os-$arch.json");
-    final doing = downloadQueue[tmpFilename];
-    if (doing != null) return await doing;
+    final doing = _downloadQueue[tmpFilename];
+    if (doing != null) return await doing.action.future;
     final action = Completer();
-    downloadQueue[tmpFilename] = action.future;
+    cancel ??= StreamController();
+    _downloadQueue[tmpFilename] = _DownloadItem(action: action, cancel: cancel);
     try {
       await _downloadFile("app-$os-$arch.json", "$baseUrl/app-$os-$arch.json", tmpFilename, cancel);
       final targetFilename = path.join(_getEtcBaseDir(), "nodebase", "app-$os-$arch.json");
@@ -171,15 +180,16 @@ class Platform {
     } catch (e) {
       action.completeError(e);
     } finally {
-      downloadQueue.remove(tmpFilename);
+      _downloadQueue.remove(tmpFilename);
     }
   }
   Future<void> downloadPlatformListJson({StreamController? cancel}) async {
     final tmpFilename = path.join(_getTmpBaseDir(), "plm-$os-$arch.json");
-    final doing = downloadQueue[tmpFilename];
-    if (doing != null) return await doing;
+    final doing = _downloadQueue[tmpFilename];
+    if (doing != null) return await doing.action.future;
     final action = Completer();
-    downloadQueue[tmpFilename] = action.future;
+    cancel ??= StreamController();
+    _downloadQueue[tmpFilename] = _DownloadItem(action: action, cancel: cancel);
     try {
       await _downloadFile("plm-$os-$arch.json", "$baseUrl/plm-$os-$arch.json", tmpFilename, cancel);
       final targetFilename = path.join(_getEtcBaseDir(), "nodebase", "plm-$os-$arch.json");
@@ -191,17 +201,18 @@ class Platform {
     } catch (e) {
       action.completeError(e);
     } finally {
-      downloadQueue.remove(tmpFilename);
+      _downloadQueue.remove(tmpFilename);
     }
   }
   Future<void> downloadApplicationMetaJson(String name, String version, {StreamController? cancel}) async {
     // python3 -c 'from hashlib import sha256; x="node-v20.11.0";print(x, sha256(x.encode("utf-8")).hexdigest())'
     final hash = await fsCalcStringHash("$name-$version");
     final tmpFilename = path.join(_getTmpBaseDir(), "app-$hash-meta.json");
-    final doing = downloadQueue[tmpFilename];
-    if (doing != null) return await doing;
+    final doing = _downloadQueue[tmpFilename];
+    if (doing != null) return await doing.action.future;
     final action = Completer();
-    downloadQueue[tmpFilename] = action.future;
+    cancel ??= StreamController();
+    _downloadQueue[tmpFilename] = _DownloadItem(action: action, cancel: cancel);
     try {
       await _downloadFile("app-$name-$version.json", "$baseUrl/app/$os/$arch/$hash.json", tmpFilename, cancel);
       final targetFilename = path.join(_getEtcBaseDir(), "app", hash, "meta.json");
@@ -213,16 +224,17 @@ class Platform {
     } catch (e) {
       action.completeError(e);
     } finally {
-      downloadQueue.remove(tmpFilename);
+      _downloadQueue.remove(tmpFilename);
     }
   }
   Future<void> downloadPlatformMetaJson(String name, String version, {StreamController? cancel}) async {
     final hash = await fsCalcStringHash("$name-$version");
     final tmpFilename = path.join(_getTmpBaseDir(), "plm-$hash-meta.json");
-    final doing = downloadQueue[tmpFilename];
-    if (doing != null) return await doing;
+    final doing = _downloadQueue[tmpFilename];
+    if (doing != null) return await doing.action.future;
     final action = Completer();
-    downloadQueue[tmpFilename] = action.future;
+    cancel ??= StreamController();
+    _downloadQueue[tmpFilename] = _DownloadItem(action: action, cancel: cancel);
     try {
       await _downloadFile("plm-$name-$version.json", "$baseUrl/plm/$os/$arch/$hash.json", tmpFilename, cancel);
       final targetFilename = path.join(_getEtcBaseDir(), "plm", hash, "meta.json");
@@ -234,17 +246,18 @@ class Platform {
     } catch (e) {
       action.completeError(e);
     } finally {
-      downloadQueue.remove(tmpFilename);
+      _downloadQueue.remove(tmpFilename);
     }
   }
   Future<void> downloadApplicationBinary(String name, String version, String url, {StreamController? cancel}) async {
     final hash = await fsCalcStringHash("$name-$version");
     final baseName = path.basename(url);
     final tmpFilename = path.join(_getTmpBaseDir(), baseName);
-    final doing = downloadQueue[tmpFilename];
-    if (doing != null) return await doing;
+    final doing = _downloadQueue[tmpFilename];
+    if (doing != null) return await doing.action.future;
     final action = Completer();
-    downloadQueue[tmpFilename] = action.future;
+    cancel ??= StreamController();
+    _downloadQueue[tmpFilename] = _DownloadItem(action: action, cancel: cancel);
     try {
       await _downloadFile("app-$name-$version.bin", url, tmpFilename, cancel);
       final tmpFile = File(tmpFilename);
@@ -262,17 +275,18 @@ class Platform {
     } catch (e) {
       action.completeError(e);
     } finally {
-      downloadQueue.remove(tmpFilename);
+      _downloadQueue.remove(tmpFilename);
     }
   }
   Future<void> downloadPlatformBinary(String name, String version, String url, {StreamController? cancel}) async {
     final hash = await fsCalcStringHash("$name-$version");
     final baseName = path.basename(url);
     final tmpFilename = path.join(_getTmpBaseDir(), baseName);
-    final doing = downloadQueue[tmpFilename];
-    if (doing != null) return await doing;
+    final doing = _downloadQueue[tmpFilename];
+    if (doing != null) return await doing.action.future;
     final action = Completer();
-    downloadQueue[tmpFilename] = action.future;
+    cancel ??= StreamController();
+    _downloadQueue[tmpFilename] = _DownloadItem(action: action, cancel: cancel);
     try {
       await _downloadFile("plm-$name-$version.bin", url, tmpFilename, cancel);
       final tmpFile = File(tmpFilename);
@@ -294,8 +308,14 @@ class Platform {
     } catch (e) {
       action.completeError(e);
     } finally {
-      downloadQueue.remove(tmpFilename);
+      _downloadQueue.remove(tmpFilename);
     }
+  }
+  Future<void> downloadCancel(String targeFilename) async {
+    final doing = _downloadQueue[targeFilename];
+    if (doing == null) return;
+    doing.cancel.add(true);
+    await doing.action.future;
   }
 
   Future<void> _configListAdd(String target, String name, String version) async {

@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import '../ctrl/application.dart';
 import '../ctrl/platform.dart';
 import '../util/fs.dart';
@@ -21,14 +23,27 @@ class NodeBaseController {
     // TODO: read app config and get default base url
     platform = Platform(baseUrl: baseUrl, baseDir: appBaseDir, os: os, arch: arch);
     application = Application(baseDir: appBaseDir);
-    // TODO: read user settings, app list, platform list
-    //       get latest app, platform list from remote
-    await platform.downloadNodeBaseJson();
-    // TODO: check platform version; if no change, skip download list
-    await platform.downloadApplicationListJson();
-    await platform.downloadPlatformListJson();
-
+    try {
+      // TODO: read user settings, app list, platform list
+      //       get latest app, platform list from remote
+      await platform.downloadNodeBaseJson();
+    } catch (e) {
+      log("NodeBase [E] cannot download nodebase.json");
+    }
     isSupported = await platform.isSupported();
+    // TODO: check platform version; if no change, skip download list
+    try {
+      await platform.downloadApplicationListJson();
+    } catch(e) {
+      log("NodeBase [E] cannot download app-list.json.json");
+    }
+
+    try {
+      await platform.downloadPlatformListJson();
+    } catch(e) {
+      log("NodeBase [E] cannot download plm-list.json");
+    }
+
     event.initializeToken.add(true);
   }
 }

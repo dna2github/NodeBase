@@ -25,6 +25,7 @@ class _DownloadTileState extends State<DownloadTile> with TickerProviderStateMix
   late AnimationController controller;
   bool isDeterminate = false;
   double progressValue = 0.0;
+  bool isCanceling = false;
 
   void modeDeterminate(double value) => setState(() {
     isDeterminate = true;
@@ -85,8 +86,20 @@ class _DownloadTileState extends State<DownloadTile> with TickerProviderStateMix
       trailing: Wrap(
         spacing: 2,
         children: [
-          IconButton(onPressed: () {
-            nodebase.instance.platform.downloadCancel(widget.filename).then((_) {
+          IconButton(onPressed: isCanceling ? null :() {
+            (() async {
+              final confirmed = await showConfirmDialog(
+                  context,
+                  "Cancel Downloading",
+                  "Do you confirm to cancel downloading for \"${widget.type} - ${widget.name}\"?"
+              );
+              if (!confirmed) return false;
+              isCanceling = true;
+              await nodebase.instance.platform.downloadCancel(widget.filename);
+              return true;
+            })().then((ok) {
+              isCanceling = false;
+              if (!ok) return;
               generateSnackBar(
                   context,
                   "Canceled downloading for \"${widget.type} - ${widget.name}\""

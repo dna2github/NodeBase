@@ -45,7 +45,7 @@ class _AppRuntimeTileState extends State<AppRuntimeTile> {
             showConfirmDialog(
                 context,
                 "Stop Application",
-                "Do you confirm to stop the application \"${widget.process.name}\""
+                "Do you confirm to stop the application \"${widget.process.name}\"?"
             ).then((confirmed) {
               if (!confirmed) return;
               widget.process.stop().then((_) {

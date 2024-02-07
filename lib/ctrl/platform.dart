@@ -249,7 +249,7 @@ class Platform {
       _downloadQueue.remove(tmpFilename);
     }
   }
-  Future<void> downloadApplicationBinary(String name, String version, String url, {StreamController? cancel}) async {
+  Future<void> downloadApplicationBinary(String name, String version, String platform, String url, {StreamController? cancel}) async {
     final hash = await fsCalcStringHash("$name-$version");
     final baseName = path.basename(url);
     final tmpFilename = path.join(_getTmpBaseDir(), baseName);
@@ -271,7 +271,7 @@ class Platform {
         await tmpFile.copy(targetFilename);
       }
       await tmpFile.delete();
-      await _configListAdd("app-list.json", name, version);
+      await _configListAdd("app-list.json", name, "$version:$platform");
     } catch (e) {
       action.completeError(e);
     } finally {
@@ -349,6 +349,7 @@ class Platform {
   }
 
   Future<Map<String, List<String>>> listAvailableApplicationList() async {
+    // name-version:platform
     final filename = path.join(_getEtcBaseDir(), "nodebase", "app-$os-$arch.json");
     final config = await fsReadFileAsJson(filename);
     Map<String, List<String>> r = {};
@@ -392,10 +393,10 @@ class Platform {
     final filename = path.join(_getEtcBaseDir(), "app", hash, "config.json");
     await fsWriteFileAsJson(filename, json);
   }
-  Future<void> removeApplicationBinary(String name, String version) async {
+  Future<void> removeApplicationBinary(String name, String version, String platform) async {
     final hash = await fsCalcStringHash("$name-$version");
     final dir = Directory(path.join(_getApplicationBaseDir(), hash));
-    await _configListRemove("app-list.json", name, version);
+    await _configListRemove("app-list.json", name, "$version:$platform");
     if (!dir.existsSync()) return;
     await dir.delete(recursive: true);
   }
@@ -418,6 +419,7 @@ class Platform {
     return r;
   }
   Future<Map<String, List<String>>> listInstalledPlatformList() async {
+    // name-version
     final filename = path.join(_getEtcBaseDir(), "nodebase", "plm-list.json");
     final config = await fsReadFileAsJson(filename);
     Map<String, List<String>> r = {};

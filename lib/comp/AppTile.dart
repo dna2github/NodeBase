@@ -23,6 +23,7 @@ class AppTile extends StatefulWidget {
 }
 
 class _AppTileState extends State<AppTile> {
+  AppTile? detect;
   bool isInstalled = false;
 
   void setInstall(bool installed) {
@@ -45,6 +46,10 @@ class _AppTileState extends State<AppTile> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> actions = [];
+    if (detect != widget) {
+      isInstalled = widget.defaultInstalled;
+      detect = widget;
+    }
     if (!isInstalled) {
       actions.add(IconButton(onPressed: () {
         (() async {
@@ -59,9 +64,9 @@ class _AppTileState extends State<AppTile> {
           final platform = nodebase.instance.platform;
           try {
             await platform.downloadApplicationMetaJson(name, version);
-            final json = await platform.readPlatformMetaJson(name, version);
+            final json = await platform.readApplicationMetaJson(name, version);
             final url = json["source"];
-            await platform.downloadApplicationBinary(name, version, url);
+            await platform.downloadApplicationBinary(name, version, widget.platform, url);
             return "ok";
           } catch (e) {
             log("NodeBase [E] AppTile:install ${widget.name}-${widget.version} ... $e");
@@ -98,7 +103,7 @@ class _AppTileState extends State<AppTile> {
             "Do you confirm to remove the application \"${widget.name}-${widget.version}\"?"
         ).then((confirmed) {
           if (!confirmed) return;
-          nodebase.instance.platform.removeApplicationBinary(widget.name, widget.version).then((_) {
+          nodebase.instance.platform.removeApplicationBinary(widget.name, widget.version, widget.platform).then((_) {
             setInstall(false);
             generateSnackBar(context, "Removed application: \"${widget.name}-${widget.version}\"");
           });

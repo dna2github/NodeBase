@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ class PlatformTile extends StatefulWidget {
 }
 
 class _AppTileState extends State<PlatformTile> {
+  PlatformTile? detect;
   bool isInstalled = false;
 
   void setInstall(bool installed) {
@@ -32,7 +34,6 @@ class _AppTileState extends State<PlatformTile> {
   @override
   void initState() {
     super.initState();
-    isInstalled = widget.defaultInstalled;
   }
 
   @override
@@ -43,6 +44,10 @@ class _AppTileState extends State<PlatformTile> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> actions = [];
+    if (detect != widget) {
+      isInstalled = widget.defaultInstalled;
+      detect = widget;
+    }
     if (!isInstalled) {
       actions.add(IconButton(onPressed: () {
         (() async {

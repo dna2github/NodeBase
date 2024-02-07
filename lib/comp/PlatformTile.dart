@@ -25,6 +25,10 @@ class _AppTileState extends State<PlatformTile> {
   PlatformTile? detect;
   bool isInstalled = false;
 
+  bool isDownloading = false;
+  bool isRunning = false;
+  bool isRemoving = false;
+
   void setInstall(bool installed) {
     setState(() {
       isInstalled = installed;
@@ -48,8 +52,38 @@ class _AppTileState extends State<PlatformTile> {
       isInstalled = widget.defaultInstalled;
       detect = widget;
     }
-    if (!isInstalled) {
-      actions.add(IconButton(onPressed: () {
+    if (isInstalled) {
+      actions.add(IconButton(onPressed: isRemoving ? null : () {
+        showInfo(context);
+      }, icon: const Icon(Icons.info_outline)));
+      actions.add(IconButton(onPressed: isRemoving || isRunning ? null : () {
+        // TODO: check if running, no remove
+        // TODO: try ... catch ...
+        showConfirmDialog(
+            context,
+            "Remove Platform",
+            "Do you confirm to remove the platform \"${widget.name}-${widget.version}\"?"
+        ).then((confirmed) {
+          if (!confirmed) return;
+          isRemoving = true;
+          (() async {
+            try {
+              await nodebase.instance.platform.removePlatformBinary(widget.name, widget.version);
+              return true;
+            } catch(e) {
+              log("NodeBase [E] PlatformTile ... remove platform \"${widget.name}-${widget.version}\" $e");
+              return false;
+            }
+          })().then((ok) {
+            isRemoving = false;
+            if (!ok) return;
+            setInstall(false);
+            generateSnackBar(context, "Removed platform: \"${widget.name}-${widget.version}\"");
+          });
+        });
+      }, icon: const Icon(Icons.delete_forever)));
+    } else {
+      actions.add(IconButton(onPressed: isDownloading ? null : () {
         (() async {
           final name = widget.name;
           final version = widget.version;
@@ -59,6 +93,7 @@ class _AppTileState extends State<PlatformTile> {
               "Do you confirm to install the platform \"${name}-${version}\"?"
           );
           if (!confirmed) return "cancel";
+          isDownloading = true;
           final platform = nodebase.instance.platform;
           try {
             await platform.downloadPlatformMetaJson(name, version);
@@ -71,6 +106,7 @@ class _AppTileState extends State<PlatformTile> {
             return e.toString();
           }
         })().then((r) {
+          isDownloading = false;
           if (r == "cancel") return;
           if (r == "ok") {
             setInstall(true);
@@ -80,26 +116,6 @@ class _AppTileState extends State<PlatformTile> {
           }
         });
       }, icon: const Icon(Icons.download)));
-    }
-    if (isInstalled) {
-      actions.add(IconButton(onPressed: () {
-        showInfo(context);
-      }, icon: const Icon(Icons.info_outline)));
-      actions.add(IconButton(onPressed: () {
-        // TODO: check if running, no remove
-        // TODO: try ... catch ...
-        showConfirmDialog(
-            context,
-            "Remove Platform",
-            "Do you confirm to remove the platform \"${widget.name}-${widget.version}\"?"
-        ).then((confirmed) {
-          if (!confirmed) return;
-          nodebase.instance.platform.removePlatformBinary(widget.name, widget.version).then((_) {
-            setInstall(false);
-            generateSnackBar(context, "Removed platform: \"${widget.name}-${widget.version}\"");
-          });
-        });
-      }, icon: const Icon(Icons.delete_forever)));
     }
     return ListTile(
       title: Column(

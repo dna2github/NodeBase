@@ -26,6 +26,10 @@ class _AppTileState extends State<AppTile> {
   AppTile? detect;
   bool isInstalled = false;
 
+  bool isDownloading = false;
+  bool isRunning = false;
+  bool isRemoving = false;
+
   void setInstall(bool installed) {
     setState(() {
       isInstalled = installed;
@@ -50,8 +54,46 @@ class _AppTileState extends State<AppTile> {
       isInstalled = widget.defaultInstalled;
       detect = widget;
     }
-    if (!isInstalled) {
-      actions.add(IconButton(onPressed: () {
+    if (isInstalled) {
+      actions.add(IconButton(onPressed: isRemoving ? null : () {
+        showInfo(context);
+      }, icon: const Icon(Icons.info_outline)));
+      actions.add(IconButton(onPressed: isRemoving || isRunning ? null : () {
+        // TODO: if platform is not installed, pop up a dialog for installation
+        //       list all available name - {versions}
+        // TODO: pop up a dialog for exec, env set up
+        //       read exec, env from last run or default value
+        // TODO: start
+      }, icon: const Icon(Icons.play_arrow)));
+      actions.add(IconButton(onPressed: isRemoving || isRunning ? null : () {
+        // TODO: check if running, no remove
+        // TODO: try ... catch ...
+        showConfirmDialog(
+            context,
+            "Remove Application",
+            "Do you confirm to remove the application \"${widget.name}-${widget.version}\"?"
+        ).then((confirmed) {
+          if (!confirmed) return;
+          isRemoving = true;
+          (() async {
+            try {
+              await nodebase.instance.platform.removeApplicationBinary(
+                  widget.name, widget.version, widget.platform);
+              return true;
+            } catch (e) {
+              log("NodeBase [E] AppTile ... remove application \"${widget.name}-${widget.version}\" $e");
+              return false;
+            }
+          })().then((ok) {
+            isRemoving = false;
+            if (!ok) return;
+            setInstall(false);
+            generateSnackBar(context, "Removed application: \"${widget.name}-${widget.version}\"");
+          });
+        });
+      }, icon: const Icon(Icons.delete_forever)));
+    } else {
+      actions.add(IconButton(onPressed: isDownloading ? null : () {
         (() async {
           final name = widget.name;
           final version = widget.version;
@@ -61,6 +103,7 @@ class _AppTileState extends State<AppTile> {
               "Do you confirm to install the application \"${name}-${version}\"?"
           );
           if (!confirmed) return "cancel";
+          isDownloading = true;
           final platform = nodebase.instance.platform;
           try {
             await platform.downloadApplicationMetaJson(name, version);
@@ -73,6 +116,7 @@ class _AppTileState extends State<AppTile> {
             return e.toString();
           }
         })().then((r) {
+          isDownloading = false;
           if (r == "cancel") return;
           if (r == "ok") {
             setInstall(true);
@@ -82,33 +126,6 @@ class _AppTileState extends State<AppTile> {
           }
         });
       }, icon: const Icon(Icons.download)));
-    }
-    if (isInstalled) {
-      actions.add(IconButton(onPressed: () {
-        showInfo(context);
-      }, icon: const Icon(Icons.info_outline)));
-      actions.add(IconButton(onPressed: () {
-        // TODO: if platform is not installed, pop up a dialog for installation
-        //       list all available name - {versions}
-        // TODO: pop up a dialog for exec, env set up
-        //       read exec, env from last run or default value
-        // TODO: start
-      }, icon: const Icon(Icons.play_arrow)));
-      actions.add(IconButton(onPressed: () {
-        // TODO: check if running, no remove
-        // TODO: try ... catch ...
-        showConfirmDialog(
-            context,
-            "Remove Application",
-            "Do you confirm to remove the application \"${widget.name}-${widget.version}\"?"
-        ).then((confirmed) {
-          if (!confirmed) return;
-          nodebase.instance.platform.removeApplicationBinary(widget.name, widget.version, widget.platform).then((_) {
-            setInstall(false);
-            generateSnackBar(context, "Removed application: \"${widget.name}-${widget.version}\"");
-          });
-        });
-      }, icon: const Icon(Icons.delete_forever)));
     }
     return ListTile(
       title: Column(

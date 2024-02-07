@@ -68,6 +68,7 @@ class _AppTileState extends State<PlatformTile> {
         })().then((r) {
           if (r == "cancel") return;
           if (r == "ok") {
+            setInstall(true);
             generateSnackBar(context, "Installed platform: \"${widget.name}-${widget.version}\"");
           } else {
             generateSnackBar(context, "Failed to install platform: \"${widget.name}-${widget.version}\"");
@@ -80,6 +81,8 @@ class _AppTileState extends State<PlatformTile> {
         showInfo(context);
       }, icon: const Icon(Icons.info_outline)));
       actions.add(IconButton(onPressed: () {
+        // TODO: check if running, no remove
+        // TODO: try ... catch ...
         showConfirmDialog(
             context,
             "Remove Platform",
@@ -87,6 +90,7 @@ class _AppTileState extends State<PlatformTile> {
         ).then((confirmed) {
           if (!confirmed) return;
           nodebase.instance.platform.removePlatformBinary(widget.name, widget.version).then((_) {
+            setInstall(false);
             generateSnackBar(context, "Removed platform: \"${widget.name}-${widget.version}\"");
           });
         });

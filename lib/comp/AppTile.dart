@@ -25,6 +25,12 @@ class AppTile extends StatefulWidget {
 class _AppTileState extends State<AppTile> {
   bool isInstalled = false;
 
+  void setInstall(bool installed) {
+    setState(() {
+      isInstalled = installed;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +70,7 @@ class _AppTileState extends State<AppTile> {
         })().then((r) {
           if (r == "cancel") return;
           if (r == "ok") {
+            setInstall(true);
             generateSnackBar(context, "Installed application: \"${widget.name}-${widget.version}\"");
           } else {
             generateSnackBar(context, "Failed to install application: \"${widget.name}-${widget.version}\"");
@@ -83,6 +90,8 @@ class _AppTileState extends State<AppTile> {
         // TODO: start
       }, icon: const Icon(Icons.play_arrow)));
       actions.add(IconButton(onPressed: () {
+        // TODO: check if running, no remove
+        // TODO: try ... catch ...
         showConfirmDialog(
             context,
             "Remove Application",
@@ -90,6 +99,7 @@ class _AppTileState extends State<AppTile> {
         ).then((confirmed) {
           if (!confirmed) return;
           nodebase.instance.platform.removeApplicationBinary(widget.name, widget.version).then((_) {
+            setInstall(false);
             generateSnackBar(context, "Removed application: \"${widget.name}-${widget.version}\"");
           });
         });

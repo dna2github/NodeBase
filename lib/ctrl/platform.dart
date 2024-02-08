@@ -128,15 +128,19 @@ class Platform {
     final signal = StreamController();
     cancel ??= StreamController();
     await fsGuaranteeDir(targetFilename);
-    event.platformToken.add([name, targetFilename, 0]);
+    event.platformToken.add(["download", name, url, targetFilename, 0]);
     final download = fsProgressDownload(targetFilename, url, signal, cancel);
     signal.stream.listen((message) {
       final progress = message[2];
+      final len = message[1];
+      final cur = message[0];
       if (progress == -1) {
         // cancel or error
-        event.platformToken.add([name, targetFilename, -1]);
+        event.platformToken.add(["download", name, url, targetFilename, -1]);
+      } else if (len == 0) {
+        if (cur == 0) event.platformToken.add(["download", name, url, targetFilename, -99]);
       } else {
-        event.platformToken.add([name, targetFilename, progress]);
+        event.platformToken.add(["download", name, url, targetFilename, progress]);
       }
     });
     return download;

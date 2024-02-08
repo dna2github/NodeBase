@@ -126,9 +126,8 @@ class _PrimaryPageState extends State<PrimaryPage> {
       });
     });
   }
-
-  @override
-  Widget build(BuildContext context) {
+  
+  List<Widget> buildRunningView(BuildContext context) {
     final runningApps = nodebase.instance.application.getRunningApp();
     final List<Widget> runningView = [
       const Row(
@@ -164,6 +163,10 @@ class _PrimaryPageState extends State<PrimaryPage> {
         ),
       );
     }
+    return runningView;
+  }
+  
+  List<Widget> buildApplicationView(BuildContext context) {
     final List<Widget> appView = [
       const Divider(),
       const Row(
@@ -189,6 +192,10 @@ class _PrimaryPageState extends State<PrimaryPage> {
         ),
       );
     }
+    return appView;
+  }
+  
+  List<Widget> buildPlatformView(BuildContext context) {
     final List<Widget> plmView = [
       const Divider(),
       const Row(
@@ -214,6 +221,11 @@ class _PrimaryPageState extends State<PrimaryPage> {
         ),
       );
     }
+    return plmView;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         // TRY THIS: Try changing the color here to a specific color (to
@@ -227,9 +239,9 @@ class _PrimaryPageState extends State<PrimaryPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            ...runningView,
-            ...appView,
-            ...plmView,
+            ...buildRunningView(context),
+            ...buildApplicationView(context),
+            ...buildPlatformView(context),
           ],
         ),
       ),

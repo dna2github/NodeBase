@@ -109,6 +109,13 @@ class Platform {
     return config.containsKey("platform-$os-$arch");
   }
 
+  Future<String> getApplicationBaseDir(String name, String version) async {
+    return path.join(_getApplicationBaseDir(), await fsCalcStringHash("$name-$version"));
+  }
+  Future<String> getPlatformBaseDir(String name, String version) async {
+    return path.join(_getPlatformBaseDir(), await fsCalcStringHash("$name-$version"));
+  }
+
   Future<Map<String, dynamic>> readNodeBaseJson() async =>
       fsReadFileAsJson(path.join(_getEtcBaseDir(), "nodebase", "nodebase.json"));
   Future<Map<String, dynamic>> readApplicationListJson() async =>

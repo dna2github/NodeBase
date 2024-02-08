@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:nodebase/page/notSupported.dart';
+import 'package:nodebase/page/primay.dart';
 import '../util/event.dart' as event;
 import '../ctrl/nodebase.dart' as nodebase;
 
@@ -26,7 +27,13 @@ class _SplashPageState extends State<SplashPage> {
       }
     });
     splashWait().then((_) {
-      if (!nodebase.instance.isSupported) {
+      if (nodebase.instance.isSupported) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const PrimaryPage()),
+              (Route<dynamic> route) => false,
+        );
+      } else {
         Navigator.pushAndRemoveUntil(
            context,
            MaterialPageRoute(builder: (context) => const NotSupportedPage()),

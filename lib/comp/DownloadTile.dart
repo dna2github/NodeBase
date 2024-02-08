@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import './util.dart';
 import '../util/event.dart' as event;
@@ -27,6 +29,8 @@ class _DownloadTileState extends State<DownloadTile> with TickerProviderStateMix
   double progressValue = 0.0;
   bool isCanceling = false;
 
+  late StreamSubscription progress;
+
   void modeDeterminate(double value) => setState(() {
     isDeterminate = true;
     controller.stop();
@@ -35,7 +39,7 @@ class _DownloadTileState extends State<DownloadTile> with TickerProviderStateMix
   void modeNonDeterminate() => setState(() {
     isDeterminate = false;
     controller
-      ..forward(from: controller.value)
+      ..forward(from: 0)
       ..repeat();
   });
 
@@ -49,10 +53,28 @@ class _DownloadTileState extends State<DownloadTile> with TickerProviderStateMix
       setState(() {});
     });
     controller.repeat();
+
+    progress = event.platformToken.stream.listen((msg) {
+      final T = msg[0];
+      if (T != "download") return;
+      final F = msg[3];
+      if (F != widget.filename) return;
+      final V = msg[4];
+      if (V == -99) {
+        modeNonDeterminate();
+      } else if (V == -1) {
+        setState(() {
+          isCanceling = true;
+        });
+      } else {
+        modeDeterminate(V + 0.0);
+      }
+    });
   }
 
   @override
   void dispose() {
+    progress.cancel();
     controller.dispose();
     super.dispose();
   }

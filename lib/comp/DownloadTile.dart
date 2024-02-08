@@ -118,6 +118,8 @@ class _DownloadTileState extends State<DownloadTile> with TickerProviderStateMix
               if (!confirmed) return false;
               isCanceling = true;
               await nodebase.instance.platform.downloadCancel(widget.filename);
+              // TODO: deal with if no network downloading
+              // event.platformToken.add(["download", widget.name, widget.url, widget.filename, -1]);
               return true;
             })().then((ok) {
               isCanceling = false;

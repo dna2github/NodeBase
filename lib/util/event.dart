@@ -1,5 +1,4 @@
 import 'dart:async';
 
-final initializeToken = StreamController();
-final platformToken = StreamController();
-final nodebaseToken = StreamController();
+final initializeToken = StreamController.broadcast();
+final platformToken = StreamController.broadcast();

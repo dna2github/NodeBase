@@ -146,10 +146,75 @@ Future<Map<String, dynamic>> selectPlatform(BuildContext context, Map<String, dy
 }
 
 Future<Map<String, dynamic>> runAppStepArgAndEnv(BuildContext context, Map<String, dynamic> config) async {
+  final Completer ok = Completer();
   final name = config["name"];
   final version = config["version"];
   final platform = config["platform"];
   // TODO: show component to edit arg (List<String>) and env(Map<String, String>)
+  final availableEntryPoint = config["availableEntryPoint"];
+  final List<DropdownMenuItem<String>> dropdownItems = [
+    const DropdownMenuItem<String>(value: "-", child: Text("(not selected)")),
+  ];
+  for (final value in availableEntryPoint) {
+    dropdownItems.add(DropdownMenuItem<String>(value: value, child: Text(value)));
+  }
+  String selected = "-";
+  List<String> arg = [];
+  Map<String, String> env = {};
+  showDialog(context: context, builder: (context) {
+    return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text("Config Application"),
+            shape: const BeveledRectangleBorder(),
+            content: SizedBox(
+              height: 200,
+              width: 300,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text("Entrypoint"),
+                    DropdownButton<String>(
+                      value: selected,
+                      items: dropdownItems,
+                      onChanged: (val) {
+                        if (val == null) return;
+                        selected = val;
+                        setState(() {});
+                      },
+                    ),
+                    ...(selected == "-" ? []: [
+                      const Text("Arg"),
+                      // TODO: arg list
+                      const Text("Env"),
+                      // TODO: env
+                    ]),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text("Cancel")),
+              ElevatedButton(
+                  onPressed: selected == "-" ? null : () {
+                    Navigator.of(context).pop();
+                    ok.complete();
+                  },
+                  child: const Text("Next")),
+            ],
+          );
+        });
+  });
+  await ok.future;
+  config["entryPoint"] = path.join(
+      await nodebase.instance.platform.getApplicationBaseDir(name, version),
+      selected
+  );
+  config["arg"] = arg;
+  config["env"] = env;
   return config;
 }
 

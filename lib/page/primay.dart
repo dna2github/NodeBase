@@ -43,12 +43,18 @@ class _PrimaryPageState extends State<PrimaryPage> {
       final val = msg[4];
       try {
         final mark = downloadList.firstWhere(
-          (one) => one.type == type &&
-              one.name == name &&
-              one.url == url &&
+          (one) => one.url == url &&
               one.filename == filename,
         );
         if (val >= 1) {
+          final i = downloadList.indexOf(mark);
+          if (i >= 0) {
+            setState(() {
+              downloadList.removeAt(i);
+            });
+          }
+        } else if (val == -1) {
+          // cancel or error
           final i = downloadList.indexOf(mark);
           if (i >= 0) {
             setState(() {

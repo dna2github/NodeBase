@@ -45,6 +45,7 @@ Future<Map<String, dynamic>> runAppStepCheckPlatform(BuildContext context, Map<S
   return config;
 }
 Future<void> downloadPlatform(BuildContext context, Map<String, dynamic> config) async {
+  // TODO: show all; click one download and stop app running
 }
 Future<Map<String, dynamic>> selectPlatform(BuildContext context, Map<String, dynamic> config) async {
   // TODO: show available; when select one, show available exec

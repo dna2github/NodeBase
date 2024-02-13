@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:nodebase/ctrl/application.dart';
+import 'package:path/path.dart' as path;
+
+import '../ctrl/application.dart';
 import '../ctrl/nodebase.dart' as nodebase;
 
 Future<Map<String, dynamic>> runAppInit(BuildContext context, Map<String, dynamic> config) async {
@@ -47,8 +50,98 @@ Future<Map<String, dynamic>> runAppStepCheckPlatform(BuildContext context, Map<S
 Future<void> downloadPlatform(BuildContext context, Map<String, dynamic> config) async {
   // TODO: show all; click one download and stop app running
 }
+Future<List<String>> getPlatformExec(String name, String version) async {
+  Map<String, dynamic> meta = await nodebase.instance.platform.readPlatformMetaJson(name, version);
+  List<String> r = [];
+  for (final one in meta["executable"]) {
+    r.add(one);
+  }
+  return r;
+}
 Future<Map<String, dynamic>> selectPlatform(BuildContext context, Map<String, dynamic> config) async {
-  // TODO: show available; when select one, show available exec
+  final Completer ok = Completer();
+  final platform = config["platform"];
+  final platformList = config["platformList"][platform];
+  final List<DropdownMenuItem<String>> dropdownItems = [
+    const DropdownMenuItem<String>(value: "-", child: Text("(not selected)")),
+  ];
+  for (final value in platformList) {
+    dropdownItems.add(DropdownMenuItem<String>(value: value, child: Text(value)));
+  }
+  String selected = "-";
+  String selectedExec = "-";
+  List<String> execs = [];
+  showDialog(context: context, builder: (context) {
+    return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text("Select Platform"),
+            shape: const BeveledRectangleBorder(),
+            content: SizedBox(
+              height: 200,
+              width: 300,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text("Platform: $platform"),
+                    DropdownButton<String>(
+                      value: selected,
+                      items: dropdownItems,
+                      onChanged: (val) {
+                        if (val == null) return;
+                        selected = val;
+                        if (val == "-") {
+                          execs = [];
+                          setState(() {});
+                          return;
+                        }
+                        getPlatformExec(platform, selected).then((list) {
+                          execs = list;
+                          setState(() {});
+                        });
+                      },
+                    ),
+                    ...(selected == "-" ? [] : [
+                      const Text("Exec"),
+                      DropdownButton(items: [
+                        const DropdownMenuItem<String>(value: "-", child: Text("(not selected)")),
+                        ...execs.map((name) => DropdownMenuItem(
+                          value: name,
+                          child: Text(path.basename(name), overflow: TextOverflow.ellipsis),
+                        )).toList()
+                      ], onChanged: (val) {
+                        if (val == null) return;
+                        selectedExec = val;
+                        setState(() {});
+                      }, value: selectedExec),
+                    ]),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text("Cancel")),
+              ElevatedButton(
+                  onPressed: selected == "-" || selectedExec == "-" ? null : () {
+                    Navigator.of(context).pop();
+                    ok.complete();
+                  },
+                  child: const Text("Next")),
+            ],
+          );
+        }
+    );
+  }
+  );
+  await ok.future;
+  config["platformVersion"] = selected;
+  config["exec"] = path.join(
+      await nodebase.instance.platform.getPlatformBaseDir(platform, selected),
+      selectedExec
+  );
   return config;
 }
 

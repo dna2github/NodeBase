@@ -5,6 +5,81 @@ import 'package:path/path.dart' as path;
 import '../ctrl/application.dart';
 import '../ctrl/nodebase.dart' as nodebase;
 
+const defaultHintStyle = TextStyle(color: Color.fromARGB(128, 0, 0, 0));
+
+class ArgInput extends StatelessWidget {
+  const ArgInput({
+    super.key,
+    required this.onDelete,
+    required this.onChanged,
+    required this.placeholder,
+  });
+
+  final String placeholder;
+  final void Function(ArgInput)? onDelete;
+  final void Function(ArgInput, String)? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      textDirection: TextDirection.rtl,
+      children: [
+        IconButton(
+            onPressed: onDelete == null ? null : () => onDelete!(this),
+            icon: const Icon(Icons.close)
+        ),
+        Expanded(child: TextField(
+          onChanged: onChanged == null ? null : (val) => onChanged!(this, val),
+          decoration: InputDecoration(
+              hintText: placeholder,
+              hintStyle: defaultHintStyle
+          ),
+        )),
+      ],
+    );
+  }
+
+}
+
+class EnvInput extends StatelessWidget {
+  const EnvInput({
+    super.key,
+    required this.onDelete,
+    required this.onKeyChanged,
+    required this.onValChanged,
+    required this.placeholder,
+  });
+
+  final String placeholder;
+  final void Function(EnvInput)? onDelete;
+  final void Function(EnvInput, String)? onKeyChanged;
+  final void Function(EnvInput, String)? onValChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      textDirection: TextDirection.rtl,
+      children: [
+        IconButton(
+            onPressed: onDelete == null ? null : () => onDelete!(this),
+            icon: const Icon(Icons.close)
+        ),
+        Expanded(child: TextField(
+          onChanged: onValChanged == null ? null : (val) => onValChanged!(this, val),
+          decoration: InputDecoration(
+              hintText: placeholder,
+              hintStyle: defaultHintStyle
+          ),
+        )),
+        Expanded(child: TextField(
+          onChanged: onKeyChanged == null ? null : (val) => onKeyChanged!(this, val),
+        )),
+      ],
+    );
+  }
+
+}
+
 Future<Map<String, dynamic>> runAppInit(BuildContext context, Map<String, dynamic> config) async {
   final name = config["name"] ?? "";
   final version = config["version"] ?? "";
@@ -19,8 +94,62 @@ Future<Map<String, dynamic>> runAppInit(BuildContext context, Map<String, dynami
   config["envRequire"] = meta["envRequire"] ?? [];
   // savedConfig.arg, savedConfig.env
   final savedConfig = await nodebase.instance.platform.readApplicationConfig(name, version);
-  config["lastArg"] = savedConfig["arg"] ?? [];
-  config["lastEnv"] = savedConfig["env"] ?? {};
+
+  final lastArg = savedConfig["arg"] ?? [];
+  config["lastArg"] = [];
+  for(int i = 0, n = lastArg.length, m = config["argRequire"].length; i < n || i < m; i++) {
+    if (i < m && i < n) {
+      final one = config["argRequire"][i];
+      config["lastArg"].add({
+        "help": one["help"] ?? "",
+        "default": one["default"] ?? "",
+        "last": lastArg[i],
+        "required": one["required"] ?? true,
+      });
+    } else if (i < m && i >= n) {
+      final one = config["argRequire"][i];
+      config["lastArg"].add({
+        "help": one["help"] ?? "",
+        "default": one["default"] ?? "",
+        "last": null,
+        "required": one["required"] ?? true,
+      });
+    } else {
+      config["lastArg"].add({
+        "help": "",
+        "default": "",
+        "last": lastArg[i],
+        "required": false,
+      });
+    }
+  }
+
+  final lastEnv = savedConfig["env"] ?? {};
+  config["lastEnv"] = {};
+  for(int i = 0, n = config["envRequire"].length; i < n; i++) {
+    final one = config["envRequire"][i];
+    final name = one["name"];
+    config["lastEnv"][name] = {
+      "name": name,
+      "help": one["help"] ?? "",
+      "default": one["default"],
+      "last": lastEnv[name] ?? "",
+      "required": one["required"] ?? false,
+    };
+  }
+  for(final k in lastEnv.keys) {
+    final one = config["lastEnv"][k];
+    if (one == null) {
+      config["lastEnv"][k] = {
+        "name": k,
+        "help": "",
+        "default": "",
+        "last": lastEnv[k],
+        "required": false,
+      };
+    }
+  }
+
   config["lastEntryPoint"] = savedConfig["entryPoint"];
   config["lastExec"] = savedConfig["exec"];
   config["lastPlatformVersion"] = savedConfig["platformVersion"];
@@ -145,6 +274,33 @@ Future<Map<String, dynamic>> selectPlatform(BuildContext context, Map<String, dy
   return config;
 }
 
+ArgInput generateArgInput(List<dynamic> argItems, List<String> arg, dynamic one, Function setState) {
+  return ArgInput(onDelete: (self) {
+    final i = argItems.indexOf(self);
+    argItems.removeAt(i);
+    arg.removeAt(i);
+    setState(() {});
+  }, onChanged: (self, val) {
+    final i = argItems.indexOf(self);
+    arg[i] = val;
+  }, placeholder: one["help"] ?? "");
+}
+EnvInput generateEnvInput(List<dynamic> envItems, List<String> envk, List<String> envv, dynamic one, Function setState) {
+  return EnvInput(onDelete: (self) {
+    final i = envItems.indexOf(self);
+    envItems.removeAt(i);
+    envk.removeAt(i);
+    envv.removeAt(i);
+    setState(() {});
+  }, onKeyChanged: (self, val) {
+    final i = envItems.indexOf(self);
+    envk[i] = val;
+  }, onValChanged: (self, val) {
+    final i = envItems.indexOf(self);
+    envv[i] = val;
+  }, placeholder: one["help"] ?? "");
+}
+
 Future<Map<String, dynamic>> runAppStepArgAndEnv(BuildContext context, Map<String, dynamic> config) async {
   final Completer ok = Completer();
   final name = config["name"];
@@ -160,10 +316,36 @@ Future<Map<String, dynamic>> runAppStepArgAndEnv(BuildContext context, Map<Strin
   }
   String selected = "-";
   List<String> arg = [];
-  Map<String, String> env = {};
+  List<String> envk = [];
+  List<String> envv = [];
+  final List<dynamic> argItems = [];
+  final List<dynamic> envItems = [];
+  for (final _ in config["lastArg"]) {
+    argItems.add(null);
+    arg.add("");
+  }
+  for (final _ in config["lastEnv"].values) {
+    envItems.add(null);
+  }
+
   showDialog(context: context, builder: (context) {
     return StatefulBuilder(
         builder: (context, setState) {
+          int i = 0;
+          for (final one in config["lastArg"]) {
+            if (i >= argItems.length) break;
+            argItems[i] = generateArgInput(argItems, arg, one, setState);
+            arg[i] = one["last"] ?? one["default"] ?? "";
+            i ++;
+          }
+          i = 0;
+          for (final one in config["lastEnv"].values) {
+            if (i >= envItems.length) break;
+            envItems[i] = generateEnvInput(envItems, envk, envv, one, setState);
+            envv[i] = one["name"] ?? "";
+            envk[i] = one["last"] ?? one["default"] ?? "";
+            i ++;
+          }
           return AlertDialog(
             title: const Text("Config Application"),
             shape: const BeveledRectangleBorder(),
@@ -186,9 +368,22 @@ Future<Map<String, dynamic>> runAppStepArgAndEnv(BuildContext context, Map<Strin
                     ),
                     ...(selected == "-" ? []: [
                       const Text("Arg"),
-                      // TODO: arg list
+                      ...argItems,
+                      TextButton(onPressed: () {
+                        final newOne = generateArgInput(argItems, arg, {}, setState);
+                        argItems.add(newOne);
+                        arg.add("");
+                        setState(() {});
+                      }, child: const Text("+")),
                       const Text("Env"),
-                      // TODO: env
+                      ...envItems,
+                      TextButton(onPressed: () {
+                        final newOne = generateEnvInput(envItems, envk, envv, {}, setState);
+                        envItems.add(newOne);
+                        envk.add("");
+                        envv.add("");
+                        setState(() {});
+                      }, child: const Text("+")),
                     ]),
                   ],
                 ),
@@ -213,7 +408,16 @@ Future<Map<String, dynamic>> runAppStepArgAndEnv(BuildContext context, Map<Strin
       await nodebase.instance.platform.getApplicationBaseDir(name, version),
       selected
   );
+
   config["arg"] = arg;
+
+  Map<String, String> env = {};
+  for (int i = 0, n = envk.length; i < n; i++) {
+    final k = envk[i];
+    final v = envv[i];
+    if (k == "" || v == "") continue;
+    env[k] = v;
+  }
   config["env"] = env;
   return config;
 }

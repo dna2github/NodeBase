@@ -12,10 +12,12 @@ class ArgInput extends StatelessWidget {
     super.key,
     required this.onDelete,
     required this.onChanged,
-    required this.placeholder,
+    this.placeholder = "",
+    this.initialValue = "",
   });
 
   final String placeholder;
+  final String initialValue;
   final void Function(ArgInput)? onDelete;
   final void Function(ArgInput, String)? onChanged;
 
@@ -28,7 +30,8 @@ class ArgInput extends StatelessWidget {
             onPressed: onDelete == null ? null : () => onDelete!(this),
             icon: const Icon(Icons.close)
         ),
-        Expanded(child: TextField(
+        Expanded(child: TextFormField(
+          initialValue: initialValue,
           onChanged: onChanged == null ? null : (val) => onChanged!(this, val),
           decoration: InputDecoration(
               hintText: placeholder,
@@ -47,10 +50,14 @@ class EnvInput extends StatelessWidget {
     required this.onDelete,
     required this.onKeyChanged,
     required this.onValChanged,
-    required this.placeholder,
+    this.placeholder = "",
+    this.initialKeyValue = "",
+    this.initialValValue = "",
   });
 
   final String placeholder;
+  final String initialKeyValue;
+  final String initialValValue;
   final void Function(EnvInput)? onDelete;
   final void Function(EnvInput, String)? onKeyChanged;
   final void Function(EnvInput, String)? onValChanged;
@@ -64,14 +71,16 @@ class EnvInput extends StatelessWidget {
             onPressed: onDelete == null ? null : () => onDelete!(this),
             icon: const Icon(Icons.close)
         ),
-        Expanded(child: TextField(
+        Expanded(child: TextFormField(
+          initialValue: initialValValue,
           onChanged: onValChanged == null ? null : (val) => onValChanged!(this, val),
           decoration: InputDecoration(
               hintText: placeholder,
               hintStyle: defaultHintStyle
           ),
         )),
-        Expanded(child: TextField(
+        Expanded(child: TextFormField(
+          initialValue: initialKeyValue,
           onChanged: onKeyChanged == null ? null : (val) => onKeyChanged!(this, val),
         )),
       ],
@@ -238,7 +247,7 @@ Future<Map<String, dynamic>> selectPlatform(BuildContext context, Map<String, dy
                         ...execs.map((name) => DropdownMenuItem(
                           value: name,
                           child: Text(path.basename(name), overflow: TextOverflow.ellipsis),
-                        )).toList()
+                        ))
                       ], onChanged: (val) {
                         if (val == null) return;
                         selectedExec = val;
@@ -283,7 +292,7 @@ ArgInput generateArgInput(List<dynamic> argItems, List<String> arg, dynamic one,
   }, onChanged: (self, val) {
     final i = argItems.indexOf(self);
     arg[i] = val;
-  }, placeholder: one["help"] ?? "");
+  }, placeholder: one["help"] ?? "", initialValue: one["last"] ?? one["default"] ?? "");
 }
 EnvInput generateEnvInput(List<dynamic> envItems, List<String> envk, List<String> envv, dynamic one, Function setState) {
   return EnvInput(onDelete: (self) {
@@ -298,7 +307,10 @@ EnvInput generateEnvInput(List<dynamic> envItems, List<String> envk, List<String
   }, onValChanged: (self, val) {
     final i = envItems.indexOf(self);
     envv[i] = val;
-  }, placeholder: one["help"] ?? "");
+  }, placeholder: one["help"] ?? "",
+    initialKeyValue: one["name"] ?? "",
+    initialValValue: one["last"] ?? one["default"] ?? "",
+  );
 }
 
 Future<Map<String, dynamic>> runAppStepArgAndEnv(BuildContext context, Map<String, dynamic> config) async {
@@ -422,14 +434,56 @@ Future<Map<String, dynamic>> runAppStepArgAndEnv(BuildContext context, Map<Strin
   return config;
 }
 
-Future<ApplicationProcess> runAppStepReview(BuildContext context, Map<String, dynamic> config) async {
+Future<ApplicationProcess?> runAppStepReview(BuildContext context, Map<String, dynamic> config) async {
+  final ok = Completer();
   final name = config["name"];
   final version = config["version"];
   final platform = config["platform"];
+  final platformVersion = config["platformVersion"];
   final arg = config["arg"] ?? [];
   final env = config["env"] ?? {};
   final entryPoint = config["entryPoint"]; // should not null
   final exec = config["exec"]; // should not null
+
+  showDialog(context: context, builder: (_) => AlertDialog(
+    title: const Text("Application Info"),
+    shape: const BeveledRectangleBorder(),
+    content: SizedBox(
+      height: 200,
+      width: 300,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SelectableText("-- Application --\n"
+                "$name-$version\n\\-> ${path.basename(entryPoint)}\n\n"
+                "-- Platform --\n$platform-$platformVersion\n\\-> ${path.basename(exec)}\n\n"
+                "-- Config --\n"
+                "-> Arg\n${arg.isEmpty ? "(empty)" : arg.join("\n")}\n"
+                "-> Env\n${env.isEmpty ? "(empty)" : env.entries.map(
+                    (item) => "${item.key} = ${item.value}").toList().join("\n")}"
+            ),
+          ],
+        ),
+      ),
+    ),
+    actions: [
+      TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            ok.complete(false);
+          },
+          child: const Text("Cancel")),
+      ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            ok.complete(true);
+          },
+          child: const Text("Run")),
+    ],
+  ));
+  final r = await ok.future;
+  if (!r) return null;
   // TODO: mark platform is running
   final app = nodebase.instance.application.startProcess(
       "$name-$version", [exec, entryPoint, ...arg], env

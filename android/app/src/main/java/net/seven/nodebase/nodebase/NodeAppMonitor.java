@@ -70,7 +70,7 @@ public class NodeAppMonitor extends Thread {
         ArrayList<Integer> children = new ArrayList<>();
         String output = Command.checkOutput(new String[] {
                 "/system/bin/ps",
-                "-o", "pid=", "--pid", String.valueOf(pid)
+                "-o", "pid=", "--ppid", String.valueOf(pid)
         });
         if (output == null || output.length() == 0) return children;
         String[] lines = output.trim().split("\n");
@@ -208,27 +208,27 @@ public class NodeAppMonitor extends Thread {
                             getId(), this.nodebaseName, e)
             );
             // TODO event/onError
-        } finally {
-            this.nodebaseStat = STAT.DEAD;
-            // TODO: event/onPost
-            Logger.e(
-                    "NodeService",
-                    "monitor",
-                    String.format(
-                            Locale.getDefault(),
-                            "stopped (%d / %s)",
-                            getId(), this.nodebaseName)
-            );
-
-            uiRunner.post(new Runnable() {
-                @Override
-                public void run() {
-                    ArrayList<String> r = new ArrayList<>();
-                    r.add("stop");
-                    r.add(nodebaseName);
-                    NodeAppService.getEventHandler().postMessage("app", r);
-                }
-            });
         }
+
+        this.nodebaseStat = STAT.DEAD;
+        // TODO: event/onPost
+        Logger.e(
+                "NodeService",
+                "monitor",
+                String.format(
+                        Locale.getDefault(),
+                        "stopped (%d / %s)",
+                        getId(), this.nodebaseName)
+        );
+
+        uiRunner.post(new Runnable() {
+            @Override
+            public void run() {
+                ArrayList<String> r = new ArrayList<>();
+                r.add("stop");
+                r.add(nodebaseName);
+                NodeAppService.getEventHandler().postMessage("app", r);
+            }
+        });
     }
 }

@@ -76,16 +76,15 @@ class _PrimaryPageState extends State<PrimaryPage> {
       final cmd = message[0];
       final nameVersion = message[1];
       final app = nodebase.instance.application.getApp(nameVersion);
-      if (app == null) return;
       AppRuntimeTile? tile;
       try {
-        tile = runtimeList.firstWhere((one) => one.process == app);
+        tile = runtimeList.firstWhere((one) => one.process == app || one.process.name == nameVersion);
       } catch(err) {
         tile = null;
       }
       switch(cmd) {
         case "start":
-          if (tile != null) return;
+          if (app == null || tile != null) return;
           runtimeList.add(AppRuntimeTile(process: app));
           setState(() {});
           break;

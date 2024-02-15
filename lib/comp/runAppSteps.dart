@@ -5,6 +5,8 @@ import 'package:path/path.dart' as path;
 import '../ctrl/application.dart';
 import '../ctrl/nodebase.dart' as nodebase;
 
+// TODO: rewrite all async, incomplete await causes memory leak
+
 const defaultHintStyle = TextStyle(color: Color.fromARGB(128, 0, 0, 0));
 
 class ArgInput extends StatelessWidget {
@@ -486,7 +488,7 @@ Future<ApplicationProcess?> runAppStepReview(BuildContext context, Map<String, d
   if (!r) return null;
   // TODO: mark platform is running
   final app = nodebase.instance.application.startProcess(
-      "$name-$version", [exec, entryPoint, ...arg], env
+      "$name-$version", "$platform-$platformVersion", [exec, entryPoint, ...arg], env
   );
   return app;
 }

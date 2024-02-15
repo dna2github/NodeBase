@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import './runAppSteps.dart';
 import './util.dart';
 import '../ctrl/nodebase.dart' as nodebase;
 
@@ -63,7 +64,21 @@ class _AppTileState extends State<AppTile> {
         //       list all available name - {versions}
         // TODO: pop up a dialog for exec, env set up
         //       read exec, env from last run or default value
-        // TODO: start
+        Map<String, dynamic> config = {
+          "name": widget.name,
+          "version": widget.version,
+          "platform": widget.platform,
+        };
+        runAppInit(context, config).then((_) {
+          runAppStepCheckPlatform(context, config).then((_) {
+            runAppStepArgAndEnv(context, config).then((_) {
+              runAppStepReview(context, config).then((_) {
+                // TODO: let the async return true or false so that we can check
+                //       instead of here, if one is await forever, then memory leak
+              });
+            });
+          });
+        });
       }, icon: const Icon(Icons.play_arrow)));
       actions.add(IconButton(onPressed: isRemoving || isRunning ? null : () {
         // TODO: check if running, no remove

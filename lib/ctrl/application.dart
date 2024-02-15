@@ -59,18 +59,25 @@ class Application {
     });
   }
 
-  ApplicationProcess startProcess(String name, List<String> cmd, Map<String, String> env) {
-    final app = ApplicationProcess(name: name, cmd: cmd, env: env);
+  ApplicationProcess startProcess(
+      String name,
+      String platform,
+      List<String> cmd,
+      Map<String, String> env
+  ) {
+    final app = ApplicationProcess(name: name, cmd: cmd, env: env, platform: platform);
     // XXX: if we want sandbox to run applications,
     //      on windows, MacOS, maybe consider cygwin, winehq, WSL and docker impl
     //      on Linux, Android, consider proot
     app.start();
+    runtime[name] = app;
     return app;
   }
 
   void stopProcess(String name) {
     final app = runtime[name];
     if (app == null) return;
+    runtime.remove(name);
     app.stop();
   }
 

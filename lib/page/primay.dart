@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../util/api.dart';
 import '../util/event.dart' as event;
 import '../ctrl/nodebase.dart' as nodebase;
 import '../comp/AppRuntimeTile.dart';
@@ -22,6 +23,7 @@ class _PrimaryPageState extends State<PrimaryPage> {
   List<PlatformTile> plmList = [];
 
   late StreamSubscription downloadProgress;
+  late StreamSubscription applicationEvent;
 
   @override
   void initState() {
@@ -35,7 +37,6 @@ class _PrimaryPageState extends State<PrimaryPage> {
       if (!tnv.endsWith(".bin")) return;
       final parts = tnv.substring(0, tnv.length - 4).split("-");
       // TODO: check parts.length
-      print(parts);
       final type = parts[0] == "app" ? "application" : "platform";
       final name = "${parts[1]}-${parts[2]}";
       final url = msg[2];
@@ -69,7 +70,32 @@ class _PrimaryPageState extends State<PrimaryPage> {
           });
         }
       }
+    });
 
+    applicationEvent = NodeBaseApi.event.receiveBroadcastStream("app").listen((message) {
+      final cmd = message[0];
+      final nameVersion = message[1];
+      final app = nodebase.instance.application.getApp(nameVersion);
+      if (app == null) return;
+      AppRuntimeTile? tile;
+      try {
+        tile = runtimeList.firstWhere((one) => one.process == app);
+      } catch(err) {
+        tile = null;
+      }
+      switch(cmd) {
+        case "start":
+          if (tile != null) return;
+          runtimeList.add(AppRuntimeTile(process: app));
+          setState(() {});
+          break;
+        case "stop":
+          if (tile == null) return;
+          final i = runtimeList.indexOf(tile);
+          runtimeList.removeAt(i);
+          setState(() {});
+          break;
+      }
     });
 
     initPlatformList();
@@ -79,6 +105,7 @@ class _PrimaryPageState extends State<PrimaryPage> {
   @override
   void dispose() {
     downloadProgress.cancel();
+    applicationEvent.cancel();
     super.dispose();
   }
 
@@ -134,7 +161,6 @@ class _PrimaryPageState extends State<PrimaryPage> {
   }
   
   List<Widget> buildRunningView(BuildContext context) {
-    final runningApps = nodebase.instance.application.getRunningApp();
     final List<Widget> runningView = [
       const Row(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -150,13 +176,12 @@ class _PrimaryPageState extends State<PrimaryPage> {
         ],
       ),
     ];
-    if (runningApps.isNotEmpty) {
+    if (runtimeList.isNotEmpty) {
       runningView.add(
         ListView.builder(
-            itemCount: runningApps.length,
+            itemCount: runtimeList.length,
             shrinkWrap: true,
-            itemBuilder: (BuildContext context, int index) =>
-                AppRuntimeTile(process: runningApps[index])
+            itemBuilder: (BuildContext context, int index) => runtimeList[index]
         ),
       );
     }

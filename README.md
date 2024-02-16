@@ -19,48 +19,57 @@ For previous mature version, please explore source code on
 
 ## How to use
 
-- Platform/App market is online
-  - click into platform or application page
-  - click on the top-right cart icon button
-  - select what you want to download
-     - e.g. download platform `node-10.10.0`
-     -      download app `file-transfer`
-     -      edit app `file-transfer` platform value to `node-10.10.0`
-     -      start `file-transfer` by clicking play icon button
-- Create a new platform, for example named `node`
-  - fill node url like `file:///sdcard/bin-node-v10.10.0` or `https://example.com/latest/arm/node`
-  - click download button and wait for task complete
-  - (NodeBase will copy the binary to its app zone and make it executable)
-  - Wow; now we not only support node binary but also customized exectuables.
-- Create a new app, for example named `test` and its platform is `node`
-  - click into the new app
-  - download an app zip into for example `/sdcard/test.zip`
-  - fill `Import / Export` text field with `/sdcard/test.zip` 
-  - click upload button and wait for task complete
-  - (NodeBase will extract zip app as a app folder into app zone)
-  - fill `Params` text field (for example, file manager need to config target folder as first param)
-  - click `play` button to start node app
-  - click `open in browser` button to open the app in a webview / `pop-out` button to open in external browser
-  - click `stop` button to stop node app
+- make sure your device can connect to Internet
+  - choose application for downloading (e.g. file\_transfer-1.0.0)
+  - choose platform for downloading (e.g. node-v10.10.0)
+- application
+  - click `play` button to start app via a wizard
 
-### App folder structure
+### Market Structure
 
 ```
-/<app_name>/config.json
+/nodebase.json
 {
-   "host": "http://127.0.0.1"
-   "port": 0,
-   "home": "/index.html",
-   "entry": "index.js"
+   "version": "...",
+   "platform-<os>-<arch>": "...", ...
+   "platform-windows-x64": "e.g."
 }
 
-/<app_name>/static/index.html
-[...] source code frontend client
+/plm-<os>-<arch>.json
+{
+   "items": [
+      "<name>-<version>", ...
+      "node-v10.10.0"
+   ]
+}
 
-/<app_name>/index.js
-ref: https://github.com/stallpool/halfbase/tree/master/nodejs/tinyserver/index.js
-[...] source code for backend server
-[...] hook `/index.html` to load `/app/static/index.html`
+/app-<os>-<arch>.json
+{
+   "items": [
+      "<name>-<version>", ...
+      "app-1.0.0:node"
+   ]
+}
+
+/plm/<os>/<arch>/<sha256(utf8(<name>-<version>))>.json
+{
+   "name": "e.g. node",
+   "version": "e.g. v20.10.0",
+   "source": "<url>, e.g. https://nodejs.org/dist/v20.11.0/node-v20.11.0-win-x64.zip",
+   "executable": ["<relative_executable_path>", "e.g. node-v20.11.0-win-x64\\node.exe"]
+}
+
+/app/<os>/<arch>/<sha256(utf8(<name>-<version>))>.json
+{
+   "name": "e.g. file_transfer",
+   "version": "e.g. 1.0",
+   "source": "<url>, e.g. https://raw.githubusercontent.com/wiki/dna2github/NodeBase/quick/app/node/file-transfer.zip",
+   "type": "web.server",
+   "argRequire": [{ "help": "folder path", "default": "." }],
+   "envRequire": [],
+   "entryPoint": ["index.js"]
+}
+
 ```
 
 App examples: [https://github.com/nodebase0](https://github.com/nodebase0), includes file-viewer-uploader, nodepad, ...

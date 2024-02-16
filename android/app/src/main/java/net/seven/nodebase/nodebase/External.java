@@ -18,7 +18,7 @@ public class External {
 
     private static String transformAbiToArch(String name) {
         switch(name) {
-            case "armeabi-v8a": return "arm64";
+            case "armeabi-v8a": case "arm64-v8a": return "arm64";
             case "x86_64": return "x64";
             case "x86": return "x86";
             case "armeabi-v7a": case "armeabi": return "arm";

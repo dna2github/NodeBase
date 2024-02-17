@@ -25,6 +25,50 @@ class _PrimaryPageState extends State<PrimaryPage> {
   late StreamSubscription downloadProgress;
   late StreamSubscription applicationEvent;
 
+  updateDependencyState() {
+    Map<String, int> appRef = {};
+    Map<String, int> plmRef = {};
+    for (final one in appList) {
+      print("${one.name}-${one.version}");
+      appRef["${one.name}-${one.version}"] = 0;
+    }
+    for (final one in plmList) {
+      print("${one.name}-${one.version}");
+      plmRef["${one.name}-${one.version}"] = 0;
+    }
+    for (final one in runtimeList) {
+      print("${one.process.name} ${one.process.platform}");
+      appRef[one.process.name] = (appRef[one.process.name] ?? 0) + 1;
+      plmRef[one.process.platform] = (plmRef[one.process.name] ?? 0) + 1;
+    }
+    print("$plmRef $appRef");
+    for (int i = 0, n = appList.length; i < n; i++) {
+      final one = appList[i];
+      final running = (appRef["${one.name}-${one.version}"] ?? 0) > 0;
+      if (running != one.defaultRunning) {
+        appList[i] = AppTile(
+            name: one.name,
+            version: one.version,
+            platform: one.platform,
+            defaultInstalled: one.defaultInstalled,
+            defaultRunning: running
+        );
+      }
+    }
+    for (int i = 0, n = plmList.length; i < n; i++) {
+      final one = plmList[i];
+      final running = (plmRef["${one.name}-${one.version}"] ?? 0) > 0;
+      if (running != one.defaultRunning) {
+        plmList[i] = PlatformTile(
+            name: one.name,
+            version: one.version,
+            defaultInstalled: one.defaultInstalled,
+            defaultRunning: running
+        );
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -86,12 +130,14 @@ class _PrimaryPageState extends State<PrimaryPage> {
         case "start":
           if (app == null || tile != null) return;
           runtimeList.add(AppRuntimeTile(process: app));
+          updateDependencyState();
           setState(() {});
           break;
         case "stop":
           if (tile == null) return;
           final i = runtimeList.indexOf(tile);
           runtimeList.removeAt(i);
+          updateDependencyState();
           setState(() {});
           break;
       }

@@ -69,12 +69,14 @@ class _AppTileState extends State<AppTile> {
           "version": widget.version,
           "platform": widget.platform,
         };
-        runAppInit(context, config).then((_) {
-          runAppStepCheckPlatform(context, config).then((_) {
-            runAppStepArgAndEnv(context, config).then((_) {
+        runAppInit(context, config).then((ok0) {
+          if (!ok0) return;
+          runAppStepCheckPlatform(context, config).then((ok1) {
+            if (!ok1) return;
+            runAppStepArgAndEnv(context, config).then((ok2) {
+              if (!ok2) return;
               runAppStepReview(context, config).then((_) {
-                // TODO: let the async return true or false so that we can check
-                //       instead of here, if one is await forever, then memory leak
+                // TODO: deal with ApplicationProcess object or null
               });
             });
           });

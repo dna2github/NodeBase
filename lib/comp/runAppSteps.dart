@@ -5,8 +5,6 @@ import 'package:path/path.dart' as path;
 import '../ctrl/application.dart';
 import '../ctrl/nodebase.dart' as nodebase;
 
-// TODO: rewrite all async, incomplete await causes memory leak
-
 const defaultHintStyle = TextStyle(color: Color.fromARGB(128, 0, 0, 0));
 
 class ArgInput extends StatelessWidget {
@@ -91,12 +89,12 @@ class EnvInput extends StatelessWidget {
 
 }
 
-Future<Map<String, dynamic>> runAppInit(BuildContext context, Map<String, dynamic> config) async {
+Future<bool> runAppInit(BuildContext context, Map<String, dynamic> config) async {
   final name = config["name"] ?? "";
   final version = config["version"] ?? "";
   final platform = config["platform"] ?? "";
   config["ready"] = false;
-  if (name == "" || version == "" || platform == "") return config;
+  if (name == "" || version == "" || platform == "") return false;
   config["base"] = await nodebase.instance.platform.getApplicationBaseDir(name, version);
   // meta.entryPoint[0]
   final meta = await nodebase.instance.platform.readApplicationMetaJson(name, version);
@@ -169,10 +167,10 @@ Future<Map<String, dynamic>> runAppInit(BuildContext context, Map<String, dynami
   config["platformList"] = {};
   config["platformList"][platform] = installed[platform];
   config["ready"] = true;
-  return config;
+  return true;
 }
 
-Future<Map<String, dynamic>> runAppStepCheckPlatform(BuildContext context, Map<String, dynamic> config) async {
+Future<bool> runAppStepCheckPlatform(BuildContext context, Map<String, dynamic> config) async {
   final name = config["name"];
   final version = config["version"];
   final platform = config["platform"];
@@ -182,10 +180,9 @@ Future<Map<String, dynamic>> runAppStepCheckPlatform(BuildContext context, Map<S
     config["platformReady"] = false;
   } else {
     // by default select last one, guide user to select platform version
-    config = await selectPlatform(context, config);
-    config["platformReady"] = true;
+    return await selectPlatform(context, config);
   }
-  return config;
+  return false;
 }
 Future<void> downloadPlatform(BuildContext context, Map<String, dynamic> config) async {
   // TODO: show all; click one download and stop app running
@@ -198,8 +195,7 @@ Future<List<String>> getPlatformExec(String name, String version) async {
   }
   return r;
 }
-Future<Map<String, dynamic>> selectPlatform(BuildContext context, Map<String, dynamic> config) async {
-  final Completer ok = Completer();
+Future<bool> selectPlatform(BuildContext context, Map<String, dynamic> config) async {
   final platform = config["platform"];
   final platformList = config["platformList"][platform];
   final List<DropdownMenuItem<String>> dropdownItems = [
@@ -211,7 +207,8 @@ Future<Map<String, dynamic>> selectPlatform(BuildContext context, Map<String, dy
   String selected = "-";
   String selectedExec = "-";
   List<String> execs = [];
-  showDialog(context: context, builder: (context) {
+  bool ok = false;
+  await showDialog(context: context, builder: (context) {
     return StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
@@ -267,7 +264,7 @@ Future<Map<String, dynamic>> selectPlatform(BuildContext context, Map<String, dy
               ElevatedButton(
                   onPressed: selected == "-" || selectedExec == "-" ? null : () {
                     Navigator.of(context).pop();
-                    ok.complete();
+                    ok = true;
                   },
                   child: const Text("Next")),
             ],
@@ -276,13 +273,13 @@ Future<Map<String, dynamic>> selectPlatform(BuildContext context, Map<String, dy
     );
   }
   );
-  await ok.future;
+  if (!ok) return false;
   config["platformVersion"] = selected;
   config["exec"] = path.join(
       await nodebase.instance.platform.getPlatformBaseDir(platform, selected),
       selectedExec
   );
-  return config;
+  return true;
 }
 
 ArgInput generateArgInput(List<dynamic> argItems, List<String> arg, dynamic one, Function setState) {
@@ -315,8 +312,7 @@ EnvInput generateEnvInput(List<dynamic> envItems, List<String> envk, List<String
   );
 }
 
-Future<Map<String, dynamic>> runAppStepArgAndEnv(BuildContext context, Map<String, dynamic> config) async {
-  final Completer ok = Completer();
+Future<bool> runAppStepArgAndEnv(BuildContext context, Map<String, dynamic> config) async {
   final name = config["name"];
   final version = config["version"];
   final platform = config["platform"];
@@ -332,6 +328,7 @@ Future<Map<String, dynamic>> runAppStepArgAndEnv(BuildContext context, Map<Strin
   List<String> arg = [];
   List<String> envk = [];
   List<String> envv = [];
+  bool ok = false;
   final List<dynamic> argItems = [];
   final List<dynamic> envItems = [];
   for (final _ in config["lastArg"]) {
@@ -342,7 +339,7 @@ Future<Map<String, dynamic>> runAppStepArgAndEnv(BuildContext context, Map<Strin
     envItems.add(null);
   }
 
-  showDialog(context: context, builder: (context) {
+  await showDialog(context: context, builder: (context) {
     return StatefulBuilder(
         builder: (context, setState) {
           int i = 0;
@@ -410,14 +407,14 @@ Future<Map<String, dynamic>> runAppStepArgAndEnv(BuildContext context, Map<Strin
               ElevatedButton(
                   onPressed: selected == "-" ? null : () {
                     Navigator.of(context).pop();
-                    ok.complete();
+                    ok = true;
                   },
                   child: const Text("Next")),
             ],
           );
         });
   });
-  await ok.future;
+  if (!ok) return false;
   config["entryPoint"] = path.join(
       await nodebase.instance.platform.getApplicationBaseDir(name, version),
       selected
@@ -433,11 +430,10 @@ Future<Map<String, dynamic>> runAppStepArgAndEnv(BuildContext context, Map<Strin
     env[k] = v;
   }
   config["env"] = env;
-  return config;
+  return true;
 }
 
 Future<ApplicationProcess?> runAppStepReview(BuildContext context, Map<String, dynamic> config) async {
-  final ok = Completer();
   final name = config["name"];
   final version = config["version"];
   final platform = config["platform"];
@@ -446,8 +442,9 @@ Future<ApplicationProcess?> runAppStepReview(BuildContext context, Map<String, d
   final env = config["env"] ?? {};
   final entryPoint = config["entryPoint"]; // should not null
   final exec = config["exec"]; // should not null
+  bool ok = false;
 
-  showDialog(context: context, builder: (_) => AlertDialog(
+  await showDialog(context: context, builder: (_) => AlertDialog(
     title: const Text("Application Info"),
     shape: const BeveledRectangleBorder(),
     content: SizedBox(
@@ -471,21 +468,17 @@ Future<ApplicationProcess?> runAppStepReview(BuildContext context, Map<String, d
     ),
     actions: [
       TextButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-            ok.complete(false);
-          },
+          onPressed: () => Navigator.of(context).pop(),
           child: const Text("Cancel")),
       ElevatedButton(
           onPressed: () {
             Navigator.of(context).pop();
-            ok.complete(true);
+            ok = true;
           },
           child: const Text("Run")),
     ],
   ));
-  final r = await ok.future;
-  if (!r) return null;
+  if (!ok) return null;
   // TODO: mark platform is running
   final app = nodebase.instance.application.startProcess(
       "$name-$version", "$platform-$platformVersion", [exec, entryPoint, ...arg], env

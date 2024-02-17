@@ -93,7 +93,6 @@ Future<bool> runAppInit(BuildContext context, Map<String, dynamic> config) async
   final name = config["name"] ?? "";
   final version = config["version"] ?? "";
   final platform = config["platform"] ?? "";
-  config["ready"] = false;
   if (name == "" || version == "" || platform == "") return false;
   config["base"] = await nodebase.instance.platform.getApplicationBaseDir(name, version);
   // meta.entryPoint[0]
@@ -166,7 +165,6 @@ Future<bool> runAppInit(BuildContext context, Map<String, dynamic> config) async
   final installed = await nodebase.instance.platform.listInstalledPlatformList();
   config["platformList"] = {};
   config["platformList"][platform] = installed[platform];
-  config["ready"] = true;
   return true;
 }
 
@@ -177,7 +175,6 @@ Future<bool> runAppStepCheckPlatform(BuildContext context, Map<String, dynamic> 
   if (config["platformList"][platform] == null) {
     // no install, check available and guide to download
     await downloadPlatform(context, config);
-    config["platformReady"] = false;
   } else {
     // by default select last one, guide user to select platform version
     return await selectPlatform(context, config);

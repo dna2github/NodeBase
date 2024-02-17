@@ -4,6 +4,7 @@ import 'package:path/path.dart' as path;
 
 import '../ctrl/application.dart';
 import '../ctrl/nodebase.dart' as nodebase;
+import './util.dart';
 
 const defaultHintStyle = TextStyle(color: Color.fromARGB(128, 0, 0, 0));
 
@@ -183,6 +184,8 @@ Future<bool> runAppStepCheckPlatform(BuildContext context, Map<String, dynamic> 
 }
 Future<void> downloadPlatform(BuildContext context, Map<String, dynamic> config) async {
   // TODO: show all; click one download and stop app running
+  final platform = config["platform"];
+  generateSnackBar(context, "Dependency missing.\nNo available versions for \"$platform\".");
 }
 Future<List<String>> getPlatformExec(String name, String version) async {
   Map<String, dynamic> meta = await nodebase.instance.platform.readPlatformMetaJson(name, version);

@@ -6,8 +6,8 @@ import '../util/fs.dart';
 import '../util/api.dart';
 import '../util/event.dart' as event;
 
-//const defaultPlatformBaseUrl = "https://raw.githubusercontent.com/wiki/dna2github/NodeBase/market/v1";
-const defaultPlatformBaseUrl = "http://127.0.0.1:8000";
+const defaultPlatformBaseUrl = "https://raw.githubusercontent.com/wiki/dna2github/NodeBase/market/v1";
+//const defaultPlatformBaseUrl = "http://127.0.0.1:8000";
 
 class NodeBaseController {
   late Application application;

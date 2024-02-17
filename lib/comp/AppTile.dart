@@ -12,12 +12,14 @@ class AppTile extends StatefulWidget {
     required this.version,
     required this.platform,
     this.defaultInstalled = false,
+    this.defaultRunning = false,
   });
 
   final String name;
   final String version;
   final String platform;
   final bool defaultInstalled;
+  final bool defaultRunning;
 
   @override
   State<StatefulWidget> createState() => _AppTileState();
@@ -53,6 +55,7 @@ class _AppTileState extends State<AppTile> {
     final List<Widget> actions = [];
     if (detect != widget) {
       isInstalled = widget.defaultInstalled;
+      isRunning = widget.defaultRunning;
       detect = widget;
     }
     if (isInstalled) {

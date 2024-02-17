@@ -10,11 +10,13 @@ class PlatformTile extends StatefulWidget {
     required this.name,
     required this.version,
     this.defaultInstalled = false,
+    this.defaultRunning = false,
   });
 
   final String name;
   final String version;
   final bool defaultInstalled;
+  final bool defaultRunning;
 
   @override
   State<StatefulWidget> createState() => _AppTileState();
@@ -49,6 +51,7 @@ class _AppTileState extends State<PlatformTile> {
     final List<Widget> actions = [];
     if (detect != widget) {
       isInstalled = widget.defaultInstalled;
+      isRunning = widget.defaultRunning;
       detect = widget;
     }
     if (isInstalled) {

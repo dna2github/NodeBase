@@ -13,10 +13,12 @@ class ArgInput extends StatelessWidget {
     super.key,
     required this.onDelete,
     required this.onChanged,
+    this.required = false,
     this.placeholder = "",
     this.initialValue = "",
   });
 
+  final bool required;
   final String placeholder;
   final String initialValue;
   final void Function(ArgInput)? onDelete;
@@ -27,10 +29,10 @@ class ArgInput extends StatelessWidget {
     return Row(
       textDirection: TextDirection.rtl,
       children: [
-        IconButton(
+        ...(required ? [] : [IconButton(
             onPressed: onDelete == null ? null : () => onDelete!(this),
             icon: const Icon(Icons.close)
-        ),
+        )]),
         Expanded(child: TextFormField(
           initialValue: initialValue,
           onChanged: onChanged == null ? null : (val) => onChanged!(this, val),
@@ -51,11 +53,13 @@ class EnvInput extends StatelessWidget {
     required this.onDelete,
     required this.onKeyChanged,
     required this.onValChanged,
+    this.required = false,
     this.placeholder = "",
     this.initialKeyValue = "",
     this.initialValValue = "",
   });
 
+  final bool required;
   final String placeholder;
   final String initialKeyValue;
   final String initialValValue;
@@ -68,10 +72,10 @@ class EnvInput extends StatelessWidget {
     return Row(
       textDirection: TextDirection.rtl,
       children: [
-        IconButton(
+        ...(required ? [] : [IconButton(
             onPressed: onDelete == null ? null : () => onDelete!(this),
             icon: const Icon(Icons.close)
-        ),
+        )]),
         Expanded(child: TextFormField(
           initialValue: initialValValue,
           onChanged: onValChanged == null ? null : (val) => onValChanged!(this, val),
@@ -300,30 +304,38 @@ Future<bool> selectPlatform(BuildContext context, Map<String, dynamic> config) a
 }
 
 ArgInput generateArgInput(List<dynamic> argItems, List<String> arg, dynamic one, Function setState) {
-  return ArgInput(onDelete: (self) {
-    final i = argItems.indexOf(self);
-    argItems.removeAt(i);
-    arg.removeAt(i);
-    setState(() {});
-  }, onChanged: (self, val) {
-    final i = argItems.indexOf(self);
-    arg[i] = val;
-  }, placeholder: one["help"] ?? "", initialValue: one["last"] ?? one["default"] ?? "");
+  return ArgInput(
+    onDelete: (self) {
+      final i = argItems.indexOf(self);
+      argItems.removeAt(i);
+      arg.removeAt(i);
+      setState(() {});
+    }, onChanged: (self, val) {
+      final i = argItems.indexOf(self);
+      arg[i] = val;
+    },
+    required: one["required"] ?? false,
+    placeholder: one["help"] ?? "",
+    initialValue: one["last"] ?? one["default"] ?? ""
+  );
 }
 EnvInput generateEnvInput(List<dynamic> envItems, List<String> envk, List<String> envv, dynamic one, Function setState) {
-  return EnvInput(onDelete: (self) {
-    final i = envItems.indexOf(self);
-    envItems.removeAt(i);
-    envk.removeAt(i);
-    envv.removeAt(i);
-    setState(() {});
-  }, onKeyChanged: (self, val) {
-    final i = envItems.indexOf(self);
-    envk[i] = val;
-  }, onValChanged: (self, val) {
-    final i = envItems.indexOf(self);
-    envv[i] = val;
-  }, placeholder: one["help"] ?? "",
+  return EnvInput(
+    onDelete: (self) {
+      final i = envItems.indexOf(self);
+      envItems.removeAt(i);
+      envk.removeAt(i);
+      envv.removeAt(i);
+      setState(() {});
+    }, onKeyChanged: (self, val) {
+      final i = envItems.indexOf(self);
+      envk[i] = val;
+    }, onValChanged: (self, val) {
+      final i = envItems.indexOf(self);
+      envv[i] = val;
+    },
+    required: one["required"] ?? false,
+    placeholder: one["help"] ?? "",
     initialKeyValue: one["name"] ?? "",
     initialValValue: one["last"] ?? one["default"] ?? "",
   );
@@ -431,6 +443,7 @@ Future<bool> runAppStepArgAndEnv(BuildContext context, Map<String, dynamic> conf
           );
         });
   });
+  // TODO: check required arg, env
   if (!ok) return false;
   config["selectedEntryPoint"] = selected;
   config["entryPoint"] = path.join(

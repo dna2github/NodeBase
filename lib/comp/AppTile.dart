@@ -75,8 +75,9 @@ class _AppTileState extends State<AppTile> {
             if (!ok1) return;
             runAppStepArgAndEnv(context, config).then((ok2) {
               if (!ok2) return;
-              runAppStepReview(context, config).then((_) {
-                // TODO: deal with ApplicationProcess object or null
+              runAppStepReview(context, config).then((app) {
+                if (app == null) return;
+                saveAppConfig(config);
               });
             });
           });

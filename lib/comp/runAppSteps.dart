@@ -204,10 +204,26 @@ Future<bool> selectPlatform(BuildContext context, Map<String, dynamic> config) a
   String selected = "-";
   String selectedExec = "-";
   List<String> execs = [];
+  bool firstTime = true;
   bool ok = false;
   await showDialog(context: context, builder: (context) {
     return StatefulBuilder(
         builder: (context, setState) {
+          if (firstTime && selected == "-" && config["lastPlatformVersion"] != null) {
+            firstTime = false;
+            final lastSelected = config["lastPlatformVersion"];
+            final lastSelectedExec = config["lastExec"];
+            if (config["platformList"][platform].contains(lastSelected)) {
+              getPlatformExec(platform, lastSelected).then((list) {
+                selected = lastSelected;
+                execs = list;
+                if (list.contains(lastSelectedExec)) {
+                  selectedExec = lastSelectedExec;
+                }
+                setState(() {});
+              });
+            }
+          }
           return AlertDialog(
             title: const Text("Select Platform"),
             shape: const BeveledRectangleBorder(),
@@ -272,6 +288,7 @@ Future<bool> selectPlatform(BuildContext context, Map<String, dynamic> config) a
   );
   if (!ok) return false;
   config["platformVersion"] = selected;
+  config["selectedExec"] = selectedExec;
   config["exec"] = path.join(
       await nodebase.instance.platform.getPlatformBaseDir(platform, selected),
       selectedExec
@@ -321,7 +338,7 @@ Future<bool> runAppStepArgAndEnv(BuildContext context, Map<String, dynamic> conf
   for (final value in availableEntryPoint) {
     dropdownItems.add(DropdownMenuItem<String>(value: value, child: Text(value)));
   }
-  String selected = "-";
+  String selected = config["lastEntryPoint"] ?? "-";
   List<String> arg = [];
   List<String> envk = [];
   List<String> envv = [];
@@ -412,6 +429,7 @@ Future<bool> runAppStepArgAndEnv(BuildContext context, Map<String, dynamic> conf
         });
   });
   if (!ok) return false;
+  config["selectedEntryPoint"] = selected;
   config["entryPoint"] = path.join(
       await nodebase.instance.platform.getApplicationBaseDir(name, version),
       selected
@@ -489,8 +507,8 @@ Future<void> saveAppConfig(Map<String, dynamic> config) async {
   Map<String, dynamic> json = {};
   json["arg"] = config["arg"];
   json["env"] = config["env"];
-  json["entryPoint"] = config["entryPoint"];
-  json["exec"] = config["exec"];
+  json["entryPoint"] = config["selectedEntryPoint"];
+  json["exec"] = config["selectedExec"];
   json["platform"] = config["platform"];
   json["platformVersion"] = config["platformVersion"];
   await nodebase.instance.platform.writeApplicationConfig(name, version, json);

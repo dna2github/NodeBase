@@ -58,7 +58,7 @@ class _AppRuntimeTileState extends State<AppRuntimeTile> {
           }, icon: const Icon(Icons.stop)),
         ],
       ),
-      tileColor: Color.fromARGB(255, 230, 255, 230),
+      tileColor: const Color.fromARGB(255, 230, 255, 230),
     );
   }
 

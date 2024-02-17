@@ -15,6 +15,8 @@ public class ForegroundNodeService extends Service {
     private static final String CHANNEL_ID = "net.seven.nodebase.foregroundservice";
     public static final String ARGV = "NodeService";
 
+    private Thread watchDog;
+
     public ForegroundNodeService() { }
 
     private void registerNotificationItem() {
@@ -33,6 +35,27 @@ public class ForegroundNodeService extends Service {
                 .setContentText("application nodebase service running ...")
                 .build();
         startForeground(1, notification);
+
+        watchDog = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Intent it = new Intent(
+                        ForegroundNodeService.this.getApplicationContext(),
+                        ForegroundNodeService.class
+                );
+                while(true) {
+                    int count = NodeAppService.getRunningNodeAppCount();
+                    if (count <= 0) break;
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                };
+                ForegroundNodeService.this.stopService(it);
+            }
+        });
+        watchDog.start();
     }
 
     @Override

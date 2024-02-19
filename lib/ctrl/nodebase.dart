@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:io';
 
 import '../ctrl/application.dart';
 import '../ctrl/platform.dart';
@@ -26,20 +27,29 @@ class NodeBaseController {
     try {
       // TODO: read user settings, app list, platform list
       //       get latest app, platform list from remote
-      await platform.downloadNodeBaseJson();
+      final download = platform.downloadNodeBaseJson();
+      if (!File(platform.getNodeBaseJsonFilename()).existsSync()) {
+        await download;
+      }
     } catch (e) {
       log("NodeBase [E] cannot download nodebase.json");
     }
     isSupported = await platform.isSupported();
     // TODO: check platform version; if no change, skip download list
     try {
-      await platform.downloadApplicationListJson();
+      final download = platform.downloadApplicationListJson();
+      if (!File(platform.getApplicationListJsonFilename()).existsSync()) {
+        await download;
+      }
     } catch(e) {
-      log("NodeBase [E] cannot download app-list.json.json");
+      log("NodeBase [E] cannot download app-list.json");
     }
 
     try {
-      await platform.downloadPlatformListJson();
+      final download = platform.downloadPlatformListJson();
+      if (!File(platform.getPlatformListJsonFilename()).existsSync()) {
+        await download;
+      }
     } catch(e) {
       log("NodeBase [E] cannot download plm-list.json");
     }

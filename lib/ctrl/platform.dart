@@ -103,6 +103,10 @@ class Platform {
   String _getApplicationBaseDir() => path.join(baseDir, "workspace", "app");
   String _getPlatformBaseDir() => path.join(baseDir, "workspace", "plm");
 
+  String getNodeBaseJsonFilename() => path.join(_getEtcBaseDir(), "nodebase", "nodebase.json");
+  String getApplicationListJsonFilename() => path.join(_getEtcBaseDir(), "nodebase", "app-$os-$arch.json");
+  String getPlatformListJsonFilename() => path.join(_getEtcBaseDir(), "nodebase", "plm-$os-$arch.json");
+
   void changeBaseUrl(String url) { baseUrl = url; }
   Future<bool> isSupported() async {
     final config = await readNodeBaseJson();
@@ -161,7 +165,7 @@ class Platform {
     _downloadQueue[tmpFilename] = _DownloadItem(action: action, cancel: cancel);
     try {
       await _downloadFile("nodebase.json", "$baseUrl/nodebase.json", tmpFilename, cancel);
-      final targetFilename = path.join(_getEtcBaseDir(), "nodebase", "nodebase.json");
+      final targetFilename = getNodeBaseJsonFilename();
       await fsGuaranteeDir(targetFilename);
       final tmpFile = File(tmpFilename);
       await tmpFile.copy(targetFilename);
@@ -182,7 +186,7 @@ class Platform {
     _downloadQueue[tmpFilename] = _DownloadItem(action: action, cancel: cancel);
     try {
       await _downloadFile("app-$os-$arch.json", "$baseUrl/app-$os-$arch.json", tmpFilename, cancel);
-      final targetFilename = path.join(_getEtcBaseDir(), "nodebase", "app-$os-$arch.json");
+      final targetFilename = getApplicationListJsonFilename();
       await fsGuaranteeDir(targetFilename);
       final tmpFile = File(tmpFilename);
       await tmpFile.copy(targetFilename);
@@ -203,7 +207,7 @@ class Platform {
     _downloadQueue[tmpFilename] = _DownloadItem(action: action, cancel: cancel);
     try {
       await _downloadFile("plm-$os-$arch.json", "$baseUrl/plm-$os-$arch.json", tmpFilename, cancel);
-      final targetFilename = path.join(_getEtcBaseDir(), "nodebase", "plm-$os-$arch.json");
+      final targetFilename = getPlatformListJsonFilename();
       await fsGuaranteeDir(targetFilename);
       final tmpFile = File(tmpFilename);
       await tmpFile.copy(targetFilename);

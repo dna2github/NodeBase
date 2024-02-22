@@ -12,7 +12,8 @@ For previous mature version, please explore source code on
 
 - [x] migrate kotlin service code
 - [x] implement windows adapter for MethodChannel and EventChannel
-- [ ] rewrite new design UI in dart
+- [x] rewrite new design UI in dart (basic flow)
+- [ ] polish new design UI in dart
 - [ ] implement linux adapter
 - [ ] implement macosx adapter
 - [ ] implement web+ios adapter

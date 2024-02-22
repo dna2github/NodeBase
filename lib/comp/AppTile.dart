@@ -121,7 +121,7 @@ class _AppTileState extends State<AppTile> {
           final confirmed = await showConfirmDialog(
               context,
               "Install Application",
-              "Do you confirm to install the application \"${name}-${version}\"?"
+              "Do you confirm to install the application \"$name-$version\"?"
           );
           if (!confirmed) return "cancel";
           isDownloading = true;

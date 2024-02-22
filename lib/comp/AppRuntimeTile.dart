@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import './util.dart';
 import '../ctrl/application.dart';
-import '../util/event.dart' as event;
-import '../ctrl/nodebase.dart' as nodebase;
 
 class AppRuntimeTile extends StatefulWidget {
   const AppRuntimeTile({super.key, required this.process});

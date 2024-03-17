@@ -56,7 +56,7 @@ std::string utilWorkspaceBaseDir() {
 
 #define RETURN_BADARG_ERR(x) { fl_method_call_respond_error(method_call, "BAD_ARGS", "Invalid argument type for '" #x "'", nullptr, nullptr); return; }
 void InitMethodChannel(FlView* flutter_instance) {
-    const static char *channel_name = "net.seven.lab.sevchat/app";
+    const static char *channel_name = "net.seven.nodebase/app";
 
     auto channel = fl_method_channel_new(
             fl_engine_get_binary_messenger(fl_view_get_engine(flutter_instance)),

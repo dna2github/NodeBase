@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/utsname.h>
 #include <unistd.h>
 #include <limits.h>
@@ -25,6 +26,15 @@ void utilBrowserOpen(const std::string &url) {
         exit(-1);
     }
 }
+
+bool utilFileMarkExecutable(const std::string &filename) {
+    struct stat fileStat;
+    if (!stat(filename.c_str(), &fileStat)) return false;
+    mode_t newPerms = fileStat.st_mode | S_IXUSR;
+    if (!chmod(filename.c_str(), newPerms)) return false;
+    return true;
+}
+
 std::string utilGetArch() {
     std::string arch("linux-");
     struct utsname uts;
@@ -43,6 +53,7 @@ std::string utilGetArch() {
     }
     return arch;
 }
+
 std::string utilWorkspaceBaseDir() {
     char buf[PATH_MAX];
     size_t len = readlink("/proc/self/exe", buf, sizeof(buf));
@@ -68,7 +79,20 @@ void InitMethodChannel(FlView* flutter_instance) {
             [](FlMethodChannel *channel, FlMethodCall *method_call, gpointer user_data) {
                 g_autoptr(FlMethodResponse) response = nullptr;
                 const gchar *method_name = fl_method_call_get_name(method_call);
-                if (strcmp("util.browser.open", method_name) == 0) {
+                /* TODO: if (strcmp("app.stat", method_name) == 0) {
+                } else if (strcmp("app.start", method_name) == 0) {
+                } else if (strcmp("app.restart", method_name) == 0) {
+                } else if (strcmp("app.stop", method_name) == 0) {
+                } else if (strcmp("util.ip", method_name) == 0) {
+                } else*/ if (strcmp("util.file.executable", method_name) == 0) {
+                    FlValue *args = fl_method_call_get_args(method_call);
+                    if (fl_value_get_type(args) != FL_VALUE_TYPE_LIST || fl_value_get_length(args) < 1) RETURN_BADARG_ERR(util.file.executable);
+                    FlValue *filename_ = fl_value_get_list_value(args, 0);
+                    if (fl_value_get_type(filename_) != FL_VALUE_TYPE_STRING) RETURN_BADARG_ERR(util.file.executable);
+                    std::string filename = std::string(fl_value_get_string(filename_));
+                    g_autoptr(FlValue) val = fl_value_new_bool(utilFileMarkExecutable(filename));
+                    response = FL_METHOD_RESPONSE(fl_method_success_response_new(val));
+                } else if (strcmp("util.browser.open", method_name) == 0) {
                     FlValue *args = fl_method_call_get_args(method_call);
                     if (fl_value_get_type(args) != FL_VALUE_TYPE_LIST || fl_value_get_length(args) < 1) RETURN_BADARG_ERR(util.browser.open);
                     FlValue *url_ = fl_value_get_list_value(args, 0);

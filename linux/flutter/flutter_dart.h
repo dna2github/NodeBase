@@ -18,6 +18,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+static g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
+static FlEventChannel *eventHandler = nullptr;
+
 void utilBrowserOpen(const std::string &url) {
     if (url.rfind("http:", 0) != 0 && url.rfind("https:", 0) != 0) return;
     pid_t pid = fork();
@@ -112,7 +115,7 @@ void InitMethodChannel(FlView* flutter_instance) {
     auto channel = fl_method_channel_new(
             fl_engine_get_binary_messenger(fl_view_get_engine(flutter_instance)),
             channel_name,
-            FL_METHOD_CODEC(fl_standard_method_codec_new())
+            FL_METHOD_CODEC(codec)
     );
     fl_method_channel_set_method_call_handler(
             channel,
@@ -159,4 +162,12 @@ void InitMethodChannel(FlView* flutter_instance) {
 }
 #undef RETURN_BADARG_ERR
 
+void InitEventChannel(FlView* flutter_instance) {
+    const static char *channel_name = "net.seven.nodebase/event";
+    eventHandler = fl_event_channel_new(
+            fl_engine_get_binary_messenger(fl_view_get_engine(flutter_instance)),
+            channel_name,
+            FL_METHOD_CODEC(codec)
+    );
+}
 #endif // _FLUTTER_DART_

@@ -14,7 +14,7 @@ For previous mature version, please explore source code on
 - [x] implement windows adapter for MethodChannel and EventChannel
 - [x] rewrite new design UI in dart (basic flow)
 - [ ] polish new design UI in dart
-- [ ] implement linux adapter
+- [x] implement linux adapter
 - [ ] implement macosx adapter
 - [ ] implement web+ios adapter
 

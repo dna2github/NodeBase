@@ -352,9 +352,9 @@ void InitMethodChannel(FlView* flutter_instance) {
                 const gchar *method_name = fl_method_call_get_name(method_call);
                 if (strcmp("app.stat", method_name) == 0) {
                     FlValue *args = fl_method_call_get_args(method_call);
-                    if (fl_value_get_type(args) != FL_VALUE_TYPE_LIST || fl_value_get_length(args) < 1) RETURN_BADARG_ERR(app.stop);
+                    if (fl_value_get_type(args) != FL_VALUE_TYPE_LIST || fl_value_get_length(args) < 1) RETURN_BADARG_ERR(app.stat);
                     FlValue *name_ = fl_value_get_list_value(args, 0);
-                    if (fl_value_get_type(name_) != FL_VALUE_TYPE_STRING) RETURN_BADARG_ERR(app.stop);
+                    if (fl_value_get_type(name_) != FL_VALUE_TYPE_STRING) RETURN_BADARG_ERR(app.stat);
                     std::string name = std::string(fl_value_get_string(name_));
                     g_autoptr(FlValue) appstat = fl_value_new_map();
                     appStat(name, appstat);
@@ -392,9 +392,9 @@ void InitMethodChannel(FlView* flutter_instance) {
                     response = FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
                 } else if (strcmp("app.restart", method_name) == 0) {
                     FlValue *args = fl_method_call_get_args(method_call);
-                    if (fl_value_get_type(args) != FL_VALUE_TYPE_LIST || fl_value_get_length(args) < 1) RETURN_BADARG_ERR(app.stop);
+                    if (fl_value_get_type(args) != FL_VALUE_TYPE_LIST || fl_value_get_length(args) < 1) RETURN_BADARG_ERR(app.restart);
                     FlValue *name_ = fl_value_get_list_value(args, 0);
-                    if (fl_value_get_type(name_) != FL_VALUE_TYPE_STRING) RETURN_BADARG_ERR(app.stop);
+                    if (fl_value_get_type(name_) != FL_VALUE_TYPE_STRING) RETURN_BADARG_ERR(app.restart);
                     std::string name = std::string(fl_value_get_string(name_));
                     appRestart(name);
                     response = FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));

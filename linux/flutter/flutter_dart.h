@@ -248,7 +248,7 @@ std::string utilGetArch() {
 std::string utilWorkspaceBaseDir() {
     char buf[PATH_MAX];
     size_t len = readlink("/proc/self/exe", buf, sizeof(buf));
-    if (len < 0) {
+    if (len <= 0) {
         buf[0] = '\0';
     } else {
         dirname(buf);

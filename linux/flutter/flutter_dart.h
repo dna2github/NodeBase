@@ -350,9 +350,17 @@ void InitMethodChannel(FlView* flutter_instance) {
             [](FlMethodChannel *channel, FlMethodCall *method_call, gpointer user_data) {
                 g_autoptr(FlMethodResponse) response = nullptr;
                 const gchar *method_name = fl_method_call_get_name(method_call);
-                /* TODO: if (strcmp("app.stat", method_name) == 0) {
-                } else if (strcmp("app.start", method_name) == 0) {
-                } else*/ if (strcmp("app.restart", method_name) == 0) {
+                if (strcmp("app.stat", method_name) == 0) {
+                    FlValue *args = fl_method_call_get_args(method_call);
+                    if (fl_value_get_type(args) != FL_VALUE_TYPE_LIST || fl_value_get_length(args) < 1) RETURN_BADARG_ERR(app.stop);
+                    FlValue *name_ = fl_value_get_list_value(args, 0);
+                    if (fl_value_get_type(name_) != FL_VALUE_TYPE_STRING) RETURN_BADARG_ERR(app.stop);
+                    std::string name = std::string(fl_value_get_string(name_));
+                    g_autoptr(FlValue) appstat = fl_value_new_map();
+                    appStat(name, appstat);
+                    response = FL_METHOD_RESPONSE(fl_method_success_response_new(appstat));
+                /*} else if (strcmp("app.start", method_name) == 0) {*/
+                } else if (strcmp("app.restart", method_name) == 0) {
                     FlValue *args = fl_method_call_get_args(method_call);
                     if (fl_value_get_type(args) != FL_VALUE_TYPE_LIST || fl_value_get_length(args) < 1) RETURN_BADARG_ERR(app.stop);
                     FlValue *name_ = fl_value_get_list_value(args, 0);

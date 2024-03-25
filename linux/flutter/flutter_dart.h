@@ -359,7 +359,37 @@ void InitMethodChannel(FlView* flutter_instance) {
                     g_autoptr(FlValue) appstat = fl_value_new_map();
                     appStat(name, appstat);
                     response = FL_METHOD_RESPONSE(fl_method_success_response_new(appstat));
-                /*} else if (strcmp("app.start", method_name) == 0) {*/
+                } else if (strcmp("app.start", method_name) == 0) {
+                    FlValue *args = fl_method_call_get_args(method_call);
+                    if (fl_value_get_type(args) != FL_VALUE_TYPE_LIST || fl_value_get_length(args) < 1) RETURN_BADARG_ERR(app.start);
+                    FlValue *name_ = fl_value_get_list_value(args, 0);
+                    if (fl_value_get_type(name_) != FL_VALUE_TYPE_STRING) RETURN_BADARG_ERR(app.start);
+                    FlValue *cmd_ = fl_value_get_list_value(args, 0);
+                    if (fl_value_get_type(cmd_) != FL_VALUE_TYPE_LIST) RETURN_BADARG_ERR(app.start);
+                    FlValue *env_ = fl_value_get_list_value(args, 0);
+                    if (fl_value_get_type(env_) != FL_VALUE_TYPE_MAP) RETURN_BADARG_ERR(app.start);
+                    std::string name = std::string(fl_value_get_string(name_));
+
+                    std::vector<std::string> cmd;
+                    for (size_t i = 0; i < fl_value_get_length(cmd_); i++) {
+                        FlValue *cmdi = fl_value_get_list_value(cmd_, i);
+                        if (fl_value_get_type(cmdi) != FL_VALUE_TYPE_STRING) RETURN_BADARG_ERR(app.start);
+                        cmd.push_back(std::string(fl_value_get_string(cmdi)));
+                    }
+
+                    std::map<std::string, std::string> env;
+                    for (size_t i = 0; i < fl_value_get_length(env_); i++) {
+                        FlValue *envk_ = fl_value_get_map_key(env_, i);
+                        if (fl_value_get_type(envk_) != FL_VALUE_TYPE_STRING) RETURN_BADARG_ERR(app.start);
+                        std::string envk = std::string(fl_value_get_string(envk_));
+                        FlValue *envv_ = fl_value_lookup_string(env_, envk.c_str());
+                        if (fl_value_get_type(envv_) != FL_VALUE_TYPE_STRING) RETURN_BADARG_ERR(app.start);
+                        std::string envv = std::string(fl_value_get_string(envv_));
+                        env.insert_or_assign(envk, envv);
+                    }
+
+                    appStart(name, cmd, env);
+                    response = FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
                 } else if (strcmp("app.restart", method_name) == 0) {
                     FlValue *args = fl_method_call_get_args(method_call);
                     if (fl_value_get_type(args) != FL_VALUE_TYPE_LIST || fl_value_get_length(args) < 1) RETURN_BADARG_ERR(app.stop);

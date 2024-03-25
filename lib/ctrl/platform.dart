@@ -280,6 +280,10 @@ class Platform {
         final targetFilename = path.join(_getApplicationBaseDir(), hash);
         await fsMkdir(targetFilename);
         await fsUnzipFiles(tmpFilename, targetFilename);
+      } else if (baseName.endsWith(".tar.xz")) {
+        final targetFilename = path.join(_getApplicationBaseDir(), hash);
+        await fsMkdir(targetFilename);
+        await fsUnzipXzTarFiles(tmpFilename, targetFilename);
       } else {
         final targetFilename = path.join(_getApplicationBaseDir(), hash, baseName);
         await fsGuaranteeDir(targetFilename);
@@ -309,6 +313,13 @@ class Platform {
         final targetFilename = path.join(_getPlatformBaseDir(), hash);
         await fsMkdir(targetFilename);
         await fsUnzipFiles(tmpFilename, targetFilename);
+        for (final fname in await listPlatformExecutableList(name, version)) {
+          await NodeBaseApi.apiUtilMarkExecutable(path.join(targetFilename, fname));
+        }
+      } else if (baseName.endsWith(".tar.xz")) {
+        final targetFilename = path.join(_getPlatformBaseDir(), hash);
+        await fsMkdir(targetFilename);
+        await fsUnzipXzTarFiles(tmpFilename, targetFilename);
         for (final fname in await listPlatformExecutableList(name, version)) {
           await NodeBaseApi.apiUtilMarkExecutable(path.join(targetFilename, fname));
         }

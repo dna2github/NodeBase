@@ -196,6 +196,30 @@ Future<void> fsUnzipFiles(String zipFilename, String dstDir) async {
   }
 }
 
+Future<void> fsUnzipXzTarFiles(String xztarFilename, String dstDir) async {
+  try {
+    final bytes = File(xztarFilename).readAsBytesSync();
+
+    // Decode the Zip archive
+    final archive = TarDecoder().decodeBytes(XZDecoder().decodeBytes(bytes));
+
+    for (final file in archive) {
+      final filename = file.name;
+      if (file.isFile) {
+        final data = file.content as List<int>;
+        File(path.join(dstDir, filename))
+          ..createSync(recursive: true)
+          ..writeAsBytesSync(data);
+      } else {
+        Directory(path.join(dstDir, filename))
+            .createSync(recursive: true);
+      }
+    }
+  } catch (e) {
+    log("NodeBase [E] fsUnzipFiles ... ${e.toString()}");
+  }
+}
+
 Future<void> fsGuaranteeDir(String filename) async {
   final dir = Directory(path.dirname(filename));
   if (!dir.existsSync()) {

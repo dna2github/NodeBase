@@ -23,8 +23,8 @@
 #include <map>
 #include <vector>
 #include <thread>
+#include <sys/wait.h>
 
-static g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
 static FlEventChannel *eventHandler = nullptr;
 
 enum NodeAppSTAT {
@@ -83,10 +83,10 @@ public:
         this->stat = NodeAppSTAT::RUNNING;
 
         {
-            g_autoptr(FlValue) message = fl_value_new_list (event);
+            g_autoptr(FlValue) message = fl_value_new_list();
             g_autoptr(GError) error = NULL;
-            fl_value_append_take(message, fl_value_new_string ("start");
-            fl_value_append_take(message, fl_value_new_string (this->name.c_str());
+            fl_value_append_take(message, fl_value_new_string ("start"));
+            fl_value_append_take(message, fl_value_new_string (this->name.c_str()));
             fl_event_channel_send(eventHandler, message, NULL, &error);
         }
 
@@ -95,10 +95,10 @@ public:
         this->stat = NodeAppSTAT::DEAD;
 
         {
-            g_autoptr(FlValue) message = fl_value_new_list (event);
+            g_autoptr(FlValue) message = fl_value_new_list();
             g_autoptr(GError) error = NULL;
-            fl_value_append_take(message, fl_value_new_string ("stop");
-            fl_value_append_take(message, fl_value_new_string (this->name.c_str());
+            fl_value_append_take(message, fl_value_new_string ("stop"));
+            fl_value_append_take(message, fl_value_new_string (this->name.c_str()));
             fl_event_channel_send(eventHandler, message, NULL, &error);
         }
     }
@@ -149,7 +149,7 @@ private:
     pid_t _startProcess(const char *cmd, const char **args, const char **env) {
         pid_t pid = fork();
         if (pid == 0) {
-            execve(cmd, args, env);
+            execve(cmd, (char * const *)args, (char * const *)env);
             exit(-1);
         } else if (pid > 0){
             return pid;
@@ -219,7 +219,7 @@ void appStart(const std::string &name, const std::vector<std::string> &cmd, cons
     }
     app = new NodeAppMonitor(name, cmd, env);
     // TODO: if (!app) {} // memory allocate failure
-    services.insert_or_assign(name, app);
+    services.insert({name, app});
 }
 void appStop(const std::string &name) {
     std::lock_guard<std::mutex> guard(service_lock);
@@ -234,12 +234,12 @@ bool appRestart(const std::string &name) {
     if (app_ == services.end()) return false;
     NodeAppMonitor *app = app_->second;
     app->Stop();
-    NodeAppMonitor *newapp = app->restart();
+    NodeAppMonitor *newapp = app->Restart();
     if (newapp == nullptr) {
         return false;
     }
     delete app;
-    services.insert_or_assign(name, newapp);
+    services.insert({name, newapp});
     return true;
 }
 void appStat(const std::string &name, FlValue *map) {
@@ -304,7 +304,7 @@ bool _convertIpBinary2String(struct sockaddr *addr, char* buf, size_t buf_len) {
     void *binAddr;
     if (addr->sa_family == AF_INET) {
         binAddr = &((struct sockaddr_in *)addr)->sin_addr;
-    } else if (ifa->sa_family == AF_INET6) {
+    } else if (addr->sa_family == AF_INET6) {
         binAddr = &((struct sockaddr_in6 *)addr)->sin6_addr;
     } else {
         return false;
@@ -331,7 +331,7 @@ bool utilGetIps(FlValue *map) {
             fl_value_set_string_take(map, ifa_name, newlist);
             list = newlist;
         }
-        fl_value_append_take (newlist, fl_value_new_string (addrBuf));
+        fl_value_append_take(list, fl_value_new_string (addrBuf));
     }
     return true;
 }
@@ -339,6 +339,7 @@ bool utilGetIps(FlValue *map) {
 #define RETURN_BADARG_ERR(x) { fl_method_call_respond_error(method_call, "BAD_ARGS", "Invalid argument type for '" #x "'", nullptr, nullptr); return; }
 void InitMethodChannel(FlView* flutter_instance) {
     const static char *channel_name = "net.seven.nodebase/app";
+    g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
 
     auto channel = fl_method_channel_new(
             fl_engine_get_binary_messenger(fl_view_get_engine(flutter_instance)),
@@ -385,7 +386,7 @@ void InitMethodChannel(FlView* flutter_instance) {
                         FlValue *envv_ = fl_value_lookup_string(env_, envk.c_str());
                         if (fl_value_get_type(envv_) != FL_VALUE_TYPE_STRING) RETURN_BADARG_ERR(app.start);
                         std::string envv = std::string(fl_value_get_string(envv_));
-                        env.insert_or_assign(envk, envv);
+                        env.insert({envk, envv});
                     }
 
                     appStart(name, cmd, env);
@@ -444,6 +445,7 @@ void InitMethodChannel(FlView* flutter_instance) {
 
 void InitEventChannel(FlView* flutter_instance) {
     const static char *channel_name = "net.seven.nodebase/event";
+    g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
     eventHandler = fl_event_channel_new(
             fl_engine_get_binary_messenger(fl_view_get_engine(flutter_instance)),
             channel_name,

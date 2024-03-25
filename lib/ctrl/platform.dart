@@ -276,7 +276,7 @@ class Platform {
     try {
       await _downloadFile("app-$name-$version.bin", url, tmpFilename, cancel);
       final tmpFile = File(tmpFilename);
-      Function(String, String)? unzipFn = null;
+      Function(String, String)? unzipFn;
       if (baseName.endsWith(".zip")) {
         unzipFn = fsUnzipFiles;
       } else if (baseName.endsWith(".tar")) {
@@ -317,7 +317,7 @@ class Platform {
     try {
       await _downloadFile("plm-$name-$version.bin", url, tmpFilename, cancel);
       final tmpFile = File(tmpFilename);
-      Function(String, String)? unzipFn = null;
+      Function(String, String)? unzipFn;
       if (baseName.endsWith(".zip")) {
         unzipFn = fsUnzipFiles;
       } else if (baseName.endsWith(".tar")) {

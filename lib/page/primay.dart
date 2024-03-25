@@ -29,19 +29,15 @@ class _PrimaryPageState extends State<PrimaryPage> {
     Map<String, int> appRef = {};
     Map<String, int> plmRef = {};
     for (final one in appList) {
-      print("${one.name}-${one.version}");
       appRef["${one.name}-${one.version}"] = 0;
     }
     for (final one in plmList) {
-      print("${one.name}-${one.version}");
       plmRef["${one.name}-${one.version}"] = 0;
     }
     for (final one in runtimeList) {
-      print("${one.process.name} ${one.process.platform}");
       appRef[one.process.name] = (appRef[one.process.name] ?? 0) + 1;
       plmRef[one.process.platform] = (plmRef[one.process.name] ?? 0) + 1;
     }
-    print("$plmRef $appRef");
     for (int i = 0, n = appList.length; i < n; i++) {
       final one = appList[i];
       final running = (appRef["${one.name}-${one.version}"] ?? 0) > 0;

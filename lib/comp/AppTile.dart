@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import './runAppSteps.dart';
 import './util.dart';
@@ -13,6 +14,7 @@ class AppTile extends StatefulWidget {
     required this.platform,
     this.defaultInstalled = false,
     this.defaultRunning = false,
+    this.userDefined = false,
   });
 
   final String name;
@@ -20,6 +22,7 @@ class AppTile extends StatefulWidget {
   final String platform;
   final bool defaultInstalled;
   final bool defaultRunning;
+  final bool userDefined;
 
   @override
   State<StatefulWidget> createState() => _AppTileState();
@@ -152,9 +155,19 @@ class _AppTileState extends State<AppTile> {
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            "${widget.name}-${widget.version}",
-            overflow: TextOverflow.ellipsis,
+          Row(
+            children: [
+              ...(widget.userDefined ? [
+                const Tooltip(
+                  message: "Not in marketplace",
+                  child: Icon(Icons.person_pin_circle_rounded, size: 12),
+                ),
+              ]: []),
+              Expanded(child: Text(
+                "${widget.name}-${widget.version}",
+                overflow: TextOverflow.ellipsis,
+              )),
+            ],
           ),
         ],
       ),

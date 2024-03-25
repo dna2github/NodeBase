@@ -11,12 +11,14 @@ class PlatformTile extends StatefulWidget {
     required this.version,
     this.defaultInstalled = false,
     this.defaultRunning = false,
+    this.userDefined = false,
   });
 
   final String name;
   final String version;
   final bool defaultInstalled;
   final bool defaultRunning;
+  final bool userDefined;
 
   @override
   State<StatefulWidget> createState() => _AppTileState();
@@ -123,10 +125,20 @@ class _AppTileState extends State<PlatformTile> {
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            "${widget.name}-${widget.version}",
-            overflow: TextOverflow.ellipsis,
-          ),
+          Row(
+            children: [
+              ...(widget.userDefined ? [
+                const Tooltip(
+                  message: "Not in marketplace",
+                  child: Icon(Icons.person_pin_circle_rounded, size: 12),
+                ),
+              ]: []),
+              Expanded(child: Text(
+                "${widget.name}-${widget.version}",
+                overflow: TextOverflow.ellipsis,
+              )),
+            ],
+          )
         ],
       ),
       subtitle: Column(

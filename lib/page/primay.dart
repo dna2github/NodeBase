@@ -164,13 +164,31 @@ class _PrimaryPageState extends State<PrimaryPage> {
     })().then((list) {
       final [listAp, listIp] = list;
       final List<PlatformTile> r = [];
-      listAp.forEach((name, versions) {
+      listIp.forEach((name, versions) {
         for (final version in versions) {
-          final installed = listIp.containsKey(name) && listIp[name]!.contains(version);
-          final p = PlatformTile(name: name, version: version, defaultInstalled: installed);
+          if (listAp.containsKey(name) && listAp[name]!.contains(version)) continue;
+          final p = PlatformTile(
+              name: name,
+              version: version,
+              defaultInstalled: true,
+              userDefined: true
+          );
           r.add(p);
         }
       });
+      listAp.forEach((name, versions) {
+        for (final version in versions) {
+          final installed = listIp.containsKey(name) && listIp[name]!.contains(version);
+          final p = PlatformTile(
+              name: name,
+              version: version,
+              defaultInstalled: installed,
+              userDefined: false
+          );
+          r.add(p);
+        }
+      });
+      // TODO: sort r and installed ones should at top
       setState(() {
         plmList.clear();
         plmList.addAll(r);
@@ -188,13 +206,35 @@ class _PrimaryPageState extends State<PrimaryPage> {
     })().then((list) {
       final [listAa, listIa] = list;
       final List<AppTile> r = [];
+      listIa.forEach((name, vps) {
+        for (final vp in vps) {
+          if (listAa.containsKey(name) && listAa[name]!.contains(vp)) continue;
+          final i = vp.indexOf(':');
+          final version = vp.substring(0, i);
+          final platform = vp.substring(i+1);
+          final a = AppTile(
+              name: name,
+              version: version,
+              defaultInstalled: true,
+              platform: platform,
+              userDefined: true
+          );
+          r.add(a);
+        }
+      });
       listAa.forEach((name, vps) {
         for (final vp in vps) {
           final i = vp.indexOf(':');
           final version = vp.substring(0, i);
           final platform = vp.substring(i+1);
           final installed = listIa.containsKey(name) && listIa[name]!.contains(vp);
-          final a = AppTile(name: name, version: version, defaultInstalled: installed, platform: platform);
+          final a = AppTile(
+              name: name,
+              version: version,
+              defaultInstalled: installed,
+              platform: platform,
+              userDefined: true
+          );
           r.add(a);
         }
       });

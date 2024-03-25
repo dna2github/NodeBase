@@ -233,7 +233,7 @@ class _PrimaryPageState extends State<PrimaryPage> {
               version: version,
               defaultInstalled: installed,
               platform: platform,
-              userDefined: true
+              userDefined: false
           );
           r.add(a);
         }

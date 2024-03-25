@@ -18,8 +18,192 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <mutex>
+#include <sstream>
+#include <map>
+#include <vector>
+#include <thread>
+
 static g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
 static FlEventChannel *eventHandler = nullptr;
+
+enum NodeAppSTAT {
+    BORN, READY, RUNNING, DEAD
+};
+
+class NodeAppMonitor {
+public:
+    NodeAppMonitor(const std::string &name, const std::vector<std::string> &cmd, const std::map<std::string, std::string> &env) {
+        this->name = name;
+        this->cmd = cmd;
+        this->env = env;
+        this->stat = NodeAppSTAT::BORN;
+        this->curpid = -1;
+        this->pth = std::thread(NodeAppMonitor::Run, this);
+    }
+    ~NodeAppMonitor() {
+        this->Stop();
+        if (this->pth.joinable()) this->pth.join();
+    }
+
+    void Start() {
+        this->stat = NodeAppSTAT::READY;
+        int argN = this->cmd.size(), envN = this->env.size();
+        int status = 0;
+        const char *cmd = this->cmd.at(0).c_str();
+        const char *args[argN+1], *env[envN+1];
+        const char **cur;
+
+        cur = args;
+        for (auto i = this->cmd.begin(); i != this->cmd.end(); i++) {
+            *cur = i->c_str();
+            ++ cur;
+        }
+        *cur = nullptr;
+
+        int envI = 0;
+        std::string envRaw[envN];
+        for (auto i = this->env.begin(); i != this->env.end(); i++) {
+            envRaw[envI] = std::string(i->first) + "=" + std::string(i->second);
+            env[envI] = envRaw[envI].c_str();
+            ++ envI;
+        }
+        env[envI] = nullptr;
+
+        pid_t chpid = this->_startProcess(cmd, args, env);
+        if (chpid <= 0) {
+            this->stat = NodeAppSTAT::DEAD;
+            printf(
+                    "NodeAppMonitor [E] \"%s\" start failure on CreateProcess.",
+                    this->name.c_str()
+            );
+            return;
+        }
+        this->curpid = chpid;
+        this->stat = NodeAppSTAT::RUNNING;
+
+        {
+            g_autoptr(FlValue) message = fl_value_new_list (event);
+            g_autoptr(GError) error = NULL;
+            fl_value_append_take(message, fl_value_new_string ("start");
+            fl_value_append_take(message, fl_value_new_string (this->name.c_str());
+            fl_event_channel_send(eventHandler, message, NULL, &error);
+        }
+
+        waitpid(chpid, &status, 0);
+        this->curpid = -1;
+        this->stat = NodeAppSTAT::DEAD;
+
+        {
+            g_autoptr(FlValue) message = fl_value_new_list (event);
+            g_autoptr(GError) error = NULL;
+            fl_value_append_take(message, fl_value_new_string ("stop");
+            fl_value_append_take(message, fl_value_new_string (this->name.c_str());
+            fl_event_channel_send(eventHandler, message, NULL, &error);
+        }
+    }
+
+    void Stop() {
+        if (!this->IsRunning()) return;
+        if (this->curpid <= 0) return;
+        int status = 0;
+        this->_stopProcessTree(this->curpid, SIGTERM);
+        waitpid(this->curpid, &status, 0);
+    }
+
+    NodeAppMonitor* Restart() {
+        this->Stop();
+        return new NodeAppMonitor(this->name, this->cmd, this->env);
+    }
+    void toJSON(FlValue* map) {
+        std::string rstat = "none";
+        switch (this->stat) {
+            case NodeAppSTAT::RUNNING:
+                rstat = "running";
+                break;
+            case NodeAppSTAT::DEAD:
+                rstat = "dead";
+                break;
+            case NodeAppSTAT::READY:
+                rstat = "new";
+                break;
+            case NodeAppSTAT::BORN:
+            default:
+                break;
+        }
+        g_autoptr(FlValue) statval = fl_value_new_string(rstat.c_str());
+        fl_value_set_string_take(map, "stat", statval);
+    }
+
+    bool IsRunning() { return this->stat == NodeAppSTAT::RUNNING; }
+    bool IsDead() { return this->stat == NodeAppSTAT::DEAD; }
+
+    std::string GetName() { return this->name; }
+    std::vector<std::string> GetCmd() { return this->cmd; }
+    std::map<std::string, std::string> GetEnv() { return this->env; }
+private:
+    static void Run(NodeAppMonitor* app) {
+        app->Start();
+    }
+
+    pid_t _startProcess(const char *cmd, const char **args, const char **env) {
+        pid_t pid = fork();
+        if (pid == 0) {
+            execve(cmd, args, env);
+            exit(-1);
+        } else if (pid > 0){
+            return pid;
+        } else {
+            return -1;
+        }
+    }
+
+    bool _stopProcessTree(pid_t pid, int signal) {
+        DIR *dir;
+        struct dirent *entry;
+        char path[PATH_MAX];
+        FILE *fp;
+        pid_t child_pid;
+
+        // Open the /proc directory
+        dir = opendir("/proc");
+        if (!dir) return false;
+
+        // Iterate over each entry in /proc
+        while ((entry = readdir(dir)) != NULL) {
+            // Check if the entry is a directory and starts with a digit (representing a PID)
+            if (entry->d_type == DT_DIR && entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
+                sprintf(path, "/proc/%s/stat", entry->d_name);
+                fp = fopen(path, "r");
+                if (fp) {
+                    // Read the process information from the stat file
+                    if (fscanf(fp, "%*d %*s %*c %d", &child_pid) == 1) {
+                        // Check if the process is a child of the target process
+                        if (child_pid == pid) {
+                            // Kill the child process and its subprocesses recursively
+                            this->_stopProcessTree(atoi(entry->d_name), signal);
+                        }
+                    }
+                    fclose(fp);
+                }
+            }
+        }
+
+        closedir(dir);
+
+        // Kill the target process
+        kill(pid, signal);
+        return true;
+    }
+
+private:
+    NodeAppSTAT stat;
+    std::string name;
+    std::vector<std::string> cmd;
+    std::map<std::string, std::string> env;
+    std::thread pth;
+    pid_t curpid;
+};
 
 void utilBrowserOpen(const std::string &url) {
     if (url.rfind("http:", 0) != 0 && url.rfind("https:", 0) != 0) return;

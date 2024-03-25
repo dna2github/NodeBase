@@ -175,22 +175,20 @@ Future<void> fsZipFiles(String zipFilename, List<File> files) async {
 Future<void> fsUnzipFiles(String zipFilename, String dstDir) async {
   try {
     final bytes = File(zipFilename).readAsBytesSync();
-
     // Decode the Zip archive
     final archive = ZipDecoder().decodeBytes(bytes);
+    await fsUnzip(archive, dstDir);
+  } catch (e) {
+    log("NodeBase [E] fsUnzipFiles ... ${e.toString()}");
+  }
+}
 
-    for (final file in archive) {
-      final filename = file.name;
-      if (file.isFile) {
-        final data = file.content as List<int>;
-        File(path.join(dstDir, filename))
-          ..createSync(recursive: true)
-          ..writeAsBytesSync(data);
-      } else {
-        Directory(path.join(dstDir, filename))
-            .createSync(recursive: true);
-      }
-    }
+Future<void> fsUnzipTarFiles(String tarFilename, String dstDir) async {
+  try {
+    final bytes = File(tarFilename).readAsBytesSync();
+    // Decode the Zip archive
+    final archive = TarDecoder().decodeBytes(bytes);
+    await fsUnzip(archive, dstDir);
   } catch (e) {
     log("NodeBase [E] fsUnzipFiles ... ${e.toString()}");
   }
@@ -199,24 +197,48 @@ Future<void> fsUnzipFiles(String zipFilename, String dstDir) async {
 Future<void> fsUnzipXzTarFiles(String xztarFilename, String dstDir) async {
   try {
     final bytes = File(xztarFilename).readAsBytesSync();
-
     // Decode the Zip archive
     final archive = TarDecoder().decodeBytes(XZDecoder().decodeBytes(bytes));
-
-    for (final file in archive) {
-      final filename = file.name;
-      if (file.isFile) {
-        final data = file.content as List<int>;
-        File(path.join(dstDir, filename))
-          ..createSync(recursive: true)
-          ..writeAsBytesSync(data);
-      } else {
-        Directory(path.join(dstDir, filename))
-            .createSync(recursive: true);
-      }
-    }
+    await fsUnzip(archive, dstDir);
   } catch (e) {
     log("NodeBase [E] fsUnzipFiles ... ${e.toString()}");
+  }
+}
+
+Future<void> fsUnzipGzTarFiles(String gztarFilename, String dstDir) async {
+  try {
+    final bytes = File(gztarFilename).readAsBytesSync();
+    // Decode the Zip archive
+    final archive = TarDecoder().decodeBytes(GZipDecoder().decodeBytes(bytes));
+    await fsUnzip(archive, dstDir);
+  } catch (e) {
+    log("NodeBase [E] fsUnzipFiles ... ${e.toString()}");
+  }
+}
+
+Future<void> fsUnzipBzTarFiles(String bztarFilename, String dstDir) async {
+  try {
+    final bytes = File(bztarFilename).readAsBytesSync();
+    // Decode the Zip archive
+    final archive = TarDecoder().decodeBytes(BZip2Decoder().decodeBytes(bytes));
+    await fsUnzip(archive, dstDir);
+  } catch (e) {
+    log("NodeBase [E] fsUnzipFiles ... ${e.toString()}");
+  }
+}
+
+Future<void> fsUnzip(Archive archive, String dstDir) async {
+  for (final file in archive) {
+    final filename = file.name;
+    if (file.isFile) {
+      final data = file.content as List<int>;
+      File(path.join(dstDir, filename))
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(data);
+    } else {
+      Directory(path.join(dstDir, filename))
+          .createSync(recursive: true);
+    }
   }
 }
 

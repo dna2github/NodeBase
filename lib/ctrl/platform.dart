@@ -276,18 +276,26 @@ class Platform {
     try {
       await _downloadFile("app-$name-$version.bin", url, tmpFilename, cancel);
       final tmpFile = File(tmpFilename);
+      Function(String, String)? unzipFn = null;
       if (baseName.endsWith(".zip")) {
-        final targetFilename = path.join(_getApplicationBaseDir(), hash);
-        await fsMkdir(targetFilename);
-        await fsUnzipFiles(tmpFilename, targetFilename);
+        unzipFn = fsUnzipFiles;
+      } else if (baseName.endsWith(".tar")) {
+        unzipFn = fsUnzipTarFiles;
       } else if (baseName.endsWith(".tar.xz")) {
-        final targetFilename = path.join(_getApplicationBaseDir(), hash);
-        await fsMkdir(targetFilename);
-        await fsUnzipXzTarFiles(tmpFilename, targetFilename);
-      } else {
+        unzipFn = fsUnzipXzTarFiles;
+      } else if (baseName.endsWith(".tar.gz") || baseName.endsWith(".tgz")) {
+        unzipFn = fsUnzipGzTarFiles;
+      } else if (baseName.endsWith(".tar.bz2") || baseName.endsWith(".tbz2")) {
+        unzipFn = fsUnzipBzTarFiles;
+      }
+      if (unzipFn == null) {
         final targetFilename = path.join(_getApplicationBaseDir(), hash, baseName);
         await fsGuaranteeDir(targetFilename);
         await tmpFile.copy(targetFilename);
+      } else {
+        final targetFilename = path.join(_getApplicationBaseDir(), hash);
+        await fsMkdir(targetFilename);
+        await unzipFn(tmpFilename, targetFilename);
       }
       await tmpFile.delete();
       await _configListAdd("app-list.json", name, "$version:$platform");
@@ -309,25 +317,30 @@ class Platform {
     try {
       await _downloadFile("plm-$name-$version.bin", url, tmpFilename, cancel);
       final tmpFile = File(tmpFilename);
+      Function(String, String)? unzipFn = null;
       if (baseName.endsWith(".zip")) {
-        final targetFilename = path.join(_getPlatformBaseDir(), hash);
-        await fsMkdir(targetFilename);
-        await fsUnzipFiles(tmpFilename, targetFilename);
-        for (final fname in await listPlatformExecutableList(name, version)) {
-          await NodeBaseApi.apiUtilMarkExecutable(path.join(targetFilename, fname));
-        }
+        unzipFn = fsUnzipFiles;
+      } else if (baseName.endsWith(".tar")) {
+        unzipFn = fsUnzipTarFiles;
       } else if (baseName.endsWith(".tar.xz")) {
-        final targetFilename = path.join(_getPlatformBaseDir(), hash);
-        await fsMkdir(targetFilename);
-        await fsUnzipXzTarFiles(tmpFilename, targetFilename);
-        for (final fname in await listPlatformExecutableList(name, version)) {
-          await NodeBaseApi.apiUtilMarkExecutable(path.join(targetFilename, fname));
-        }
-      } else {
+        unzipFn = fsUnzipXzTarFiles;
+      } else if (baseName.endsWith(".tar.gz") || baseName.endsWith(".tgz")) {
+        unzipFn = fsUnzipGzTarFiles;
+      } else if (baseName.endsWith(".tar.bz2") || baseName.endsWith(".tbz2")) {
+        unzipFn = fsUnzipBzTarFiles;
+      }
+      if (unzipFn == null) {
         final targetFilename = path.join(_getPlatformBaseDir(), hash, baseName);
         await fsGuaranteeDir(targetFilename);
         await tmpFile.copy(targetFilename);
         await NodeBaseApi.apiUtilMarkExecutable(targetFilename);
+      } else {
+        final targetFilename = path.join(_getPlatformBaseDir(), hash);
+        await fsMkdir(targetFilename);
+        await unzipFn(tmpFilename, targetFilename);
+        for (final fname in await listPlatformExecutableList(name, version)) {
+          await NodeBaseApi.apiUtilMarkExecutable(path.join(targetFilename, fname));
+        }
       }
       await tmpFile.delete();
       await _configListAdd("plm-list.json", name, version);

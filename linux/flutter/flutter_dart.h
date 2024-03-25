@@ -264,9 +264,9 @@ void utilBrowserOpen(const std::string &url) {
 
 bool utilFileMarkExecutable(const std::string &filename) {
     struct stat fileStat;
-    if (!stat(filename.c_str(), &fileStat)) return false;
+    if (stat(filename.c_str(), &fileStat)) {printf("%o\n", fileStat.st_mode);return false;}
     mode_t newPerms = fileStat.st_mode | S_IXUSR;
-    if (!chmod(filename.c_str(), newPerms)) return false;
+    if (chmod(filename.c_str(), newPerms)) return false;
     return true;
 }
 

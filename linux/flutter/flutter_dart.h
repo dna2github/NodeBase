@@ -205,6 +205,50 @@ private:
     pid_t curpid;
 };
 
+static std::map<std::string, NodeAppMonitor*> services;
+static std::mutex service_lock;
+
+void appStart(const std::string &name, const std::vector<std::string> &cmd, const std::map<std::string, std::string> &env) {
+    std::lock_guard<std::mutex> guard(service_lock);
+    auto app_ = services.find(name);
+    NodeAppMonitor *app;
+    if (app_ != services.end()) {
+        app = app_->second;
+        services.erase(name);
+        delete app;
+    }
+    app = new NodeAppMonitor(name, cmd, env);
+    // TODO: if (!app) {} // memory allocate failure
+    services.insert_or_assign(name, app);
+}
+void appStop(const std::string &name) {
+    std::lock_guard<std::mutex> guard(service_lock);
+    auto app_ = services.find(name);
+    if (app_ == services.end()) return;
+    NodeAppMonitor *app = app_->second;
+    app->Stop();
+}
+bool appRestart(const std::string &name) {
+    std::lock_guard<std::mutex> guard(service_lock);
+    auto app_ = services.find(name);
+    if (app_ == services.end()) return false;
+    NodeAppMonitor *app = app_->second;
+    app->Stop();
+    NodeAppMonitor *newapp = app->restart();
+    if (newapp == nullptr) {
+        return false;
+    }
+    delete app;
+    services.insert_or_assign(name, newapp);
+    return true;
+}
+void appStat(const std::string &name, FlValue *map) {
+    auto app_ = services.find(name);
+    if (app_ == services.end()) return;
+    NodeAppMonitor *app = app_->second;
+    app->toJSON(map);
+}
+
 void utilBrowserOpen(const std::string &url) {
     if (url.rfind("http:", 0) != 0 && url.rfind("https:", 0) != 0) return;
     pid_t pid = fork();

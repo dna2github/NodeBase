@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:nodebase/page/notSupported.dart';
-import 'package:nodebase/page/primay.dart';
+import './not_supported.dart';
+import './primay.dart';
 import '../util/event.dart' as event;
 import '../ctrl/nodebase.dart' as nodebase;
 

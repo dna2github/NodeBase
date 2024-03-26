@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import '../util/api.dart';
 import '../util/event.dart' as event;
 import '../ctrl/nodebase.dart' as nodebase;
-import '../comp/AppRuntimeTile.dart';
-import '../comp/DownloadTile.dart';
-import '../comp/AppTile.dart';
-import '../comp/PlatformTile.dart';
+import '../comp/app_runtime_tile.dart';
+import '../comp/download_tile.dart';
+import '../comp/app_tile.dart';
+import '../comp/platform_tile.dart';
 
 class PrimaryPage extends StatefulWidget {
   const PrimaryPage({super.key});

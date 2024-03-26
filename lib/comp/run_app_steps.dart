@@ -174,8 +174,6 @@ Future<bool> runAppInit(BuildContext context, Map<String, dynamic> config) async
 }
 
 Future<bool> runAppStepCheckPlatform(BuildContext context, Map<String, dynamic> config) async {
-  final name = config["name"];
-  final version = config["version"];
   final platform = config["platform"];
   if (config["platformList"][platform] == null) {
     // no install, check available and guide to download
@@ -344,8 +342,6 @@ EnvInput generateEnvInput(List<dynamic> envItems, List<String> envk, List<String
 Future<bool> runAppStepArgAndEnv(BuildContext context, Map<String, dynamic> config) async {
   final name = config["name"];
   final version = config["version"];
-  final platform = config["platform"];
-  // TODO: show component to edit arg (List<String>) and env(Map<String, String>)
   final availableEntryPoint = config["availableEntryPoint"];
   final List<DropdownMenuItem<String>> dropdownItems = [
     const DropdownMenuItem<String>(value: "-", child: Text("(not selected)")),

@@ -13,5 +13,6 @@ abstract class IApplication {
   IApplicationProcess startProcess(String name, String platform, List<String> cmd, Map<String, String> env);
   void stopProcess(String name);
   IApplicationProcess? getApp(String name);
+  List<IApplicationProcess> getRunningApp();
   void dispose();
 }

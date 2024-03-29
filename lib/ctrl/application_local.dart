@@ -6,8 +6,8 @@ import './application_def.dart';
 
 import '../util/api.dart';
 
-class ApplicationProcess implements IApplicationProcess {
-  ApplicationProcess({
+class _ApplicationProcess implements IApplicationProcess {
+  _ApplicationProcess({
     required this.name,
     required this.cmd,
     this.platform = "-",
@@ -66,7 +66,7 @@ class ApplicationLocal implements IApplication {
         final name = message[0];
         final state = message[1];
         final app = runtime[name];
-        if (app != null) {
+        if (app != null && app is _ApplicationProcess) {
           app.state = state;
           if (state == "dead") runtime.remove(name);
         }
@@ -75,13 +75,13 @@ class ApplicationLocal implements IApplication {
   }
 
   @override
-  ApplicationProcess startProcess(
+  IApplicationProcess startProcess(
       String name,
       String platform,
       List<String> cmd,
       Map<String, String> env
   ) {
-    final app = ApplicationProcess(name: name, cmd: cmd, env: env, platform: platform);
+    final app = _ApplicationProcess(name: name, cmd: cmd, env: env, platform: platform);
     // XXX: if we want sandbox to run applications,
     //      on windows, MacOS, maybe consider cygwin, winehq, WSL and docker impl
     //      on Linux, Android, consider proot
@@ -99,9 +99,10 @@ class ApplicationLocal implements IApplication {
   }
 
   @override
-  ApplicationProcess? getApp(String name) => runtime[name];
-  List<ApplicationProcess> getRunningApp() {
-    final List<ApplicationProcess> r = [];
+  IApplicationProcess? getApp(String name) => runtime[name];
+  @override
+  List<IApplicationProcess> getRunningApp() {
+    final List<IApplicationProcess> r = [];
     runtime.forEach((name, app) {
       if (!app.isDead()) r.add(app);
     });
@@ -115,5 +116,5 @@ class ApplicationLocal implements IApplication {
   }
 
   String baseDir;
-  Map<String, ApplicationProcess> runtime = {};
+  Map<String, IApplicationProcess> runtime = {};
 }

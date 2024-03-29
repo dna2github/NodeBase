@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 
-import '../ctrl/application.dart';
+import '../ctrl/application_def.dart';
 import '../ctrl/nodebase.dart' as nodebase;
 import './util.dart';
 
@@ -460,7 +460,7 @@ Future<bool> runAppStepArgAndEnv(BuildContext context, Map<String, dynamic> conf
   return true;
 }
 
-Future<ApplicationProcess?> runAppStepReview(BuildContext context, Map<String, dynamic> config) async {
+Future<IApplicationProcess?> runAppStepReview(BuildContext context, Map<String, dynamic> config) async {
   final name = config["name"];
   final version = config["version"];
   final platform = config["platform"];

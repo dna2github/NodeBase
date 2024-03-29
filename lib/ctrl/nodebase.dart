@@ -1,8 +1,12 @@
 import 'dart:developer';
 import 'dart:io';
 
-import '../ctrl/application.dart';
-import '../ctrl/platform.dart';
+
+
+import '../ctrl/application_def.dart';
+import '../ctrl/application_local.dart';
+import '../ctrl/platform_def.dart';
+import '../ctrl/platform_local.dart';
 import '../util/fs.dart';
 import '../util/api.dart';
 import '../util/event.dart' as event;
@@ -11,8 +15,8 @@ const defaultPlatformBaseUrl = "https://raw.githubusercontent.com/wiki/dna2githu
 //const defaultPlatformBaseUrl = "http://127.0.0.1:8000";
 
 class NodeBaseController {
-  late Application application;
-  late Platform platform;
+  late IApplication application;
+  late IPlatform platform;
   bool isSupported = false;
 
   Future<void> initializeApp() async {
@@ -22,8 +26,8 @@ class NodeBaseController {
     final appBaseDir = await fsGetBaseDir();
     var baseUrl = defaultPlatformBaseUrl;
     // TODO: read app config and get default base url
-    platform = Platform(baseUrl: baseUrl, baseDir: appBaseDir, os: os, arch: arch);
-    application = Application(baseDir: appBaseDir);
+    platform = PlatformLocal(baseUrl: baseUrl, baseDir: appBaseDir, os: os, arch: arch);
+    application = ApplicationLocal(baseDir: appBaseDir);
     try {
       // TODO: read user settings, app list, platform list
       //       get latest app, platform list from remote

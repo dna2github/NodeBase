@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 
+import './platform_def.dart';
 import '../util/api.dart';
 import '../util/fs.dart';
 import '../util/event.dart' as event;
@@ -85,8 +86,8 @@ class _DownloadItem {
   final StreamController cancel;
 }
 
-class Platform {
-  Platform({
+class PlatformLocal implements IPlatform {
+  PlatformLocal({
     required this.baseUrl,
     required this.baseDir,
     required this.os,
@@ -98,36 +99,50 @@ class Platform {
 
   final Map<String, _DownloadItem> _downloadQueue = {};
 
+  @override
+  String getName() => "$os-$arch";
+
   String _getEtcBaseDir() => path.join(baseDir, "workspace", "etc");
   String _getTmpBaseDir() => path.join(baseDir, "workspace", "tmp");
   String _getApplicationBaseDir() => path.join(baseDir, "workspace", "app");
   String _getPlatformBaseDir() => path.join(baseDir, "workspace", "plm");
 
+  @override
   String getNodeBaseJsonFilename() => path.join(_getEtcBaseDir(), "nodebase", "nodebase.json");
+  @override
   String getApplicationListJsonFilename() => path.join(_getEtcBaseDir(), "nodebase", "app-$os-$arch.json");
+  @override
   String getPlatformListJsonFilename() => path.join(_getEtcBaseDir(), "nodebase", "plm-$os-$arch.json");
 
+  @override
   void changeBaseUrl(String url) { baseUrl = url; }
   Future<bool> isSupported() async {
     final config = await readNodeBaseJson();
     return config.containsKey("platform-$os-$arch");
   }
 
+  @override
   Future<String> getApplicationBaseDir(String name, String version) async {
     return path.join(_getApplicationBaseDir(), await fsCalcStringHash("$name-$version"));
   }
+  @override
   Future<String> getPlatformBaseDir(String name, String version) async {
     return path.join(_getPlatformBaseDir(), await fsCalcStringHash("$name-$version"));
   }
 
+  @override
   Future<Map<String, dynamic>> readNodeBaseJson() async =>
       fsReadFileAsJson(path.join(_getEtcBaseDir(), "nodebase", "nodebase.json"));
+  @override
   Future<Map<String, dynamic>> readApplicationListJson() async =>
       fsReadFileAsJson(path.join(_getEtcBaseDir(), "nodebase", "app-$os-$arch.json"));
+  @override
   Future<Map<String, dynamic>> readPlatformListJson() async =>
       fsReadFileAsJson(path.join(_getEtcBaseDir(), "nodebase", "plm-$os-$arch.json"));
+  @override
   Future<Map<String, dynamic>> readApplicationMetaJson(String name, String version) async =>
       fsReadFileAsJson(path.join(_getEtcBaseDir(), "app", await fsCalcStringHash("$name-$version"), "meta.json"));
+  @override
   Future<Map<String, dynamic>> readPlatformMetaJson(String name, String version) async =>
       fsReadFileAsJson(path.join(_getEtcBaseDir(), "plm", await fsCalcStringHash("$name-$version"), "meta.json"));
 
@@ -156,6 +171,7 @@ class Platform {
     });
     return download;
   }
+  @override
   Future<void> downloadNodeBaseJson({StreamController? cancel}) async {
     final tmpFilename = path.join(_getTmpBaseDir(), "nodebase.json");
     final doing = _downloadQueue[tmpFilename];
@@ -177,6 +193,7 @@ class Platform {
       _downloadQueue.remove(tmpFilename);
     }
   }
+  @override
   Future<void> downloadApplicationListJson({StreamController? cancel}) async {
     final tmpFilename = path.join(_getTmpBaseDir(), "app-$os-$arch.json");
     final doing = _downloadQueue[tmpFilename];
@@ -198,6 +215,7 @@ class Platform {
       _downloadQueue.remove(tmpFilename);
     }
   }
+  @override
   Future<void> downloadPlatformListJson({StreamController? cancel}) async {
     final tmpFilename = path.join(_getTmpBaseDir(), "plm-$os-$arch.json");
     final doing = _downloadQueue[tmpFilename];
@@ -219,6 +237,7 @@ class Platform {
       _downloadQueue.remove(tmpFilename);
     }
   }
+  @override
   Future<void> downloadApplicationMetaJson(String name, String version, {StreamController? cancel}) async {
     // python3 -c 'from hashlib import sha256; x="node-v20.11.0";print(x, sha256(x.encode("utf-8")).hexdigest())'
     final hash = await fsCalcStringHash("$name-$version");
@@ -242,6 +261,7 @@ class Platform {
       _downloadQueue.remove(tmpFilename);
     }
   }
+  @override
   Future<void> downloadPlatformMetaJson(String name, String version, {StreamController? cancel}) async {
     final hash = await fsCalcStringHash("$name-$version");
     final tmpFilename = path.join(_getTmpBaseDir(), "plm-$hash-meta.json");
@@ -264,6 +284,7 @@ class Platform {
       _downloadQueue.remove(tmpFilename);
     }
   }
+  @override
   Future<void> downloadApplicationBinary(String name, String version, String platform, String url, {StreamController? cancel}) async {
     final hash = await fsCalcStringHash("$name-$version");
     final baseName = path.basename(url);
@@ -305,6 +326,7 @@ class Platform {
       _downloadQueue.remove(tmpFilename);
     }
   }
+  @override
   Future<void> downloadPlatformBinary(String name, String version, String url, {StreamController? cancel}) async {
     final hash = await fsCalcStringHash("$name-$version");
     final baseName = path.basename(url);
@@ -350,8 +372,9 @@ class Platform {
       _downloadQueue.remove(tmpFilename);
     }
   }
-  Future<void> downloadCancel(String targeFilename) async {
-    final doing = _downloadQueue[targeFilename];
+  @override
+  Future<void> downloadCancel(String targetFilename) async {
+    final doing = _downloadQueue[targetFilename];
     if (doing == null) return;
     doing.cancel.add(true);
     await doing.action.future;
@@ -387,6 +410,7 @@ class Platform {
     await fsWriteFileAsJson(filename, config);
   }
 
+  @override
   Future<Map<String, List<String>>> listAvailableApplicationList() async {
     // name-version:platform
     final filename = path.join(_getEtcBaseDir(), "nodebase", "app-$os-$arch.json");
@@ -405,6 +429,7 @@ class Platform {
     }
     return r;
   }
+  @override
   Future<Map<String, List<String>>> listInstalledApplicationList() async {
     final filename = path.join(_getEtcBaseDir(), "nodebase", "app-list.json");
     final config = await fsReadFileAsJson(filename);
@@ -422,16 +447,19 @@ class Platform {
     }
     return r;
   }
+  @override
   Future<Map<String, dynamic>> readApplicationConfig(String name, String version) async {
     final hash = await fsCalcStringHash("$name-$version");
     final filename = path.join(_getEtcBaseDir(), "app", hash, "config.json");
     return await fsReadFileAsJson(filename);
   }
+  @override
   Future<void> writeApplicationConfig(String name, String version, Map<String, dynamic> json) async {
     final hash = await fsCalcStringHash("$name-$version");
     final filename = path.join(_getEtcBaseDir(), "app", hash, "config.json");
     await fsWriteFileAsJson(filename, json);
   }
+  @override
   Future<void> removeApplicationBinary(String name, String version, String platform) async {
     final hash = await fsCalcStringHash("$name-$version");
     final dir = Directory(path.join(_getApplicationBaseDir(), hash));
@@ -440,6 +468,7 @@ class Platform {
     await dir.delete(recursive: true);
   }
 
+  @override
   Future<Map<String, List<String>>> listAvailablePlatformList() async {
     final filename = path.join(_getEtcBaseDir(), "nodebase", "plm-$os-$arch.json");
     final config = await fsReadFileAsJson(filename);
@@ -457,6 +486,7 @@ class Platform {
     }
     return r;
   }
+  @override
   Future<Map<String, List<String>>> listInstalledPlatformList() async {
     // name-version
     final filename = path.join(_getEtcBaseDir(), "nodebase", "plm-list.json");
@@ -475,6 +505,7 @@ class Platform {
     }
     return r;
   }
+  @override
   Future<List<String>> listPlatformExecutableList(String name, String version) async {
     final meta = await readPlatformMetaJson(name, version);
     List<String> r = [];
@@ -483,16 +514,19 @@ class Platform {
     }
     return r;
   }
+  @override
   Future<Map<String, dynamic>> readPlatformConfig(String name, String version) async {
     final hash = await fsCalcStringHash("$name-$version");
     final filename = path.join(_getEtcBaseDir(), "plm", hash, "config.json");
     return await fsReadFileAsJson(filename);
   }
+  @override
   Future<void> writePlatformConfig(String name, String version, Map<String, dynamic> json) async {
     final hash = await fsCalcStringHash("$name-$version");
     final filename = path.join(_getEtcBaseDir(), "plm", hash, "config.json");
     await fsWriteFileAsJson(filename, json);
   }
+  @override
   Future<void> removePlatformBinary(String name, String version) async {
     final hash = await fsCalcStringHash("$name-$version");
     final dir = Directory(path.join(_getPlatformBaseDir(), hash));

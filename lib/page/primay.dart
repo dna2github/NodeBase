@@ -35,8 +35,8 @@ class _PrimaryPageState extends State<PrimaryPage> {
       plmRef["${one.name}-${one.version}"] = 0;
     }
     for (final one in runtimeList) {
-      appRef[one.process.name] = (appRef[one.process.name] ?? 0) + 1;
-      plmRef[one.process.platform] = (plmRef[one.process.name] ?? 0) + 1;
+      appRef[one.process.getName()] = (appRef[one.process.getName()] ?? 0) + 1;
+      plmRef[one.process.getPlatform()] = (plmRef[one.process.getName()] ?? 0) + 1;
     }
     for (int i = 0, n = appList.length; i < n; i++) {
       final one = appList[i];
@@ -118,7 +118,7 @@ class _PrimaryPageState extends State<PrimaryPage> {
       final app = nodebase.instance.application.getApp(nameVersion);
       AppRuntimeTile? tile;
       try {
-        tile = runtimeList.firstWhere((one) => one.process == app || one.process.name == nameVersion);
+        tile = runtimeList.firstWhere((one) => one.process == app || one.process.getName() == nameVersion);
       } catch(err) {
         tile = null;
       }

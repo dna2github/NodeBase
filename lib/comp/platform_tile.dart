@@ -144,7 +144,7 @@ class _AppTileState extends State<PlatformTile> {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("(${nodebase.instance.platform.os}-${nodebase.instance.platform.arch})")
+          Text("(${nodebase.instance.platform.getName()})")
         ],
       ),
       trailing: Wrap(
@@ -168,7 +168,7 @@ class _AppTileState extends State<PlatformTile> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text("-- Basic -- "),
-              SelectableText("$name-$version\n(${nodebase.instance.platform.os}-${nodebase.instance.platform.arch})"),
+              SelectableText("$name-$version\n(${nodebase.instance.platform.getName()})"),
             ],
           ),
         ),

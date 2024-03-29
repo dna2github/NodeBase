@@ -2,9 +2,11 @@
 
 import 'dart:async';
 
+import './application_def.dart';
+
 import '../util/api.dart';
 
-class ApplicationProcess {
+class ApplicationProcess implements IApplicationProcess {
   ApplicationProcess({
     required this.name,
     required this.cmd,
@@ -18,14 +20,26 @@ class ApplicationProcess {
   String platform;
   String state = "new";
 
+  @override
+  String getName() => name;
+  @override
+  String getPlatform() => platform;
+  @override
+  List<String> getCmd() => cmd;
+  @override
+  Map<String, String> getEnv() => env;
+
+  @override
   Future<void> start() async {
     await NodeBaseApi.apiAppStart(name, cmd, env: env);
   }
 
+  @override
   Future<void> stop() async {
     await NodeBaseApi.apiAppStop(name);
   }
 
+  @override
   Future<String> syncState() async {
     final obj = await NodeBaseApi.apiAppStatus(name);
     final r = obj["state"];
@@ -33,13 +47,14 @@ class ApplicationProcess {
     return r;
   }
 
+  @override
   bool isDead() => state == "dead";
 }
 
-class Application {
+class ApplicationLocal implements IApplication {
   late StreamSubscription listener;
 
-  Application({
+  ApplicationLocal({
     required this.baseDir
   }) {
     _connect();
@@ -59,6 +74,7 @@ class Application {
     });
   }
 
+  @override
   ApplicationProcess startProcess(
       String name,
       String platform,
@@ -74,6 +90,7 @@ class Application {
     return app;
   }
 
+  @override
   void stopProcess(String name) {
     final app = runtime[name];
     if (app == null) return;
@@ -81,6 +98,7 @@ class Application {
     app.stop();
   }
 
+  @override
   ApplicationProcess? getApp(String name) => runtime[name];
   List<ApplicationProcess> getRunningApp() {
     final List<ApplicationProcess> r = [];
@@ -90,6 +108,7 @@ class Application {
     return r;
   }
 
+  @override
   void dispose() {
     listener.cancel();
     runtime.forEach((_, app) => app.stop());

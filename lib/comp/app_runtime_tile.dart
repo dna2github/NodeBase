@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import './util.dart';
-import '../ctrl/application.dart';
+import '../ctrl/application_def.dart';
 
 class AppRuntimeTile extends StatefulWidget {
   const AppRuntimeTile({super.key, required this.process});
 
-  final ApplicationProcess process;
+  final IApplicationProcess process;
 
   @override
   State<StatefulWidget> createState() => _AppRuntimeTileState();
@@ -26,11 +26,11 @@ class _AppRuntimeTileState extends State<AppRuntimeTile> {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      title: Text(widget.process.name),
+      title: Text(widget.process.getName()),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("platform: ${widget.process.platform}"),
+          Text("platform: ${widget.process.getPlatform()}"),
         ],
       ),
       trailing: Wrap(
@@ -43,13 +43,13 @@ class _AppRuntimeTileState extends State<AppRuntimeTile> {
             showConfirmDialog(
                 context,
                 "Stop Application",
-                "Do you confirm to stop the application \"${widget.process.name}\"?"
+                "Do you confirm to stop the application \"${widget.process.getName()}\"?"
             ).then((confirmed) {
               if (!confirmed) return;
               widget.process.stop().then((_) {
                 generateSnackBar(
                     context,
-                    "Stopped application \"${widget.process.name}\""
+                    "Stopped application \"${widget.process.getName()}\""
                 );
               });
             });
@@ -61,8 +61,9 @@ class _AppRuntimeTileState extends State<AppRuntimeTile> {
   }
 
   void showInfo(BuildContext context) {
-    final cmdMain = widget.process.cmd[0];
-    final cmdEntry = widget.process.cmd.length > 1 ? "\n${widget.process.cmd[1]}" : "";
+    final cmd = widget.process.getCmd();
+    final cmdMain = cmd[0];
+    final cmdEntry = cmd.length > 1 ? "\n${cmd[1]}" : "";
     showDialog(context: context, builder: (_) => AlertDialog(
       title: const Text("Application Info"),
       shape: const BeveledRectangleBorder(),
@@ -77,7 +78,7 @@ class _AppRuntimeTileState extends State<AppRuntimeTile> {
               SelectableText("$cmdMain$cmdEntry"),
               const Divider(),
               const Text("-- ENV --"),
-              SelectableText(widget.process.env.entries.map(
+              SelectableText(widget.process.getEnv().entries.map(
                       (kv) => "${kv.key} =\n${kv.value}"
               ).toList().join("\n\n")),
             ],

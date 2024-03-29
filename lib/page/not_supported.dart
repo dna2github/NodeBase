@@ -43,7 +43,7 @@ class _NotSupportedPageState extends State<NotSupportedPage> {
                               style: TextStyle(color: Color.fromARGB(128, 0, 0, 0)),
                             ),
                             Text(
-                              "\"${nodebase.instance.platform.os} ${nodebase.instance.platform.arch}\"",
+                              "\"${nodebase.instance.platform.getName()}\"",
                               style: const TextStyle(color: Color.fromARGB(255, 255, 128, 128)),
                             ),
                           ],

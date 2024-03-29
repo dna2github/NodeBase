@@ -10,6 +10,9 @@ SnackBar generateSnackBar(BuildContext context, String content, {
     action: SnackBarAction(
         label: "X",
         onPressed: () {
+          // TODO: To safely refer to a widget's ancestor in its dispose() method,
+          //  save a reference to the ancestor by calling dependOnInheritedWidgetOfExactType()
+          //  in the widget's didChangeDependencies() method.
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
         }
     ),

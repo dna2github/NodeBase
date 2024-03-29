@@ -1,8 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
 
-
-
 import '../ctrl/application_def.dart';
 import '../ctrl/application_local.dart';
 import '../ctrl/platform_def.dart';
@@ -10,9 +8,7 @@ import '../ctrl/platform_local.dart';
 import '../util/fs.dart';
 import '../util/api.dart';
 import '../util/event.dart' as event;
-
-const defaultPlatformBaseUrl = "https://raw.githubusercontent.com/wiki/dna2github/NodeBase/market/v1";
-//const defaultPlatformBaseUrl = "http://127.0.0.1:8000";
+import './configure.dart';
 
 class NodeBaseController {
   late IApplication application;
@@ -20,6 +16,16 @@ class NodeBaseController {
   bool isSupported = false;
 
   Future<void> initializeApp() async {
+    if (localMode) {
+      await initLocalMode();
+    } else {
+      // TODO: add PlatformRemote and ApplicationRemote for remote mode
+    }
+
+    event.initializeToken.add(true);
+  }
+
+  Future<void> initLocalMode() async {
     final parts = (await NodeBaseApi.apiUtilGetArch()).split("|")[0].split("-");
     String os = parts[0];
     String arch = parts[1];
@@ -57,9 +63,8 @@ class NodeBaseController {
     } catch(e) {
       log("NodeBase [E] cannot download plm-list.json");
     }
-
-    event.initializeToken.add(true);
   }
+
 }
 
 final instance = NodeBaseController();

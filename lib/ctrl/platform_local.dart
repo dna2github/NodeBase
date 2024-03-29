@@ -534,6 +534,7 @@ class PlatformLocal implements IPlatform {
     if (!dir.existsSync()) return;
     // XXX: by default, on windows, MAX_PATh = 260, if too long, will fail
     // ref: https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
+    // ref: https://stackoverflow.com/questions/3277717/c-winapi-handling-long-file-paths-names (prefix \\?\)
     await dir.delete(recursive: true);
   }
 }

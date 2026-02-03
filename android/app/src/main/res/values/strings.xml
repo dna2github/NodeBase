@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NodeBase</string>
+    <string name="tab_status">Status</string>
+    <string name="tab_config">Configuration</string>
+    <string name="server_running">Server Running</string>
+    <string name="server_stopped">Server Stopped</string>
+    <string name="start_server">Start Server</string>
+    <string name="stop_server">Stop Server</string>
+    <string name="port">Port</string>
+    <string name="enable_https">Enable HTTPS</string>
+    <string name="registered_services">Registered Services</string>
+    <string name="no_services">No services registered</string>
+    <string name="kick">Kick</string>
+    <string name="save">Save</string>
+    <string name="server_address">Server Address</string>
+    <string name="notification_channel_name">NodeBase</string>
+    <string name="notification_channel_desc">NodeBase HTTP/WebSocket server</string>
+    <string name="notification_title">NodeBase</string>
+    <string name="notification_text">NodeBase is running on port %d</string>
+    <string name="builtin_services">Built-in Services</string>
+    <string name="builtin_services_desc">Enable local services hosted by the server</string>
+    <string name="enable_fileshare">Enable FileShare Service</string>
+    <string name="fileshare_desc">Visit /fileshare/service to manage file sharing</string>
+    <string name="enable_chat">Enable Chat Service</string>
+    <string name="chat_desc">Visit /chat/service to manage chat room</string>
+</resources>

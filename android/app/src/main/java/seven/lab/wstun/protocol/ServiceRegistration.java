@@ -24,6 +24,9 @@ public class ServiceRegistration {
 
     @SerializedName("static_resources")
     private Map<String, String> staticResources;  // path -> content
+    
+    @SerializedName("auth_token")
+    private String authToken;  // Optional auth token for clients to access this service
 
     public static class Endpoint {
         @SerializedName("path")
@@ -109,5 +112,13 @@ public class ServiceRegistration {
 
     public void setStaticResources(Map<String, String> staticResources) {
         this.staticResources = staticResources;
+    }
+    
+    public String getAuthToken() {
+        return authToken;
+    }
+    
+    public void setAuthToken(String authToken) {
+        this.authToken = authToken;
     }
 }

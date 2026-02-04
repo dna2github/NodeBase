@@ -3,6 +3,9 @@ package seven.lab.wstun.server;
 import android.content.Context;
 import android.util.Log;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -69,18 +72,22 @@ public class NettyServer {
         final String corsOrigins = config.getCorsOrigins();
         final int serverPort = port;
         final LocalServiceManager localSvcMgr = localServiceManager;
+        final ServerConfig serverConfig = config;
 
         bossGroup = new NioEventLoopGroup(1);
-        workerGroup = new NioEventLoopGroup();
+        // Use more worker threads to handle concurrent HTTP and WebSocket connections
+        workerGroup = new NioEventLoopGroup(Math.max(4, Runtime.getRuntime().availableProcessors() * 2));
 
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workerGroup)
             .channel(NioServerSocketChannel.class)
-            .option(ChannelOption.SO_BACKLOG, 128)
+            .option(ChannelOption.SO_BACKLOG, 1024)
             .childOption(ChannelOption.SO_KEEPALIVE, true)
+            .childOption(ChannelOption.TCP_NODELAY, true)
             .childHandler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) throws Exception {
+                    Log.d(TAG, "New connection from: " + ch.remoteAddress());
                     ChannelPipeline pipeline = ch.pipeline();
 
                     // SSL handler
@@ -90,15 +97,17 @@ public class NettyServer {
 
                     // HTTP codec
                     pipeline.addLast("http-codec", new HttpServerCodec());
+                    
+                    // Aggregate HTTP message parts into FullHttpRequest
                     pipeline.addLast("http-aggregator", new HttpObjectAggregator(65536));
-                    pipeline.addLast("chunked-write", new ChunkedWriteHandler());
 
-                    // Idle state handler
-                    pipeline.addLast("idle", new IdleStateHandler(60, 30, 0));
+                    // Idle state handler - longer timeouts for better stability
+                    // Read idle: 120s, Write idle: 60s, All idle: 0 (disabled)
+                    pipeline.addLast("idle", new IdleStateHandler(120, 60, 0));
 
                     // HTTP/WebSocket handler with CORS configuration and local service support
                     pipeline.addLast("http-handler", 
-                        new HttpHandler(serviceManager, requestManager, localSvcMgr, ssl, corsOrigins, serverPort));
+                        new HttpHandler(serviceManager, requestManager, localSvcMgr, ssl, corsOrigins, serverPort, serverConfig));
                 }
             });
 
@@ -163,5 +172,12 @@ public class NettyServer {
      */
     public RequestManager getRequestManager() {
         return requestManager;
+    }
+
+    /**
+     * Get the local service manager.
+     */
+    public LocalServiceManager getLocalServiceManager() {
+        return localServiceManager;
     }
 }

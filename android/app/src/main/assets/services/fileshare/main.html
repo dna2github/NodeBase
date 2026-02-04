@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FileShare - WSTun</title>
+    <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #f5f5f5; min-height: 100vh; padding: 20px; }
+.container { max-width: 800px; margin: 0 auto; }
+.card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+h1 { color: #6200ee; margin-bottom: 8px; }
+h2 { color: #333; margin-bottom: 16px; font-size: 18px; }
+.subtitle { color: #666; margin-bottom: 20px; }
+.upload-zone { border: 2px dashed #6200ee; padding: 40px; text-align: center; border-radius: 8px; cursor: pointer; }
+.upload-zone:hover { background: #f0e6ff; }
+.upload-zone input { display: none; }
+.file-list { list-style: none; }
+.file-item { padding: 15px; margin: 10px 0; background: #f9f9f9; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.file-info { flex: 1; min-width: 200px; }
+.file-name { font-weight: bold; color: #333; word-break: break-all; }
+.file-meta { color: #666; font-size: 0.9em; }
+.btn { background: #6200ee; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; font-size: 14px; }
+.btn:hover { background: #3700b3; }
+.btn-danger { background: #f44336; }
+.empty { text-align: center; color: #666; padding: 30px; }
+.status { padding: 10px; border-radius: 4px; margin-bottom: 15px; }
+.status.connected { background: #e8f5e9; color: #2e7d32; }
+.status.disconnected { background: #ffebee; color: #c62828; }
+.hidden { display: none !important; }
+.input-group { margin-bottom: 15px; }
+.input-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #333; }
+.input-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.room-list { list-style: none; }
+.room-item { padding: 15px; margin: 10px 0; background: #f9f9f9; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+.room-info { flex: 1; }
+.room-name { font-weight: bold; color: #333; }
+.room-meta { color: #666; font-size: 0.9em; }
+.users { margin-top: 10px; padding: 10px; background: #f0f0f0; border-radius: 4px; font-size: 13px; }
+.users span { background: #6200ee; color: white; padding: 2px 8px; border-radius: 10px; margin-right: 5px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>FileShare</h1>
+            <p class="subtitle">Share files with others</p>
+            <div id="status" class="status disconnected">Loading...</div>
+        </div>
+        
+        <!-- Room selection / Join section -->
+        <div id="joinSection" class="card">
+            <h2>Join a Room</h2>
+            <div id="roomListContainer">
+                <p style="color:#666;text-align:center;">Loading available rooms...</p>
+            </div>
+            <div style="margin-top:20px;padding-top:20px;border-top:1px solid #eee;">
+                <h2>Or Enter Room Details</h2>
+                <div class="input-group">
+                    <label for="instanceUuid">Room UUID</label>
+                    <input type="text" id="instanceUuid" placeholder="Enter room UUID">
+                </div>
+                <div class="input-group">
+                    <label for="instanceToken">Room Token (if required)</label>
+                    <input type="text" id="instanceToken" placeholder="Enter room token">
+                </div>
+                <button class="btn" onclick="joinRoom()" style="width:100%;">Join Room</button>
+            </div>
+        </div>
+        
+        <!-- Main content after joining -->
+        <div id="mainContent" class="hidden">
+            <div class="card">
+                <h2>Share a File</h2>
+                <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" onchange="handleFile(this.files[0])">
+                    <p><strong>Click to select a file</strong></p>
+                    <p style="color:#666;margin-top:10px;">File stays on your device until downloaded</p>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Connected Users</h2>
+                <div id="usersList" class="users">No other users yet</div>
+            </div>
+            <div class="card">
+                <h2>My Shared Files</h2>
+                <ul class="file-list" id="myFiles"><li class="empty">No files shared yet</li></ul>
+            </div>
+            <div class="card">
+                <h2>All Available Files</h2>
+                <ul class="file-list" id="allFiles"><li class="empty">No files available</li></ul>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/libwstun.js"></script>
+    <script>
+const SERVICE = 'fileshare';
+let client = null;
+let myUserId = null;
+let myFiles = new Map();       // My shared files: fileId -> {file, filename, size, mimeType}
+let allFiles = new Map();      // All files in room: fileId -> {filename, size, mimeType, ownerId}
+let users = new Map();         // userId -> {joinedAt}
+
+// Parse hash params
+function getHashParams() {
+    const hash = location.hash.substring(1);
+    const params = {};
+    hash.split('&').forEach(p => {
+        const [k, v] = p.split('=');
+        if (k) params[k] = decodeURIComponent(v || '');
+    });
+    return params;
+}
+
+const hashParams = getHashParams();
+const serverToken = hashParams.server_token || null;
+let instanceUuid = hashParams.instance || null;
+let instanceToken = hashParams.token || null;
+
+// Pre-fill form from hash params
+if (instanceUuid) document.getElementById('instanceUuid').value = instanceUuid;
+if (instanceToken) document.getElementById('instanceToken').value = instanceToken;
+
+// Load available rooms
+async function loadRooms() {
+    try {
+        const rooms = await WSTun.listInstances(SERVICE, serverToken);
+        renderRooms(rooms);
+    } catch (err) {
+        document.getElementById('roomListContainer').innerHTML = 
+            '<p style="color:#c62828;">Failed to load rooms. Enter room details manually.</p>';
+    }
+}
+
+function renderRooms(rooms) {
+    const container = document.getElementById('roomListContainer');
+    if (!rooms || rooms.length === 0) {
+        container.innerHTML = '<p style="color:#666;text-align:center;">No rooms available. Create one from /fileshare/service</p>';
+        return;
+    }
+    container.innerHTML = '<ul class="room-list">' + rooms.map(r => 
+        `<li class="room-item">
+            <div class="room-info">
+                <div class="room-name">${esc(r.name)}</div>
+                <div class="room-meta">UUID: ${r.uuid} | Users: ${r.userCount}${r.hasToken ? ' | Token required' : ''}</div>
+            </div>
+            <button class="btn" onclick="selectRoom('${r.uuid}', ${r.hasToken})">Join</button>
+        </li>`
+    ).join('') + '</ul>';
+}
+
+function selectRoom(uuid, hasToken) {
+    document.getElementById('instanceUuid').value = uuid;
+    if (hasToken) {
+        document.getElementById('instanceToken').focus();
+    } else {
+        joinRoom();
+    }
+}
+
+function joinRoom() {
+    instanceUuid = document.getElementById('instanceUuid').value.trim();
+    instanceToken = document.getElementById('instanceToken').value.trim() || null;
+    
+    if (!instanceUuid) {
+        alert('Please enter a room UUID');
+        return;
+    }
+    
+    setStatus('Connecting...', false);
+    connectToInstance();
+}
+
+function connectToInstance() {
+    myUserId = WSTun.generateId();
+    
+    client = WSTun.createInstanceClient({
+        service: SERVICE,
+        instanceUuid: instanceUuid,
+        serverToken: serverToken,
+        instanceToken: instanceToken,
+        userId: myUserId,
+        onOpen: () => setStatus('Connecting to room...', false),
+        onJoined: (payload) => {
+            setStatus('Connected to ' + (payload.instanceName || 'room'), true);
+            document.getElementById('joinSection').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            
+            // Update URL hash so it can be bookmarked
+            let hash = 'instance=' + encodeURIComponent(payload.instanceUuid || instanceUuid);
+            if (instanceToken) hash += '&token=' + encodeURIComponent(instanceToken);
+            if (serverToken) hash += '&server_token=' + encodeURIComponent(serverToken);
+            history.replaceState(null, '', '#' + hash);
+            
+            // Request state from other users
+            client.send('request_state', { userId: myUserId });
+            
+            // Announce ourselves
+            client.send('user_join', { userId: myUserId });
+        },
+        onMessage: handleMessage,
+        onClose: () => {
+            setStatus('Disconnected', false);
+        },
+        onError: (err) => {
+            setStatus('Error: ' + (err.message || 'Failed to join'), false);
+        },
+        onKicked: () => {
+            alert('You have been kicked from the room.');
+            location.reload();
+        }
+    });
+    
+    client.connect();
+}
+
+function handleMessage(msg) {
+    switch (msg.type) {
+        case 'user_join':
+            // Another user joined
+            if (msg.payload.userId !== myUserId) {
+                users.set(msg.payload.userId, { joinedAt: Date.now() });
+                updateUsersList();
+                // Send our state to new user
+                sendMyState();
+            }
+            break;
+            
+        case 'user_leave':
+            // User left - remove their files
+            users.delete(msg.payload.userId);
+            for (const [fid, f] of allFiles.entries()) {
+                if (f.ownerId === msg.payload.userId) allFiles.delete(fid);
+            }
+            updateUsersList();
+            updateAllFiles();
+            break;
+            
+        case 'request_state':
+            // Someone is requesting state - send our files
+            if (msg.payload.userId !== myUserId) {
+                sendMyState();
+            }
+            break;
+            
+        case 'state_response':
+            // Received state from another user
+            if (msg.payload.userId !== myUserId) {
+                users.set(msg.payload.userId, { joinedAt: Date.now() });
+                // Merge their files
+                (msg.payload.files || []).forEach(f => {
+                    if (!allFiles.has(f.id)) {
+                        allFiles.set(f.id, f);
+                    }
+                });
+                updateUsersList();
+                updateAllFiles();
+            }
+            break;
+            
+        case 'file_add':
+            // Someone added a file
+            if (msg.payload.ownerId !== myUserId) {
+                allFiles.set(msg.payload.id, msg.payload);
+                updateAllFiles();
+            }
+            break;
+            
+        case 'file_remove':
+            // Someone removed a file
+            allFiles.delete(msg.payload.id);
+            updateAllFiles();
+            break;
+            
+        case 'file_request':
+            // Someone wants to download our file
+            streamFile(msg.payload);
+            break;
+    }
+}
+
+function sendMyState() {
+    const myFileList = Array.from(myFiles.entries()).map(([id, f]) => ({
+        id, filename: f.filename, size: f.size, mimeType: f.mimeType, ownerId: myUserId
+    }));
+    client.send('state_response', { userId: myUserId, files: myFileList });
+}
+
+function setStatus(text, connected) {
+    const el = document.getElementById('status');
+    el.className = 'status ' + (connected ? 'connected' : 'disconnected');
+    el.textContent = text;
+}
+
+function handleFile(file) {
+    if (!file || !client) return;
+    const fileId = 'f' + WSTun.generateId();
+    const info = {
+        file, filename: file.name, size: file.size,
+        mimeType: file.type || 'application/octet-stream'
+    };
+    myFiles.set(fileId, info);
+    
+    // Add to allFiles
+    allFiles.set(fileId, {
+        id: fileId, filename: file.name, size: file.size,
+        mimeType: info.mimeType, ownerId: myUserId
+    });
+    
+    // Broadcast to others
+    client.send('file_add', {
+        id: fileId, filename: file.name, size: file.size,
+        mimeType: info.mimeType, ownerId: myUserId
+    });
+    
+    updateMyFiles();
+    updateAllFiles();
+}
+
+function removeFile(fileId) {
+    myFiles.delete(fileId);
+    allFiles.delete(fileId);
+    client.send('file_remove', { id: fileId });
+    updateMyFiles();
+    updateAllFiles();
+}
+
+function streamFile(payload) {
+    const { requestId, fileId } = payload;
+    const info = myFiles.get(fileId);
+    if (!info) {
+        client.send('http_response_chunk', { request_id: requestId, error: 'File not found', done: true });
+        return;
+    }
+    client.send('http_response_start', {
+        request_id: requestId, status: 200,
+        headers: { 'Content-Type': info.mimeType, 'Content-Disposition': 'attachment; filename="' + info.filename + '"' }
+    });
+    streamChunks(requestId, info.file, 0);
+}
+
+function streamChunks(requestId, file, offset) {
+    if (offset >= file.size) {
+        client.send('http_response_chunk', { request_id: requestId, done: true });
+        return;
+    }
+    const chunk = file.slice(offset, Math.min(offset + 65536, file.size));
+    const reader = new FileReader();
+    reader.onload = () => {
+        client.send('http_response_chunk', {
+            request_id: requestId, chunk_base64: reader.result.split(',')[1], done: false
+        });
+        streamChunks(requestId, file, offset + 65536);
+    };
+    reader.readAsDataURL(chunk);
+}
+
+function updateUsersList() {
+    const el = document.getElementById('usersList');
+    const userIds = Array.from(users.keys());
+    if (userIds.length === 0) {
+        el.innerHTML = 'No other users yet';
+    } else {
+        el.innerHTML = userIds.map(uid => `<span>${esc(uid)}</span>`).join('');
+    }
+}
+
+function updateMyFiles() {
+    const el = document.getElementById('myFiles');
+    if (myFiles.size === 0) {
+        el.innerHTML = '<li class="empty">No files shared yet</li>';
+        return;
+    }
+    el.innerHTML = Array.from(myFiles.entries()).map(([id, f]) =>
+        `<li class="file-item"><div class="file-info"><div class="file-name">${esc(f.filename)}</div><div class="file-meta">${formatSize(f.size)}</div></div><button class="btn btn-danger" onclick="removeFile('${id}')">&times;</button></li>`
+    ).join('');
+}
+
+function updateAllFiles() {
+    const el = document.getElementById('allFiles');
+    if (allFiles.size === 0) {
+        el.innerHTML = '<li class="empty">No files available</li>';
+        return;
+    }
+    el.innerHTML = Array.from(allFiles.entries()).map(([id, f]) => {
+        const isOwn = myFiles.has(id);
+        const downloadUrl = '/fileshare/download/' + encodeURIComponent(id) + (serverToken ? '?token=' + encodeURIComponent(serverToken) : '');
+        return `<li class="file-item">
+            <div class="file-info">
+                <div class="file-name">${esc(f.filename)}</div>
+                <div class="file-meta">${formatSize(f.size)} - ${isOwn ? 'you' : esc(f.ownerId)}</div>
+            </div>
+            <a href="${downloadUrl}" class="btn" target="_blank">Download</a>
+        </li>`;
+    }).join('');
+}
+
+function formatSize(b) {
+    if (!b) return '0 B';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
+    return (b / 1073741824).toFixed(1) + ' GB';
+}
+
+function esc(s) {
+    return s ? String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+}
+
+// Auto-join if instance UUID is provided
+if (instanceUuid) {
+    setStatus('Joining room...', false);
+    connectToInstance();
+} else {
+    setStatus('Select a room to join', false);
+    loadRooms();
+}
+
+// Handle page unload - notify others
+window.addEventListener('beforeunload', () => {
+    if (client) {
+        client.send('user_leave', { userId: myUserId });
+    }
+});
+    </script>
+</body>
+</html>

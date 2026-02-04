@@ -3,588 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat - WSTun Service</title>
+    <title>Chat Instance Manager - WSTun</title>
     <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, sans-serif; background: #f0f2f5; height: 100vh; }
-.view { height: 100vh; }
-.hidden { display: none !important; }
-
-/* Connection view */
-.connect-box {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: white; padding: 40px; border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px;
-}
-.connect-box h1 { color: #6200ee; margin-bottom: 10px; }
-.connect-box p { color: #666; margin-bottom: 20px; font-size: 14px; }
-.connect-box input {
-    width: 100%; padding: 12px; margin-bottom: 15px;
-    border: 1px solid #ddd; border-radius: 6px; font-size: 16px;
-}
-.connect-box button {
-    width: 100%; padding: 12px; background: #6200ee; color: white;
-    border: none; border-radius: 6px; font-size: 16px; cursor: pointer;
-}
-.connect-box button:hover { background: #3700b3; }
-.connect-box button:disabled { background: #ccc; cursor: not-allowed; }
-#status { margin-top: 15px; font-size: 14px; min-height: 20px; }
-.status-error { color: #f44336; }
-.status-success { color: #4caf50; }
-.status-info { color: #2196f3; }
-
-/* Chat view */
-.chat-container { display: flex; height: 100vh; }
-.sidebar {
-    width: 200px; background: white; border-right: 1px solid #ddd;
-    padding: 15px; display: flex; flex-direction: column;
-}
-.sidebar h3 { color: #666; margin-bottom: 10px; }
-.sidebar ul { list-style: none; flex: 1; overflow-y: auto; }
-.sidebar li { padding: 8px; margin: 4px 0; background: #f5f5f5; border-radius: 4px; font-size: 14px; }
-.sidebar li.you { background: #e8f5e9; }
-.disconnect-btn { padding: 10px; background: #f44336; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; }
-
-.main { flex: 1; display: flex; flex-direction: column; }
-.header { padding: 15px 20px; background: white; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
-.header h2 { color: #333; }
-#connectionStatus { font-size: 14px; }
-#connectionStatus.connected { color: #4caf50; }
-#connectionStatus.disconnected { color: #f44336; }
-
-#messages { flex: 1; overflow-y: auto; padding: 20px; background: #f0f2f5; }
-.message { margin: 10px 0; max-width: 70%; }
-.message.own { margin-left: auto; }
-.message-content { padding: 10px 15px; border-radius: 12px; background: white; }
-.message.own .message-content { background: #6200ee; color: white; }
-.message-header { font-size: 12px; color: #666; margin-bottom: 4px; }
-.message.own .message-header { color: rgba(255,255,255,0.7); }
-.message-text { word-wrap: break-word; }
-.message.system { max-width: 100%; text-align: center; }
-.message.system .message-content { background: transparent; color: #666; font-style: italic; }
-
-.input-area { background: white; padding: 15px 20px; border-top: 1px solid #ddd; }
-.input-area textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; resize: none; font-size: 14px; }
-.send-row { display: flex; gap: 10px; margin-top: 10px; }
-.send-row select { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
-.send-row button { padding: 10px 30px; background: #6200ee; color: white; border: none; border-radius: 6px; cursor: pointer; }
-.send-row button:hover { background: #3700b3; }
-
-@media (max-width: 600px) {
-    .sidebar { width: 150px; }
-    .message { max-width: 85%; }
-}
+body { font-family: Arial, sans-serif; background: #f5f5f5; min-height: 100vh; padding: 20px; }
+.container { max-width: 600px; margin: 0 auto; }
+.card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+h1 { color: #6200ee; margin-bottom: 8px; }
+h2 { color: #333; margin-bottom: 16px; font-size: 18px; }
+.subtitle { color: #666; margin-bottom: 20px; }
+.btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+.btn-primary { background: #6200ee; color: white; }
+.btn-primary:hover { background: #3700b3; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.input-group { margin-bottom: 15px; }
+.input-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #333; }
+.input-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.info-box { background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0; }
+.info-box code { background: #fff; padding: 2px 6px; border-radius: 4px; font-family: monospace; word-break: break-all; }
+.link { color: #6200ee; text-decoration: none; }
+.link:hover { text-decoration: underline; }
+.success { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 6px; margin: 10px 0; }
+.instance-list { margin-top: 15px; }
+.instance-item { padding: 12px; margin: 8px 0; background: #f9f9f9; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+.instance-info { flex: 1; }
+.instance-name { font-weight: bold; }
+.instance-meta { font-size: 12px; color: #666; }
     </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Connection/Login View -->
-        <div id="connectView" class="view">
-            <div class="connect-box">
-                <h1>WSTun Chat</h1>
-                <p>Connect to a WSTun server to start chatting</p>
-                <input type="text" id="serverInput" placeholder="Server URL (e.g., ws://192.168.1.100:8080/ws)">
-                <input type="text" id="nameInput" placeholder="Your name" maxlength="20">
-                <button id="connectBtn" onclick="connect()">Connect</button>
-                <div id="status"></div>
+    <div class="container">
+        <div class="card">
+            <h1>Chat</h1>
+            <p class="subtitle">Create a chat room</p>
+            
+            <div class="input-group">
+                <label for="serverToken">Server Auth Token (if required)</label>
+                <input type="text" id="serverToken" placeholder="Leave empty if not required">
             </div>
+            <div class="input-group">
+                <label for="roomName">Room Name</label>
+                <input type="text" id="roomName" placeholder="My Chat Room" value="Chat Room">
+            </div>
+            <div class="input-group">
+                <label for="roomToken">Room Token (optional, for private rooms)</label>
+                <input type="text" id="roomToken" placeholder="Leave empty for public room">
+            </div>
+            
+            <button class="btn btn-primary" onclick="createInstance()">Create Room</button>
+            
+            <div id="result" style="display:none;"></div>
         </div>
-
-        <!-- Chat View -->
-        <div id="chatView" class="view hidden">
-            <div class="chat-container">
-                <div class="sidebar">
-                    <h3>Users</h3>
-                    <ul id="userList"></ul>
-                    <button onclick="disconnect()" class="disconnect-btn">Disconnect</button>
-                </div>
-                <div class="main">
-                    <div class="header">
-                        <h2>Chat Room</h2>
-                        <span id="connectionStatus" class="connected">Connected</span>
-                    </div>
-                    <div id="messages"></div>
-                    <div class="input-area">
-                        <textarea id="messageInput" placeholder="Type a message..." rows="2"></textarea>
-                        <div class="send-row">
-                            <select id="recipientSelect">
-                                <option value="">Everyone</option>
-                            </select>
-                            <button onclick="sendMessage()">Send</button>
-                        </div>
-                    </div>
-                </div>
+        
+        <div class="card">
+            <h2>Existing Rooms</h2>
+            <p class="subtitle">Click to open the chat page</p>
+            <div id="instanceList" class="instance-list">
+                <p style="color:#666;text-align:center;">Loading...</p>
             </div>
+            <button class="btn" style="margin-top:15px;background:#eee;color:#333;" onclick="loadInstances()">Refresh</button>
         </div>
     </div>
 
+    <script src="/libwstun.js"></script>
     <script>
-// WSTun Chat Service - Browser Client
-// Uses WebSocket to connect to WSTun server and register as a chat service
+const SERVICE = 'chat';
+const serverToken = document.getElementById('serverToken');
 
-let ws = null;
-let userId = null;
-let userName = null;
-let users = new Map();
-let messages = [];
-
-const connectView = document.getElementById('connectView');
-const chatView = document.getElementById('chatView');
-const statusDiv = document.getElementById('status');
-const connectBtn = document.getElementById('connectBtn');
-const messagesDiv = document.getElementById('messages');
-const userList = document.getElementById('userList');
-const recipientSelect = document.getElementById('recipientSelect');
-const connectionStatus = document.getElementById('connectionStatus');
-
-// Load saved server URL
-const savedServer = localStorage.getItem('wstun_chat_server');
-if (savedServer) document.getElementById('serverInput').value = savedServer;
-
-function setStatus(msg, type = 'info') {
-    statusDiv.textContent = msg;
-    statusDiv.className = 'status-' + type;
+async function createInstance() {
+    const name = document.getElementById('roomName').value.trim() || 'Chat Room';
+    const token = document.getElementById('roomToken').value.trim() || null;
+    const sToken = serverToken.value.trim() || null;
+    
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('result').innerHTML = '<div style="color:#666;padding:12px;">Creating room...</div>';
+    
+    const host = WSTun.createInstanceHost({
+        service: SERVICE,
+        name: name,
+        serverToken: sToken,
+        instanceToken: token,
+        onOpen: () => {
+            console.log('WebSocket connected for instance creation');
+        },
+        onInstanceCreated: (payload) => {
+            const joinUrl = location.origin + '/chat/main#instance=' + payload.uuid + 
+                (token ? '&token=' + encodeURIComponent(token) : '') +
+                (sToken ? '&server_token=' + encodeURIComponent(sToken) : '');
+            
+            document.getElementById('result').innerHTML = `
+                <div class="success">Room created successfully!</div>
+                <div class="info-box">
+                    <p><strong>Room UUID:</strong> <code>${payload.uuid}</code></p>
+                    <p><strong>Join URL:</strong></p>
+                    <p><a href="${joinUrl}" class="link" target="_blank">${joinUrl}</a></p>
+                </div>
+            `;
+            
+            loadInstances();
+        },
+        onError: (err) => {
+            const msg = err && err.message ? err.message : (typeof err === 'string' ? err : 'Failed to create room');
+            document.getElementById('result').innerHTML = `<div style="background:#ffebee;color:#c62828;padding:12px;border-radius:6px;">Error: ${msg}</div>`;
+        },
+        onClose: () => {
+            console.log('Instance host connection closed');
+        }
+    });
+    
+    host.connect();
 }
 
-function connect() {
-    const serverUrl = document.getElementById('serverInput').value.trim();
-    const name = document.getElementById('nameInput').value.trim();
-
-    if (!serverUrl) { setStatus('Please enter server URL', 'error'); return; }
-    if (!name) { setStatus('Please enter your name', 'error'); return; }
-
-    connectBtn.disabled = true;
-    setStatus('Connecting...', 'info');
-
+async function loadInstances() {
+    document.getElementById('instanceList').innerHTML = '<p style="color:#666;text-align:center;">Loading rooms...</p>';
     try {
-        ws = new WebSocket(serverUrl);
+        const sToken = serverToken.value.trim() || null;
+        const instances = await WSTun.listInstances(SERVICE, sToken);
+        renderInstances(instances);
     } catch (err) {
-        setStatus('Invalid WebSocket URL', 'error');
-        connectBtn.disabled = false;
+        console.error('Failed to load instances:', err);
+        document.getElementById('instanceList').innerHTML = '<p style="color:#666;text-align:center;">No rooms available</p>';
+    }
+}
+
+function renderInstances(instances) {
+    const el = document.getElementById('instanceList');
+    if (!instances || instances.length === 0) {
+        el.innerHTML = '<p style="color:#666;text-align:center;">No rooms available</p>';
         return;
     }
-
-    ws.onopen = () => {
-        setStatus('Connected! Registering service...', 'success');
-        localStorage.setItem('wstun_chat_server', serverUrl);
-        userName = name;
-        userId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-        registerService();
-    };
-
-    ws.onmessage = (event) => {
-        try {
-            const message = JSON.parse(event.data);
-            handleMessage(message);
-        } catch (err) {
-            console.error('Failed to parse message:', err);
-        }
-    };
-
-    ws.onclose = () => {
-        console.log('WebSocket closed');
-        if (chatView.classList.contains('hidden')) {
-            setStatus('Connection closed', 'error');
-            connectBtn.disabled = false;
-        } else {
-            connectionStatus.textContent = 'Disconnected';
-            connectionStatus.className = 'disconnected';
-        }
-    };
-
-    ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
-        setStatus('Connection failed', 'error');
-        connectBtn.disabled = false;
-    };
-}
-
-function registerService() {
-    const registration = {
-        type: 'register',
-        id: Date.now().toString(),
-        payload: {
-            name: 'chat',
-            type: 'chat',
-            description: 'Chat Room Service',
-            endpoints: [
-                { path: '/main', method: 'GET', description: 'Chat interface', relay: true },
-                { path: '/api/join', method: 'POST', description: 'Join chat', relay: true },
-                { path: '/api/leave', method: 'POST', description: 'Leave chat', relay: true },
-                { path: '/api/send', method: 'POST', description: 'Send message', relay: true },
-                { path: '/api/users', method: 'GET', description: 'List users', relay: true },
-                { path: '/api/messages', method: 'GET', description: 'Get messages', relay: true }
-            ],
-            static_resources: {}
-        }
-    };
-
-    ws.send(JSON.stringify(registration));
-}
-
-function handleMessage(message) {
-    switch (message.type) {
-        case 'ack':
-            if (message.payload && message.payload.success) {
-                console.log('Service registered successfully');
-                // Join chat as this user
-                joinSelf();
-            } else {
-                setStatus('Registration failed', 'error');
-                connectBtn.disabled = false;
-            }
-            break;
-
-        case 'http_request':
-            handleHttpRequest(message);
-            break;
-
-        default:
-            console.log('Unknown message type:', message.type);
-    }
-}
-
-function joinSelf() {
-    // Add self to users
-    users.set(userId, { id: userId, name: userName, joinedAt: Date.now() });
-    addChatMessage({ type: 'system', content: { text: `${userName} joined the chat` }, timestamp: Date.now() });
     
-    // Switch to chat view
-    connectView.classList.add('hidden');
-    chatView.classList.remove('hidden');
-    updateUserList();
-}
-
-function handleHttpRequest(message) {
-    const request = message.payload;
-    const urlPath = request.path.replace('/chat', '');
-    const requestId = request.request_id;
-
-    console.log(`HTTP ${request.method} ${urlPath}`);
-
-    if (urlPath === '/main' || urlPath === '/main/') {
-        sendHtmlResponse(requestId);
-    } else if (urlPath === '/api/join' && request.method === 'POST') {
-        handleJoinRequest(request);
-    } else if (urlPath === '/api/leave' && request.method === 'POST') {
-        handleLeaveRequest(request);
-    } else if (urlPath === '/api/send' && request.method === 'POST') {
-        handleSendRequest(request);
-    } else if (urlPath === '/api/users') {
-        sendJsonResponse(requestId, { users: Array.from(users.values()) });
-    } else if (urlPath === '/api/messages') {
-        handleMessagesRequest(requestId, request.query);
-    } else {
-        sendResponse(requestId, 404, { 'Content-Type': 'text/plain' }, 'Not Found');
-    }
-}
-
-function sendResponse(requestId, status, headers, body, isBase64 = false) {
-    const response = {
-        type: 'http_response',
-        payload: {
-            request_id: requestId,
-            status: status,
-            headers: headers,
-            [isBase64 ? 'body_base64' : 'body']: body
-        }
-    };
-    ws.send(JSON.stringify(response));
-}
-
-function sendJsonResponse(requestId, data) {
-    sendResponse(requestId, 200, { 'Content-Type': 'application/json' }, JSON.stringify(data));
-}
-
-function sendHtmlResponse(requestId) {
-    // Return a simple HTML page that loads from this same client via API
-    const html = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Room</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Arial, sans-serif; background: #f0f2f5; height: 100vh; }
-        .login-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
-        .login-box h1 { color: #6200ee; margin-bottom: 20px; }
-        .login-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
-        .login-box button { width: 100%; padding: 12px; background: #6200ee; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
-        .chat-container { display: flex; height: 100vh; }
-        .sidebar { width: 200px; background: white; border-right: 1px solid #ddd; padding: 15px; display: flex; flex-direction: column; }
-        .sidebar h3 { color: #666; margin-bottom: 10px; }
-        .sidebar ul { list-style: none; flex: 1; overflow-y: auto; }
-        .sidebar li { padding: 8px; margin: 4px 0; background: #f5f5f5; border-radius: 4px; font-size: 14px; }
-        .leave-btn { padding: 10px; background: #f44336; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; }
-        .main { flex: 1; display: flex; flex-direction: column; }
-        .header { padding: 15px 20px; background: white; border-bottom: 1px solid #ddd; }
-        #messages { flex: 1; overflow-y: auto; padding: 20px; }
-        .message { margin: 10px 0; max-width: 70%; }
-        .message.own { margin-left: auto; }
-        .message-content { padding: 10px 15px; border-radius: 12px; background: white; }
-        .message.own .message-content { background: #6200ee; color: white; }
-        .message-header { font-size: 12px; color: #666; margin-bottom: 4px; }
-        .message.own .message-header { color: rgba(255,255,255,0.7); }
-        .message.system { max-width: 100%; text-align: center; }
-        .message.system .message-content { background: transparent; color: #666; font-style: italic; }
-        .input-area { background: white; padding: 15px; border-top: 1px solid #ddd; display: flex; gap: 10px; }
-        .input-area input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
-        .input-area button { padding: 10px 20px; background: #6200ee; color: white; border: none; border-radius: 6px; cursor: pointer; }
-        .hidden { display: none !important; }
-    </style>
-</head>
-<body>
-    <div id="loginView">
-        <div class="login-box">
-            <h1>Join Chat</h1>
-            <input type="text" id="nameInput" placeholder="Enter your name">
-            <button onclick="joinChat()">Join</button>
-        </div>
-    </div>
-    <div id="chatView" class="hidden">
-        <div class="chat-container">
-            <div class="sidebar">
-                <h3>Users</h3>
-                <ul id="userList"></ul>
-                <button class="leave-btn" onclick="leaveChat()">Leave</button>
+    const sToken = serverToken.value.trim();
+    el.innerHTML = instances.map(inst => {
+        const url = '/chat/main#instance=' + inst.uuid + 
+            (sToken ? '&server_token=' + encodeURIComponent(sToken) : '');
+        return `
+        <div class="instance-item">
+            <div class="instance-info">
+                <div class="instance-name">${esc(inst.name)}</div>
+                <div class="instance-meta">UUID: ${inst.uuid} | Users: ${inst.userCount}${inst.hasToken ? ' | Private' : ''}</div>
             </div>
-            <div class="main">
-                <div class="header"><h2>Chat Room</h2></div>
-                <div id="messages"></div>
-                <div class="input-area">
-                    <input type="text" id="msgInput" placeholder="Type a message...">
-                    <button onclick="sendMsg()">Send</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script>
-        let myUserId = null, myName = null, lastTs = 0, pollId = null;
-        async function joinChat() {
-            const name = document.getElementById('nameInput').value.trim();
-            if (!name) return alert('Enter your name');
-            const res = await fetch('/chat/api/join', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
-            const data = await res.json();
-            if (data.success) { myUserId = data.userId; myName = name; document.getElementById('loginView').classList.add('hidden'); document.getElementById('chatView').classList.remove('hidden'); startPolling(); }
-        }
-        async function leaveChat() {
-            if (myUserId) await fetch('/chat/api/leave', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: myUserId }) });
-            stopPolling(); location.reload();
-        }
-        async function sendMsg() {
-            const input = document.getElementById('msgInput'), text = input.value.trim();
-            if (!text || !myUserId) return;
-            await fetch('/chat/api/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: myUserId, content: { text }, messageType: 'text' }) });
-            input.value = '';
-        }
-        async function loadMessages() {
-            const res = await fetch('/chat/api/messages?since=' + lastTs + '&userId=' + myUserId);
-            const data = await res.json();
-            data.messages.forEach(m => { if (m.timestamp > lastTs) { lastTs = m.timestamp; renderMsg(m); } });
-        }
-        async function loadUsers() {
-            const res = await fetch('/chat/api/users');
-            const data = await res.json();
-            document.getElementById('userList').innerHTML = data.users.map(u => '<li>' + esc(u.name) + (u.id === myUserId ? ' (you)' : '') + '</li>').join('');
-        }
-        function renderMsg(m) {
-            const div = document.createElement('div');
-            div.className = 'message ' + (m.userId === myUserId ? 'own ' : '') + (m.type === 'system' ? 'system' : '');
-            if (m.type === 'system') div.innerHTML = '<div class="message-content">' + esc(m.content.text) + '</div>';
-            else div.innerHTML = '<div class="message-content"><div class="message-header">' + esc(m.userName) + '</div><div>' + esc(m.content.text) + '</div></div>';
-            document.getElementById('messages').appendChild(div);
-            document.getElementById('messages').scrollTop = 999999;
-        }
-        function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
-        function startPolling() { loadMessages(); loadUsers(); pollId = setInterval(() => { loadMessages(); loadUsers(); }, 2000); }
-        function stopPolling() { if (pollId) clearInterval(pollId); }
-        document.getElementById('msgInput').addEventListener('keypress', e => { if (e.key === 'Enter') sendMsg(); });
-        document.getElementById('nameInput').addEventListener('keypress', e => { if (e.key === 'Enter') joinChat(); });
-    <\x3Cscript>
-</body>
-</html>`;
-    sendResponse(requestId, 200, { 'Content-Type': 'text/html; charset=UTF-8' }, html);
+            <a href="${url}" class="btn btn-primary" target="_blank">Open</a>
+        </div>`;
+    }).join('');
 }
 
-function handleJoinRequest(request) {
-    try {
-        const body = request.body_base64 ? atob(request.body_base64) : request.body;
-        const data = JSON.parse(body);
-        
-        const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-        const user = { id, name: data.name || 'Anonymous', joinedAt: Date.now() };
-        users.set(id, user);
-        
-        addChatMessage({ type: 'system', content: { text: `${user.name} joined the chat` }, timestamp: Date.now() });
-        updateUserList();
-        
-        sendJsonResponse(request.request_id, { success: true, userId: id, user });
-    } catch (err) {
-        sendJsonResponse(request.request_id, { success: false, error: err.message });
-    }
+function esc(s) {
+    return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
 }
 
-function handleLeaveRequest(request) {
-    try {
-        const body = request.body_base64 ? atob(request.body_base64) : request.body;
-        const data = JSON.parse(body);
-        
-        const user = users.get(data.userId);
-        if (user) {
-            users.delete(data.userId);
-            addChatMessage({ type: 'system', content: { text: `${user.name} left the chat` }, timestamp: Date.now() });
-            updateUserList();
-        }
-        sendJsonResponse(request.request_id, { success: true });
-    } catch (err) {
-        sendJsonResponse(request.request_id, { success: false, error: err.message });
-    }
-}
-
-function handleSendRequest(request) {
-    try {
-        const body = request.body_base64 ? atob(request.body_base64) : request.body;
-        const data = JSON.parse(body);
-        
-        const user = users.get(data.userId);
-        if (!user) {
-            sendJsonResponse(request.request_id, { success: false, error: 'User not found' });
-            return;
-        }
-
-        const message = {
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-            type: data.messageType || 'text',
-            userId: data.userId,
-            userName: user.name,
-            content: data.content,
-            recipients: data.recipients || null,
-            timestamp: Date.now()
-        };
-
-        addChatMessage(message);
-        sendJsonResponse(request.request_id, { success: true, message });
-    } catch (err) {
-        sendJsonResponse(request.request_id, { success: false, error: err.message });
-    }
-}
-
-function handleMessagesRequest(requestId, query) {
-    const params = new URLSearchParams(query || '');
-    const since = parseInt(params.get('since')) || 0;
-    const uid = params.get('userId');
-
-    let filtered = messages.filter(m => m.timestamp > since);
-    if (uid) {
-        filtered = filtered.filter(m => 
-            !m.recipients || m.recipients.includes(uid) || m.userId === uid || m.type === 'system'
-        );
-    }
-    sendJsonResponse(requestId, { messages: filtered });
-}
-
-function addChatMessage(message) {
-    messages.push(message);
-    if (messages.length > 1000) messages = messages.slice(-500);
-    
-    // Render in local UI
-    renderLocalMessage(message);
-}
-
-function renderLocalMessage(msg) {
-    const isOwn = msg.userId === userId;
-    const isSystem = msg.type === 'system';
-    const div = document.createElement('div');
-    div.className = 'message ' + (isOwn ? 'own ' : '') + (isSystem ? 'system' : '');
-    
-    if (isSystem) {
-        div.innerHTML = '<div class="message-content"><span>' + escapeHtml(msg.content.text) + '</span></div>';
-    } else {
-        div.innerHTML = '<div class="message-content"><div class="message-header">' + escapeHtml(msg.userName) + '</div><div class="message-text">' + escapeHtml(msg.content.text) + '</div></div>';
-    }
-    
-    messagesDiv.appendChild(div);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
-function updateUserList() {
-    userList.innerHTML = Array.from(users.values()).map(u => 
-        `<li class="${u.id === userId ? 'you' : ''}">${escapeHtml(u.name)}${u.id === userId ? ' (you)' : ''}</li>`
-    ).join('');
-    
-    recipientSelect.innerHTML = '<option value="">Everyone</option>' +
-        Array.from(users.values())
-            .filter(u => u.id !== userId)
-            .map(u => `<option value="${u.id}">${escapeHtml(u.name)}</option>`)
-            .join('');
-}
-
-function sendMessage() {
-    const input = document.getElementById('messageInput');
-    const text = input.value.trim();
-    if (!text || !userId) return;
-    
-    const recipient = recipientSelect.value;
-    const message = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-        type: 'text',
-        userId: userId,
-        userName: userName,
-        content: { text },
-        recipients: recipient ? [recipient] : null,
-        timestamp: Date.now()
-    };
-    
-    addChatMessage(message);
-    input.value = '';
-}
-
-function disconnect() {
-    if (userId) {
-        addChatMessage({ type: 'system', content: { text: `${userName} left the chat` }, timestamp: Date.now() });
-    }
-    if (ws) {
-        ws.close();
-        ws = null;
-    }
-    userId = null;
-    userName = null;
-    users.clear();
-    messages = [];
-    
-    chatView.classList.add('hidden');
-    connectView.classList.remove('hidden');
-    connectBtn.disabled = false;
-    setStatus('', 'info');
-    messagesDiv.innerHTML = '';
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-// Enter key handlers
-document.getElementById('messageInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-    }
-});
-
-document.getElementById('nameInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        connect();
-    }
-});
-
-document.getElementById('serverInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        document.getElementById('nameInput').focus();
-    }
-});
+loadInstances();
     </script>
 </body>
 </html>

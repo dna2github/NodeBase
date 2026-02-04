@@ -37,6 +37,23 @@ public class Message {
     public static final String TYPE_FILE_REGISTER = "file_register";
     public static final String TYPE_FILE_UNREGISTER = "file_unregister";
     public static final String TYPE_FILE_LIST = "file_list";
+    
+    // Client registration (for user clients, not services)
+    public static final String TYPE_CLIENT_REGISTER = "client_register";
+    
+    // Chat broadcast types
+    public static final String TYPE_CHAT_USER_LIST = "chat_user_list";
+    
+    // Service management
+    public static final String TYPE_KICK_CLIENT = "kick_client";
+    
+    // Instance management
+    public static final String TYPE_CREATE_INSTANCE = "create_instance";
+    public static final String TYPE_JOIN_INSTANCE = "join_instance";
+    public static final String TYPE_LEAVE_INSTANCE = "leave_instance";
+    public static final String TYPE_LIST_INSTANCES = "list_instances";
+    public static final String TYPE_INSTANCE_LIST = "instance_list";
+    public static final String TYPE_INSTANCE_CREATED = "instance_created";
 
     @SerializedName("type")
     private String type;

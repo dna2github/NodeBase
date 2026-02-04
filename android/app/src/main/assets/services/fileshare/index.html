@@ -3,572 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FileShare - WSTun Service</title>
+    <title>FileShare Instance Manager - WSTun</title>
     <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, sans-serif; background: #f5f5f5; min-height: 100vh; }
-.view { min-height: 100vh; }
-.hidden { display: none !important; }
-
-.connect-box {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: white; padding: 40px; border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px;
-}
-.connect-box h1 { color: #6200ee; margin-bottom: 10px; }
-.connect-box p { color: #666; margin-bottom: 20px; font-size: 14px; }
-.connect-box input {
-    width: 100%; padding: 12px; margin-bottom: 15px;
-    border: 1px solid #ddd; border-radius: 6px; font-size: 16px;
-}
-.connect-box button {
-    width: 100%; padding: 12px; background: #6200ee; color: white;
-    border: none; border-radius: 6px; font-size: 16px; cursor: pointer;
-}
-.connect-box button:hover { background: #3700b3; }
-.connect-box button:disabled { background: #ccc; cursor: not-allowed; }
-#status { margin-top: 15px; font-size: 14px; min-height: 20px; }
-.status-error { color: #f44336; }
-.status-success { color: #4caf50; }
-.status-info { color: #2196f3; }
-
-.container { max-width: 900px; margin: 0 auto; padding: 20px; }
-.header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-.header h1 { color: #6200ee; }
-.header-info { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
-.user-id { background: #f0f0f0; padding: 5px 10px; border-radius: 4px; font-size: 12px; color: #666; }
-#connectionIndicator { width: 12px; height: 12px; border-radius: 50%; background: #4caf50; }
-#connectionIndicator.disconnected { background: #f44336; }
-.disconnect-btn { padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; }
-
-.section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-.section h3 { color: #333; margin-bottom: 15px; }
-.upload-zone {
-    border: 2px dashed #6200ee; padding: 40px; text-align: center;
-    border-radius: 8px; cursor: pointer; transition: background 0.2s;
-}
-.upload-zone:hover { background: #f0e6ff; }
-.upload-zone.dragover { background: #e0d0ff; border-color: #3700b3; }
-.upload-zone input { display: none; }
-.upload-zone p { color: #666; margin: 10px 0; }
-.upload-zone .icon { font-size: 48px; color: #6200ee; }
-
-.file-list { list-style: none; }
-.file-item {
-    padding: 15px; margin: 10px 0; background: #f9f9f9; border-radius: 4px;
-    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
-}
-.file-info { flex: 1; min-width: 200px; }
-.file-name { font-weight: bold; color: #333; word-break: break-all; }
-.file-meta { color: #666; font-size: 0.9em; }
-.file-owner { color: #2196f3; font-size: 0.8em; }
-.file-actions { display: flex; gap: 10px; }
-.btn { background: #6200ee; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; font-size: 14px; }
-.btn:hover { background: #3700b3; }
-.btn-danger { background: #f44336; }
+body { font-family: Arial, sans-serif; background: #f5f5f5; min-height: 100vh; padding: 20px; }
+.container { max-width: 600px; margin: 0 auto; }
+.card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+h1 { color: #6200ee; margin-bottom: 8px; }
+h2 { color: #333; margin-bottom: 16px; font-size: 18px; }
+.subtitle { color: #666; margin-bottom: 20px; }
+.btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+.btn-primary { background: #6200ee; color: white; }
+.btn-primary:hover { background: #3700b3; }
+.btn-danger { background: #f44336; color: white; }
 .btn-danger:hover { background: #d32f2f; }
-.empty { text-align: center; color: #666; padding: 40px; }
-
-.share-info { background: #e8f5e9; padding: 15px; border-radius: 4px; margin-top: 20px; }
-.share-info h4 { color: #2e7d32; margin-bottom: 10px; }
-.share-info p { margin: 5px 0; }
-.share-info code { background: #c8e6c9; padding: 4px 8px; border-radius: 4px; font-size: 13px; }
-
-.progress { height: 4px; background: #e0e0e0; border-radius: 2px; margin-top: 8px; overflow: hidden; }
-.progress-bar { height: 100%; background: #6200ee; transition: width 0.3s; }
-
-@media (max-width: 600px) {
-    .header { flex-direction: column; text-align: center; }
-    .file-item { flex-direction: column; text-align: center; }
-}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.input-group { margin-bottom: 15px; }
+.input-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #333; }
+.input-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.info-box { background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0; }
+.info-box code { background: #fff; padding: 2px 6px; border-radius: 4px; font-family: monospace; word-break: break-all; }
+.link { color: #6200ee; text-decoration: none; }
+.link:hover { text-decoration: underline; }
+.success { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 6px; margin: 10px 0; }
+.instance-list { margin-top: 15px; }
+.instance-item { padding: 12px; margin: 8px 0; background: #f9f9f9; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+.instance-info { flex: 1; }
+.instance-name { font-weight: bold; }
+.instance-meta { font-size: 12px; color: #666; }
     </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Connection View -->
-        <div id="connectView" class="view">
-            <div class="connect-box">
-                <h1>WSTun FileShare</h1>
-                <p>Share files peer-to-peer via streaming relay</p>
-                <input type="text" id="serverInput" placeholder="Server URL (e.g., ws://192.168.1.100:8080/ws)">
-                <button id="connectBtn" onclick="connect()">Connect</button>
-                <div id="status"></div>
+    <div class="container">
+        <div class="card">
+            <h1>FileShare</h1>
+            <p class="subtitle">Create a file sharing room</p>
+            
+            <div class="input-group">
+                <label for="serverToken">Server Auth Token (if required)</label>
+                <input type="text" id="serverToken" placeholder="Leave empty if not required">
             </div>
+            <div class="input-group">
+                <label for="roomName">Room Name</label>
+                <input type="text" id="roomName" placeholder="My FileShare Room" value="FileShare Room">
+            </div>
+            <div class="input-group">
+                <label for="roomToken">Room Token (optional, for private rooms)</label>
+                <input type="text" id="roomToken" placeholder="Leave empty for public room">
+            </div>
+            
+            <button class="btn btn-primary" onclick="createInstance()">Create Room</button>
+            
+            <div id="result" style="display:none;"></div>
         </div>
-
-        <!-- Main View -->
-        <div id="mainView" class="view hidden">
-            <div class="container">
-                <div class="header">
-                    <h1>FileShare Relay</h1>
-                    <div class="header-info">
-                        <span class="user-id">ID: <strong id="myUserId">-</strong></span>
-                        <div id="connectionIndicator" title="Connected"></div>
-                        <button onclick="disconnect()" class="disconnect-btn">Disconnect</button>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <h3>Share Files</h3>
-                    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-                        <input type="file" id="fileInput" multiple onchange="handleFiles(this.files)">
-                        <div class="icon">📁</div>
-                        <p><strong>Click to select files</strong> or drag and drop</p>
-                        <p>Files are streamed on demand - not loaded into memory</p>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <h3>My Shared Files</h3>
-                    <ul class="file-list" id="myFileList">
-                        <li class="empty">No files shared yet</li>
-                    </ul>
-                </div>
-
-                <div class="section">
-                    <h3>All Available Files (from all users)</h3>
-                    <ul class="file-list" id="allFileList">
-                        <li class="empty">No files in the relay</li>
-                    </ul>
-                </div>
-
-                <div class="share-info">
-                    <h4>How Streaming Relay Works</h4>
-                    <p>1. Select files to share - they stay on your device (not uploaded)</p>
-                    <p>2. When someone downloads, data streams: Your browser → Server → Downloader</p>
-                    <p>3. No file size limit - data flows in chunks without loading entire file</p>
-                    <p style="margin-top:10px;"><strong>Relay URL:</strong> <code id="shareLink">-</code></p>
-                </div>
+        
+        <div class="card">
+            <h2>Existing Rooms</h2>
+            <p class="subtitle">Click to open the file sharing page</p>
+            <div id="instanceList" class="instance-list">
+                <p style="color:#666;text-align:center;">Loading...</p>
             </div>
+            <button class="btn" style="margin-top:15px;background:#eee;color:#333;" onclick="loadInstances()">Refresh</button>
         </div>
     </div>
 
+    <script src="/libwstun.js"></script>
     <script>
-/**
- * WSTun FileShare - Streaming Relay Client
- * 
- * Protocol:
- * 
- * 1. File Registration (user adds file to share):
- *    Client -> Server: { type: 'file_register', payload: { fileId, filename, size, mimeType } }
- *    Server -> All:    { type: 'file_list', payload: { files: [...] } }
- * 
- * 2. File Unregistration (user removes file):
- *    Client -> Server: { type: 'file_unregister', payload: { fileId } }
- *    Server -> All:    { type: 'file_list', payload: { files: [...] } }
- * 
- * 3. Download Request (HTTP GET /fileshare/relay/{fileId}):
- *    Server -> FileOwner: { type: 'file_request', payload: { requestId, fileId } }
- *    FileOwner -> Server: { type: 'file_chunk', payload: { requestId, chunk: base64, done: false } }
- *    FileOwner -> Server: { type: 'file_chunk', payload: { requestId, chunk: base64, done: true } }
- *    Server streams chunks to HTTP response
- */
+const SERVICE = 'fileshare';
+const serverToken = document.getElementById('serverToken');
 
-const CHUNK_SIZE = 64 * 1024; // 64KB chunks
-
-let ws = null;
-let serverUrl = '';
-let myUserId = null;
-let myFiles = new Map();   // fileId -> { file: File, filename, size, mimeType }
-let allFiles = new Map();  // fileId -> { filename, size, mimeType, ownerId }
-let activeTransfers = new Map(); // requestId -> { fileId, reader, offset }
-
-const connectView = document.getElementById('connectView');
-const mainView = document.getElementById('mainView');
-const statusDiv = document.getElementById('status');
-const connectBtn = document.getElementById('connectBtn');
-const myFileList = document.getElementById('myFileList');
-const allFileList = document.getElementById('allFileList');
-const uploadZone = document.getElementById('uploadZone');
-const connectionIndicator = document.getElementById('connectionIndicator');
-
-// Load saved server URL
-const savedServer = localStorage.getItem('wstun_fileshare_server');
-if (savedServer) document.getElementById('serverInput').value = savedServer;
-
-// Drag and drop
-uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
-uploadZone.addEventListener('dragleave', () => { uploadZone.classList.remove('dragover'); });
-uploadZone.addEventListener('drop', (e) => { e.preventDefault(); uploadZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
-
-function setStatus(msg, type = 'info') {
-    statusDiv.textContent = msg;
-    statusDiv.className = 'status-' + type;
-}
-
-function connect() {
-    serverUrl = document.getElementById('serverInput').value.trim();
-    if (!serverUrl) { setStatus('Please enter server URL', 'error'); return; }
-
-    connectBtn.disabled = true;
-    setStatus('Connecting...', 'info');
-
-    try { ws = new WebSocket(serverUrl); }
-    catch (err) { setStatus('Invalid WebSocket URL', 'error'); connectBtn.disabled = false; return; }
-
-    ws.onopen = () => {
-        setStatus('Connected! Registering...', 'success');
-        localStorage.setItem('wstun_fileshare_server', serverUrl);
-        myUserId = 'u' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
-        document.getElementById('myUserId').textContent = myUserId;
-        registerService();
-    };
-
-    ws.onmessage = (event) => {
-        try { handleMessage(JSON.parse(event.data)); }
-        catch (err) { console.error('Parse error:', err); }
-    };
-
-    ws.onclose = () => {
-        connectionIndicator.classList.add('disconnected');
-        if (mainView.classList.contains('hidden')) {
-            setStatus('Connection closed', 'error');
-            connectBtn.disabled = false;
-        }
-    };
-
-    ws.onerror = () => { setStatus('Connection failed', 'error'); connectBtn.disabled = false; };
-}
-
-function registerService() {
-    ws.send(JSON.stringify({
-        type: 'register',
-        id: Date.now().toString(),
-        payload: {
-            name: 'fileshare',
-            type: 'filesharing',
-            description: 'File Sharing Relay Service',
-            endpoints: [
-                { path: '/relay', method: 'GET', description: 'Relay file list', relay: true },
-                { path: '/relay/*', method: 'GET', description: 'Download file (streaming)', relay: true },
-                { path: '/api/files', method: 'GET', description: 'List files JSON', relay: true }
-            ],
-            static_resources: {}
-        }
-    }));
-}
-
-function handleMessage(message) {
-    switch (message.type) {
-        case 'ack':
-            if (message.payload?.success) {
-                connectView.classList.add('hidden');
-                mainView.classList.remove('hidden');
-                updateShareLink();
-            } else {
-                setStatus('Registration failed: ' + (message.payload?.error || 'unknown'), 'error');
-                connectBtn.disabled = false;
-            }
-            break;
-
-        case 'http_request':
-            handleHttpRequest(message);
-            break;
-
-        case 'file_list':
-            // Server broadcasts updated file list
-            handleFileListUpdate(message.payload);
-            break;
-
-        case 'file_request':
-            // Server asking us to stream a file
-            handleFileStreamRequest(message.payload);
-            break;
-
-        default:
-            console.log('Unknown message:', message.type);
-    }
-}
-
-function handleHttpRequest(message) {
-    const request = message.payload;
-    const urlPath = request.path.replace('/fileshare', '');
-    const requestId = request.request_id;
-
-    console.log(`HTTP ${request.method} ${urlPath}`);
-
-    if (urlPath === '/relay' || urlPath === '/relay/') {
-        sendRelayPage(requestId);
-    } else if (urlPath.startsWith('/relay/')) {
-        const fileId = decodeURIComponent(urlPath.substring(7));
-        handleDownloadRequest(requestId, fileId);
-    } else if (urlPath === '/api/files') {
-        sendFileListJson(requestId);
-    } else {
-        sendResponse(requestId, 404, { 'Content-Type': 'text/plain' }, 'Not Found');
-    }
-}
-
-function sendResponse(requestId, status, headers, body, isBase64 = false) {
-    ws.send(JSON.stringify({
-        type: 'http_response',
-        payload: { request_id: requestId, status, headers, [isBase64 ? 'body_base64' : 'body']: body }
-    }));
-}
-
-function sendRelayPage(requestId) {
-    const files = Array.from(allFiles.entries());
-    const listHtml = files.length === 0 
-        ? '<li class="empty">No files shared</li>'
-        : files.map(([id, f]) => `
-            <li class="file-item">
-                <div class="file-info">
-                    <span class="file-name">${esc(f.filename)}</span>
-                    <span class="file-meta">${formatSize(f.size)}</span>
-                    <span class="file-owner">by ${esc(f.ownerId)}</span>
+async function createInstance() {
+    const name = document.getElementById('roomName').value.trim() || 'FileShare Room';
+    const token = document.getElementById('roomToken').value.trim() || null;
+    const sToken = serverToken.value.trim() || null;
+    
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('result').innerHTML = '<div style="color:#666;padding:12px;">Creating room...</div>';
+    
+    // Use temporary host just to create instance
+    const host = WSTun.createInstanceHost({
+        service: SERVICE,
+        name: name,
+        serverToken: sToken,
+        instanceToken: token,
+        onOpen: () => {
+            console.log('WebSocket connected for instance creation');
+        },
+        onInstanceCreated: (payload) => {
+            const joinUrl = location.origin + '/fileshare/main#instance=' + payload.uuid + 
+                (token ? '&token=' + encodeURIComponent(token) : '') +
+                (sToken ? '&server_token=' + encodeURIComponent(sToken) : '');
+            
+            document.getElementById('result').innerHTML = `
+                <div class="success">Room created successfully!</div>
+                <div class="info-box">
+                    <p><strong>Room UUID:</strong> <code>${payload.uuid}</code></p>
+                    <p><strong>Join URL:</strong></p>
+                    <p><a href="${joinUrl}" class="link" target="_blank">${joinUrl}</a></p>
                 </div>
-                <a href="/fileshare/relay/${encodeURIComponent(id)}" class="btn">Download</a>
-            </li>
-        `).join('');
-
-    const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FileShare Relay</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;background:#f5f5f5;padding:20px}
-.container{max-width:800px;margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1)}
-h1{color:#6200ee;margin-bottom:20px}
-.file-list{list-style:none}
-.file-item{padding:15px;margin:10px 0;background:#f9f9f9;border-radius:4px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
-.file-info{flex:1;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.file-name{font-weight:bold;color:#333}
-.file-meta{color:#666;font-size:.9em}
-.file-owner{color:#2196f3;font-size:.8em}
-.btn{background:#6200ee;color:#fff;padding:8px 16px;border:none;border-radius:4px;text-decoration:none;font-size:14px}
-.btn:hover{background:#3700b3}
-.empty{text-align:center;color:#666;padding:40px}
-.note{color:#666;font-size:.9em;margin-top:20px;text-align:center}
-</style></head>
-<body><div class="container">
-<h1>FileShare Relay</h1>
-<ul class="file-list">${listHtml}</ul>
-<p class="note">Files stream directly from the owner's browser. Available while owner is connected.</p>
-</div>
-<script>setTimeout(()=>location.reload(),10000)<\x3Cscript>
-</body></html>`;
-    sendResponse(requestId, 200, { 'Content-Type': 'text/html; charset=UTF-8' }, html);
-}
-
-function sendFileListJson(requestId) {
-    const files = Array.from(allFiles.entries()).map(([id, f]) => ({ id, ...f }));
-    sendResponse(requestId, 200, { 'Content-Type': 'application/json' }, JSON.stringify({ files }));
-}
-
-function handleDownloadRequest(requestId, fileId) {
-    // Check if we own this file
-    if (myFiles.has(fileId)) {
-        // We own it - start streaming
-        startFileStream(requestId, fileId);
-    } else if (allFiles.has(fileId)) {
-        // Another user owns it - server should request from them
-        // For now, we can't handle this without server coordination
-        // Send a message to server to request the file from owner
-        ws.send(JSON.stringify({
-            type: 'relay_request',
-            payload: { requestId, fileId }
-        }));
-        // Server will handle relay or return error
-    } else {
-        sendResponse(requestId, 404, { 'Content-Type': 'text/plain' }, 'File not found');
-    }
-}
-
-function startFileStream(requestId, fileId) {
-    const info = myFiles.get(fileId);
-    if (!info) {
-        sendResponse(requestId, 404, { 'Content-Type': 'text/plain' }, 'File not found');
-        return;
-    }
-
-    console.log(`Starting stream for ${info.filename} (${formatSize(info.size)})`);
-    
-    // Send headers first
-    ws.send(JSON.stringify({
-        type: 'http_response_start',
-        payload: {
-            request_id: requestId,
-            status: 200,
-            headers: {
-                'Content-Type': info.mimeType,
-                'Content-Length': info.size.toString(),
-                'Content-Disposition': `attachment; filename="${info.filename}"`
-            }
+            `;
+            
+            // Don't disconnect - keep instance alive
+            // The instance will stay alive as long as this page is open
+            // Users can join via the main.html page
+            
+            loadInstances();
+        },
+        onError: (err) => {
+            const msg = err && err.message ? err.message : (typeof err === 'string' ? err : 'Failed to create room');
+            document.getElementById('result').innerHTML = `<div style="background:#ffebee;color:#c62828;padding:12px;border-radius:6px;">Error: ${msg}</div>`;
+        },
+        onClose: () => {
+            console.log('Instance host connection closed');
         }
-    }));
-
-    // Stream file in chunks
-    streamFileChunks(requestId, info.file, 0);
+    });
+    
+    host.connect();
 }
 
-function streamFileChunks(requestId, file, offset) {
-    if (offset >= file.size) {
-        // Done - send end marker
-        ws.send(JSON.stringify({
-            type: 'http_response_chunk',
-            payload: { request_id: requestId, done: true }
-        }));
-        console.log(`Stream complete for request ${requestId}`);
+async function loadInstances() {
+    document.getElementById('instanceList').innerHTML = '<p style="color:#666;text-align:center;">Loading rooms...</p>';
+    try {
+        const sToken = serverToken.value.trim() || null;
+        const instances = await WSTun.listInstances(SERVICE, sToken);
+        renderInstances(instances);
+    } catch (err) {
+        console.error('Failed to load instances:', err);
+        document.getElementById('instanceList').innerHTML = '<p style="color:#666;text-align:center;">No rooms available</p>';
+    }
+}
+
+function renderInstances(instances) {
+    const el = document.getElementById('instanceList');
+    if (!instances || instances.length === 0) {
+        el.innerHTML = '<p style="color:#666;text-align:center;">No rooms available</p>';
         return;
     }
-
-    const end = Math.min(offset + CHUNK_SIZE, file.size);
-    const chunk = file.slice(offset, end);
     
-    const reader = new FileReader();
-    reader.onload = () => {
-        const base64 = reader.result.split(',')[1];
-        ws.send(JSON.stringify({
-            type: 'http_response_chunk',
-            payload: { request_id: requestId, chunk_base64: base64, done: false }
-        }));
-        // Continue with next chunk
-        streamFileChunks(requestId, file, end);
-    };
-    reader.onerror = () => {
-        ws.send(JSON.stringify({
-            type: 'http_response_chunk',
-            payload: { request_id: requestId, error: 'Read error', done: true }
-        }));
-    };
-    reader.readAsDataURL(chunk);
-}
-
-function handleFileStreamRequest(payload) {
-    // Server is asking us to stream a file for another user's download
-    const { requestId, fileId } = payload;
-    if (myFiles.has(fileId)) {
-        startFileStream(requestId, fileId);
-    } else {
-        ws.send(JSON.stringify({
-            type: 'http_response_chunk',
-            payload: { request_id: requestId, error: 'File not found', done: true }
-        }));
-    }
-}
-
-function handleFileListUpdate(payload) {
-    // Server sent updated file list
-    allFiles.clear();
-    if (payload.files) {
-        for (const f of payload.files) {
-            allFiles.set(f.id, { filename: f.filename, size: f.size, mimeType: f.mimeType, ownerId: f.ownerId });
-        }
-    }
-    updateAllFileList();
-}
-
-// Local file management
-function handleFiles(fileArray) {
-    for (const file of fileArray) addFile(file);
-}
-
-function addFile(file) {
-    const fileId = 'f' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
-    const info = {
-        file: file,  // Keep reference to File object (not loaded into memory)
-        filename: file.name,
-        mimeType: file.type || 'application/octet-stream',
-        size: file.size
-    };
-    myFiles.set(fileId, info);
-    
-    // Register with server
-    ws.send(JSON.stringify({
-        type: 'file_register',
-        payload: { fileId, filename: info.filename, size: info.size, mimeType: info.mimeType, ownerId: myUserId }
-    }));
-
-    // Also add to local allFiles for display
-    allFiles.set(fileId, { filename: info.filename, size: info.size, mimeType: info.mimeType, ownerId: myUserId });
-    
-    updateMyFileList();
-    updateAllFileList();
-    console.log(`Registered file: ${file.name} (${fileId})`);
-}
-
-function removeFile(fileId) {
-    myFiles.delete(fileId);
-    allFiles.delete(fileId);
-    
-    // Unregister from server
-    ws.send(JSON.stringify({
-        type: 'file_unregister',
-        payload: { fileId }
-    }));
-    
-    updateMyFileList();
-    updateAllFileList();
-}
-
-function updateMyFileList() {
-    if (myFiles.size === 0) {
-        myFileList.innerHTML = '<li class="empty">No files shared yet</li>';
-        return;
-    }
-    myFileList.innerHTML = Array.from(myFiles.entries()).map(([id, f]) => `
-        <li class="file-item">
-            <div class="file-info">
-                <div class="file-name">${esc(f.filename)}</div>
-                <div class="file-meta">${formatSize(f.size)} - ${f.mimeType}</div>
-            </div>
-            <button class="btn btn-danger" onclick="removeFile('${id}')">Remove</button>
-        </li>
-    `).join('');
-}
-
-function updateAllFileList() {
-    if (allFiles.size === 0) {
-        allFileList.innerHTML = '<li class="empty">No files in the relay</li>';
-        return;
-    }
-    allFileList.innerHTML = Array.from(allFiles.entries()).map(([id, f]) => {
-        const isMine = myFiles.has(id);
+    const sToken = serverToken.value.trim();
+    el.innerHTML = instances.map(inst => {
+        const url = '/fileshare/main#instance=' + inst.uuid + 
+            (sToken ? '&server_token=' + encodeURIComponent(sToken) : '');
         return `
-        <li class="file-item">
-            <div class="file-info">
-                <div class="file-name">${esc(f.filename)}</div>
-                <div class="file-meta">${formatSize(f.size)} - ${esc(f.ownerId)}${isMine ? ' (you)' : ''}</div>
+        <div class="instance-item">
+            <div class="instance-info">
+                <div class="instance-name">${esc(inst.name)}</div>
+                <div class="instance-meta">UUID: ${inst.uuid} | Users: ${inst.userCount}${inst.hasToken ? ' | Private' : ''}</div>
             </div>
-            <a href="${getRelayUrl()}/${encodeURIComponent(id)}" class="btn" target="_blank">Download</a>
-        </li>
-    `}).join('');
+            <a href="${url}" class="btn btn-primary" target="_blank">Open</a>
+        </div>`;
+    }).join('');
 }
 
-function getRelayUrl() {
-    return serverUrl.replace('ws://', 'http://').replace('wss://', 'https://').replace('/ws', '') + '/fileshare/relay';
+function esc(s) {
+    return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
 }
 
-function updateShareLink() {
-    document.getElementById('shareLink').textContent = getRelayUrl();
-}
-
-function disconnect() {
-    // Unregister all files
-    for (const fileId of myFiles.keys()) {
-        ws.send(JSON.stringify({ type: 'file_unregister', payload: { fileId } }));
-    }
-    if (ws) { ws.close(); ws = null; }
-    myFiles.clear();
-    allFiles.clear();
-    mainView.classList.add('hidden');
-    connectView.classList.remove('hidden');
-    connectBtn.disabled = false;
-    setStatus('', 'info');
-    connectionIndicator.classList.remove('disconnected');
-}
-
-function formatSize(bytes) {
-    if (!bytes) return '0 B';
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
-    return (bytes / 1024 / 1024 / 1024).toFixed(1) + ' GB';
-}
-
-function esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
-
-document.getElementById('serverInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') connect(); });
+// Load instances on page load
+loadInstances();
     </script>
 </body>
 </html>

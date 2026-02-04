@@ -133,17 +133,23 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="• /[service]/main - Main entry point\n• /[service]/relay - Relay endpoint\n• /[service]/api/* - API endpoints"
+                    android:text="• /[service]/service - Management page\n• /[service]/main - User client\n• /[service]/api/* - API endpoints"
                     android:textSize="12sp"
                     android:fontFamily="monospace" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/save" />
+
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginTop="16dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -154,55 +160,44 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/builtin_services"
+                    android:text="Debug Tools"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:orientation="horizontal"
                     android:layout_marginTop="8dp"
-                    android:text="@string/builtin_services_desc"
-                    android:textSize="14sp" />
+                    android:gravity="center_vertical">
 
-                <CheckBox
-                    android:id="@+id/fileshareCheckbox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/enable_fileshare" />
+                    <CheckBox
+                        android:id="@+id/debugLogsCheckbox"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Enable Debug Logs Endpoint" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="32dp"
-                    android:text="@string/fileshare_desc"
-                    android:textSize="12sp"
-                    android:textColor="@android:color/darker_gray" />
+                    <Button
+                        android:id="@+id/viewLogsButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="View"
+                        style="@style/Widget.MaterialComponents.Button.TextButton" />
 
-                <CheckBox
-                    android:id="@+id/chatCheckbox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/enable_chat" />
+                </LinearLayout>
 
                 <TextView
+                    android:id="@+id/debugLogsUrl"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="32dp"
-                    android:text="@string/chat_desc"
+                    android:layout_marginTop="4dp"
+                    android:text="Access /debug/logs in browser to view live server logs"
                     android:textSize="12sp"
                     android:textColor="@android:color/darker_gray" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <Button
-            android:id="@+id/saveButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/save" />
 
     </LinearLayout>
 </ScrollView>

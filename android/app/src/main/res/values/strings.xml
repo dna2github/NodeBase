@@ -2,26 +2,44 @@
 <resources>
     <string name="app_name">NodeBase</string>
     <string name="tab_status">Status</string>
-    <string name="tab_config">Configuration</string>
+    <string name="tab_config">Config</string>
+    <string name="tab_instances">Instances</string>
+    <string name="tab_services">Services</string>
+    <string name="tab_marketplace">Marketplace</string>
     <string name="server_running">Server Running</string>
     <string name="server_stopped">Server Stopped</string>
     <string name="start_server">Start Server</string>
     <string name="stop_server">Stop Server</string>
     <string name="port">Port</string>
     <string name="enable_https">Enable HTTPS</string>
-    <string name="registered_services">Registered Services</string>
+    <string name="registered_services">Running service instances (registered via WebSocket)</string>
     <string name="no_services">No services registered</string>
+    <string name="running_instances">Running Instances</string>
+    <string name="running_instances_desc">Active rooms and sessions across all services</string>
+    <string name="no_instances">No running instances</string>
     <string name="kick">Kick</string>
     <string name="save">Save</string>
     <string name="server_address">Server Address</string>
-    <string name="notification_channel_name">NodeBase</string>
+    <string name="notification_channel_name">NodeBase Server</string>
     <string name="notification_channel_desc">NodeBase HTTP/WebSocket server</string>
-    <string name="notification_title">NodeBase</string>
-    <string name="notification_text">NodeBase is running on port %d</string>
-    <string name="builtin_services">Built-in Services</string>
-    <string name="builtin_services_desc">Enable local services hosted by the server</string>
-    <string name="enable_fileshare">Enable FileShare Service</string>
-    <string name="fileshare_desc">Visit /fileshare/service to manage file sharing</string>
-    <string name="enable_chat">Enable Chat Service</string>
-    <string name="chat_desc">Visit /chat/service to manage chat room</string>
+    <string name="notification_title">NodeBase Server</string>
+    <string name="notification_text">Server is running on port %d</string>
+    
+    <!-- Installed Services -->
+    <string name="installed_services">Installed Services</string>
+    <string name="installed_services_desc">FileShare and Chat are built-in and cannot be uninstalled</string>
+    <string name="no_installed_services">No services installed</string>
+    <string name="filter_services">Filter services...</string>
+    <string name="enable">Enable</string>
+    <string name="disable">Disable</string>
+    <string name="uninstall">Uninstall</string>
+    <string name="destroy">Destroy</string>
+    
+    <!-- Marketplace -->
+    <string name="marketplace">Marketplace</string>
+    <string name="marketplace_url">Marketplace URL</string>
+    <string name="marketplace_url_hint">http://example.com/wstun/marketplace</string>
+    <string name="fetch">Fetch</string>
+    <string name="install">Install</string>
+    <string name="no_marketplace_services">Enter a marketplace URL and click Fetch</string>
 </resources>

@@ -15,6 +15,9 @@ public class ServerConfig {
     private static final String KEY_CORS_ORIGINS = "cors_origins";
     private static final String KEY_FILESHARE_ENABLED = "fileshare_enabled";
     private static final String KEY_CHAT_ENABLED = "chat_enabled";
+    private static final String KEY_SERVER_AUTH_TOKEN = "server_auth_token";
+    private static final String KEY_AUTH_ENABLED = "auth_enabled";
+    private static final String KEY_DEBUG_LOGS_ENABLED = "debug_logs_enabled";
 
     private final SharedPreferences prefs;
 
@@ -89,5 +92,66 @@ public class ServerConfig {
      */
     public void setChatEnabled(boolean enabled) {
         prefs.edit().putBoolean(KEY_CHAT_ENABLED, enabled).apply();
+    }
+    
+    /**
+     * Check if server authentication is enabled.
+     */
+    public boolean isAuthEnabled() {
+        return prefs.getBoolean(KEY_AUTH_ENABLED, false);
+    }
+    
+    /**
+     * Enable or disable server authentication.
+     */
+    public void setAuthEnabled(boolean enabled) {
+        prefs.edit().putBoolean(KEY_AUTH_ENABLED, enabled).apply();
+    }
+    
+    /**
+     * Get the server auth token. Returns null if not set.
+     */
+    public String getServerAuthToken() {
+        return prefs.getString(KEY_SERVER_AUTH_TOKEN, null);
+    }
+    
+    /**
+     * Set the server auth token. Set to null or empty to disable.
+     */
+    public void setServerAuthToken(String token) {
+        if (token == null || token.isEmpty()) {
+            prefs.edit().remove(KEY_SERVER_AUTH_TOKEN).apply();
+        } else {
+            prefs.edit().putString(KEY_SERVER_AUTH_TOKEN, token).apply();
+        }
+    }
+    
+    /**
+     * Validate server auth token.
+     * Returns true if auth is disabled or token matches.
+     */
+    public boolean validateServerAuth(String token) {
+        if (!isAuthEnabled()) {
+            return true;
+        }
+        String serverToken = getServerAuthToken();
+        if (serverToken == null || serverToken.isEmpty()) {
+            return true;
+        }
+        return serverToken.equals(token);
+    }
+    
+    /**
+     * Check if debug logs endpoint is enabled.
+     */
+    public boolean isDebugLogsEnabled() {
+        return prefs.getBoolean(KEY_DEBUG_LOGS_ENABLED, false);
+    }
+    
+    /**
+     * Enable or disable debug logs endpoint.
+     */
+    public void setDebugLogsEnabled(boolean enabled) {
+        prefs.edit().putBoolean(KEY_DEBUG_LOGS_ENABLED, enabled).apply();
     }
 }

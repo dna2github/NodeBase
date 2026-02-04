@@ -15,6 +15,7 @@ import androidx.core.app.NotificationCompat;
 
 import seven.lab.wstun.R;
 import seven.lab.wstun.config.ServerConfig;
+import seven.lab.wstun.server.LocalServiceManager;
 import seven.lab.wstun.server.NettyServer;
 import seven.lab.wstun.server.ServiceManager;
 import seven.lab.wstun.ui.MainActivity;
@@ -195,6 +196,13 @@ public class WSTunService extends Service {
         if (serviceManager != null) {
             serviceManager.kickService(serviceName);
         }
+    }
+
+    /**
+     * Get the local service manager.
+     */
+    public LocalServiceManager getLocalServiceManager() {
+        return server != null ? server.getLocalServiceManager() : null;
     }
 
     private void createNotificationChannel() {

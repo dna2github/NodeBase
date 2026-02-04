@@ -25,7 +25,8 @@ import seven.lab.wstun.R;
 import seven.lab.wstun.service.WSTunService;
 
 /**
- * Main activity with tabs for status and configuration.
+ * Main activity with tabs for server status and configuration.
+ * The Status tab contains 3 sub-tabs: Running Instances, Installed Services, Marketplace.
  */
 public class MainActivity extends AppCompatActivity {
 

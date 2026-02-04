@@ -4,21 +4,27 @@ import android.content.Context;
 import android.util.Log;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import seven.lab.wstun.config.ServerConfig;
+import seven.lab.wstun.marketplace.InstalledService;
+import seven.lab.wstun.marketplace.MarketplaceService;
+import seven.lab.wstun.marketplace.ServiceManifest;
 
 /**
- * Manages built-in local services (FileShare, Chat) that are hosted by the server itself.
- * These services are loaded from assets and can be started/stopped via HTTP API.
+ * Manages local services including built-in and marketplace-installed services.
+ * Services can be enabled/disabled and have endpoints attached/detached dynamically.
  */
 public class LocalServiceManager {
     
@@ -27,13 +33,13 @@ public class LocalServiceManager {
 
     private final Context context;
     private final ServerConfig config;
+    private final MarketplaceService marketplaceService;
     
-    // Service status tracking
+    // Service status tracking (for running instances)
     private final Map<String, ServiceStatus> serviceStatuses = new ConcurrentHashMap<>();
     
-    // HTML content cache
-    private String fileshareHtml;
-    private String chatHtml;
+    // HTML/JS content cache
+    private String libwstunJs;
     
     /**
      * Represents the status of a local service.
@@ -84,26 +90,62 @@ public class LocalServiceManager {
     public LocalServiceManager(Context context, ServerConfig config) {
         this.context = context;
         this.config = config;
+        this.marketplaceService = new MarketplaceService(context);
         
-        // Initialize service statuses
-        serviceStatuses.put("fileshare", new ServiceStatus("fileshare"));
-        serviceStatuses.put("chat", new ServiceStatus("chat"));
+        // Initialize service statuses for all installed services
+        for (String name : marketplaceService.getInstalledServices().keySet()) {
+            serviceStatuses.put(name, new ServiceStatus(name));
+        }
         
-        // Load HTML content from assets
-        loadServiceHtml();
+        // Load libwstun.js
+        loadLibwstunJs();
     }
     
-    private void loadServiceHtml() {
+    private void loadLibwstunJs() {
         try {
-            fileshareHtml = loadAsset("services/fileshare/index.html");
-            chatHtml = loadAsset("services/chat/index.html");
-            Log.i(TAG, "Loaded service HTML from assets");
+            libwstunJs = loadAsset("libwstun.js");
+            Log.i(TAG, "Loaded libwstun.js from assets");
         } catch (IOException e) {
-            Log.e(TAG, "Failed to load service HTML from assets", e);
-            // Use embedded HTML as fallback
-            fileshareHtml = getEmbeddedFileshareHtml();
-            chatHtml = getEmbeddedChatHtml();
+            Log.e(TAG, "Failed to load assets", e);
+            libwstunJs = "// libwstun.js failed to load";
         }
+    }
+    
+    /**
+     * Generate the admin HTML page dynamically.
+     */
+    public String getAdminHtml() {
+        StringBuilder html = new StringBuilder();
+        html.append("<!DOCTYPE html><html><head><meta charset='UTF-8'>");
+        html.append("<meta name='viewport' content='width=device-width, initial-scale=1.0'>");
+        html.append("<title>WSTun Admin</title><style>");
+        html.append("body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#f5f5f5;}");
+        html.append(".card{background:white;padding:20px;border-radius:8px;margin-bottom:16px;box-shadow:0 2px 4px rgba(0,0,0,0.1);}");
+        html.append("h1{color:#6200ee;}h2{color:#333;margin-top:0;}");
+        html.append("a{color:#6200ee;}.btn{display:inline-block;padding:10px 20px;background:#6200ee;color:white;text-decoration:none;border-radius:6px;margin-right:8px;margin-bottom:8px;}");
+        html.append(".btn:hover{background:#3700b3;}.badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:12px;margin-left:8px;}");
+        html.append(".enabled{background:#e8f5e9;color:#2e7d32;}.disabled{background:#f5f5f5;color:#666;}");
+        html.append("</style></head><body>");
+        html.append("<h1>WSTun Service Manager</h1>");
+        html.append("<p>Use the WSTun Android app to manage services, or access services directly below.</p>");
+        
+        html.append("<div class='card'><h2>Installed Services</h2>");
+        for (Map.Entry<String, InstalledService> entry : getInstalledServices().entrySet()) {
+            String name = entry.getKey();
+            InstalledService svc = entry.getValue();
+            String displayName = svc.getDisplayName() != null ? svc.getDisplayName() : name;
+            html.append("<p><strong>").append(displayName).append("</strong>");
+            html.append("<span class='badge ").append(svc.isEnabled() ? "enabled" : "disabled").append("'>");
+            html.append(svc.isEnabled() ? "Enabled" : "Disabled").append("</span>");
+            if (svc.isEnabled()) {
+                html.append(" - <a class='btn' href='/").append(name).append("/service'>Manage</a>");
+            }
+            html.append("</p>");
+        }
+        html.append("</div>");
+        
+        html.append("</body></html>");
+        return html.toString();
     }
     
     private String loadAsset(String path) throws IOException {
@@ -119,15 +161,79 @@ public class LocalServiceManager {
     }
     
     /**
-     * Check if a local service is enabled in config.
+     * Check if a service is enabled.
      */
     public boolean isServiceEnabled(String serviceName) {
-        if ("fileshare".equals(serviceName)) {
-            return config.isFileshareEnabled();
-        } else if ("chat".equals(serviceName)) {
-            return config.isChatEnabled();
+        InstalledService service = marketplaceService.getInstalledService(serviceName);
+        return service != null && service.isEnabled();
+    }
+    
+    /**
+     * Get the marketplace service.
+     */
+    public MarketplaceService getMarketplaceService() {
+        return marketplaceService;
+    }
+    
+    /**
+     * Get all installed services.
+     */
+    public Map<String, InstalledService> getInstalledServices() {
+        return marketplaceService.getInstalledServices();
+    }
+    
+    /**
+     * Get installed service by name.
+     */
+    public InstalledService getInstalledService(String serviceName) {
+        return marketplaceService.getInstalledService(serviceName);
+    }
+    
+    /**
+     * Enable a service.
+     */
+    public boolean enableService(String serviceName) {
+        boolean result = marketplaceService.enableService(serviceName);
+        if (result && !serviceStatuses.containsKey(serviceName)) {
+            serviceStatuses.put(serviceName, new ServiceStatus(serviceName));
         }
-        return false;
+        return result;
+    }
+    
+    /**
+     * Disable a service.
+     */
+    public boolean disableService(String serviceName, ServiceManager serviceManager) {
+        InstalledService service = marketplaceService.getInstalledService(serviceName);
+        if (service == null) {
+            return false;
+        }
+        
+        // Close all instances for this service
+        if (serviceManager != null) {
+            serviceManager.closeInstancesForService(serviceName);
+        }
+        
+        // Stop the service status
+        ServiceStatus status = serviceStatuses.get(serviceName);
+        if (status != null && status.isRunning()) {
+            status.stop();
+        }
+        
+        return marketplaceService.disableService(serviceName);
+    }
+    
+    /**
+     * Uninstall a service.
+     */
+    public boolean uninstallService(String serviceName, ServiceManager serviceManager) {
+        // Disable first
+        disableService(serviceName, serviceManager);
+        
+        // Remove status
+        serviceStatuses.remove(serviceName);
+        
+        return marketplaceService.uninstallService(serviceName);
     }
     
     /**
@@ -201,195 +307,76 @@ public class LocalServiceManager {
     
     /**
      * Get the service management HTML page for a service.
+     * This returns the service controller page (index.html) which:
+     * - Registers as a SERVICE with the server
+     * - Shows in Android UI
+     * - Manages user clients
      */
     public String getServicePageHtml(String serviceName, String serverUrl) {
-        ServiceStatus status = serviceStatuses.get(serviceName);
-        if (status == null || !isServiceEnabled(serviceName)) {
+        if (!isServiceEnabled(serviceName)) {
             return getServiceDisabledHtml(serviceName);
         }
         
-        return generateServicePageHtml(serviceName, serverUrl, status);
+        InstalledService service = marketplaceService.getInstalledService(serviceName);
+        if (service == null) {
+            return getServiceDisabledHtml(serviceName);
+        }
+        
+        // Get the /service endpoint file
+        String content = service.getFileContent("/service");
+        if (content == null || content.isEmpty()) {
+            return getServiceDisabledHtml(serviceName);
+        }
+        return content;
     }
     
     /**
-     * Get the main service HTML (the actual fileshare/chat UI).
+     * Get the main service HTML (the user client UI).
+     * This is served directly from server when service is registered.
      */
     public String getServiceMainHtml(String serviceName) {
-        if ("fileshare".equals(serviceName)) {
-            return fileshareHtml;
-        } else if ("chat".equals(serviceName)) {
-            return chatHtml;
+        InstalledService service = marketplaceService.getInstalledService(serviceName);
+        if (service == null) {
+            return null;
         }
-        return null;
+        
+        return service.getFileContent("/main");
     }
     
-    private String generateServicePageHtml(String serviceName, String serverUrl, ServiceStatus status) {
-        String displayName = "fileshare".equals(serviceName) ? "FileShare" : "Chat";
-        String mainPath = "/" + serviceName + "/main";
+    /**
+     * Get file content for any endpoint of a service.
+     */
+    public String getServiceFileContent(String serviceName, String path) {
+        InstalledService service = marketplaceService.getInstalledService(serviceName);
+        if (service == null || !service.isEnabled()) {
+            return null;
+        }
         
-        return "<!DOCTYPE html>\n" +
-            "<html>\n" +
-            "<head>\n" +
-            "    <meta charset=\"UTF-8\">\n" +
-            "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
-            "    <title>" + displayName + " Service - WSTun</title>\n" +
-            "    <style>\n" +
-            "* { box-sizing: border-box; margin: 0; padding: 0; }\n" +
-            "body { font-family: Arial, sans-serif; background: #f5f5f5; min-height: 100vh; padding: 20px; }\n" +
-            ".container { max-width: 600px; margin: 0 auto; }\n" +
-            ".card { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }\n" +
-            "h1 { color: #6200ee; margin-bottom: 8px; }\n" +
-            ".subtitle { color: #666; margin-bottom: 20px; }\n" +
-            ".status { padding: 16px; border-radius: 8px; margin-bottom: 20px; }\n" +
-            ".status.running { background: #e8f5e9; border: 1px solid #4caf50; }\n" +
-            ".status.stopped { background: #fff3e0; border: 1px solid #ff9800; }\n" +
-            ".status-label { font-weight: bold; margin-bottom: 8px; }\n" +
-            ".status.running .status-label { color: #2e7d32; }\n" +
-            ".status.stopped .status-label { color: #e65100; }\n" +
-            ".status-info { font-size: 14px; color: #666; }\n" +
-            ".status-info code { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-size: 12px; }\n" +
-            ".buttons { display: flex; gap: 12px; flex-wrap: wrap; }\n" +
-            ".btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: all 0.2s; }\n" +
-            ".btn:disabled { opacity: 0.5; cursor: not-allowed; }\n" +
-            ".btn-primary { background: #6200ee; color: white; }\n" +
-            ".btn-primary:hover:not(:disabled) { background: #3700b3; }\n" +
-            ".btn-danger { background: #f44336; color: white; }\n" +
-            ".btn-danger:hover:not(:disabled) { background: #d32f2f; }\n" +
-            ".btn-secondary { background: #e0e0e0; color: #333; }\n" +
-            ".btn-secondary:hover:not(:disabled) { background: #bdbdbd; }\n" +
-            ".link-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }\n" +
-            ".link-section a { color: #6200ee; text-decoration: none; }\n" +
-            ".link-section a:hover { text-decoration: underline; }\n" +
-            ".message { padding: 12px; border-radius: 8px; margin-top: 16px; display: none; }\n" +
-            ".message.success { background: #e8f5e9; color: #2e7d32; display: block; }\n" +
-            ".message.error { background: #ffebee; color: #c62828; display: block; }\n" +
-            "    </style>\n" +
-            "</head>\n" +
-            "<body>\n" +
-            "    <div class=\"container\">\n" +
-            "        <div class=\"card\">\n" +
-            "            <h1>" + displayName + " Service</h1>\n" +
-            "            <p class=\"subtitle\">Manage the built-in " + displayName.toLowerCase() + " service</p>\n" +
-            "            \n" +
-            "            <div id=\"statusBox\" class=\"status stopped\">\n" +
-            "                <div class=\"status-label\" id=\"statusLabel\">Loading...</div>\n" +
-            "                <div class=\"status-info\" id=\"statusInfo\"></div>\n" +
-            "            </div>\n" +
-            "            \n" +
-            "            <div class=\"buttons\">\n" +
-            "                <button id=\"startBtn\" class=\"btn btn-primary\" onclick=\"startService()\" disabled>Start Service</button>\n" +
-            "                <button id=\"stopBtn\" class=\"btn btn-danger\" onclick=\"stopService()\" disabled>Stop Service</button>\n" +
-            "                <button id=\"openBtn\" class=\"btn btn-secondary\" onclick=\"openService()\" disabled>Open " + displayName + "</button>\n" +
-            "            </div>\n" +
-            "            \n" +
-            "            <div id=\"message\" class=\"message\"></div>\n" +
-            "            \n" +
-            "            <div class=\"link-section\">\n" +
-            "                <p>Service URL: <a href=\"" + mainPath + "\" id=\"serviceLink\">" + serverUrl + mainPath + "</a></p>\n" +
-            "            </div>\n" +
-            "        </div>\n" +
-            "    </div>\n" +
-            "    \n" +
-            "    <script>\n" +
-            "const SERVICE_NAME = '" + serviceName + "';\n" +
-            "let currentUuid = null;\n" +
-            "\n" +
-            "async function loadStatus() {\n" +
-            "    try {\n" +
-            "        const res = await fetch('/' + SERVICE_NAME + '/service/api/status');\n" +
-            "        const data = await res.json();\n" +
-            "        updateUI(data);\n" +
-            "    } catch (err) {\n" +
-            "        showMessage('Failed to load status: ' + err.message, 'error');\n" +
-            "    }\n" +
-            "}\n" +
-            "\n" +
-            "function updateUI(status) {\n" +
-            "    const statusBox = document.getElementById('statusBox');\n" +
-            "    const statusLabel = document.getElementById('statusLabel');\n" +
-            "    const statusInfo = document.getElementById('statusInfo');\n" +
-            "    const startBtn = document.getElementById('startBtn');\n" +
-            "    const stopBtn = document.getElementById('stopBtn');\n" +
-            "    const openBtn = document.getElementById('openBtn');\n" +
-            "    \n" +
-            "    currentUuid = status.uuid;\n" +
-            "    \n" +
-            "    if (status.running) {\n" +
-            "        statusBox.className = 'status running';\n" +
-            "        statusLabel.textContent = 'Service Running';\n" +
-            "        statusInfo.innerHTML = 'UUID: <code>' + status.uuid + '</code><br>Started: ' + new Date(status.startedAt).toLocaleString();\n" +
-            "        startBtn.disabled = true;\n" +
-            "        stopBtn.disabled = false;\n" +
-            "        openBtn.disabled = false;\n" +
-            "    } else {\n" +
-            "        statusBox.className = 'status stopped';\n" +
-            "        statusLabel.textContent = 'Service Stopped';\n" +
-            "        if (status.stoppedAt > 0) {\n" +
-            "            statusInfo.innerHTML = 'Last UUID: <code>' + (status.uuid || 'none') + '</code><br>Stopped: ' + new Date(status.stoppedAt).toLocaleString();\n" +
-            "        } else {\n" +
-            "            statusInfo.textContent = 'Service has not been started yet';\n" +
-            "        }\n" +
-            "        startBtn.disabled = false;\n" +
-            "        stopBtn.disabled = true;\n" +
-            "        openBtn.disabled = true;\n" +
-            "    }\n" +
-            "}\n" +
-            "\n" +
-            "async function startService() {\n" +
-            "    try {\n" +
-            "        const res = await fetch('/' + SERVICE_NAME + '/service/api/start', { method: 'POST' });\n" +
-            "        const data = await res.json();\n" +
-            "        if (data.success) {\n" +
-            "            showMessage('Service started successfully!', 'success');\n" +
-            "            loadStatus();\n" +
-            "        } else {\n" +
-            "            showMessage('Failed to start: ' + (data.error || 'Unknown error'), 'error');\n" +
-            "        }\n" +
-            "    } catch (err) {\n" +
-            "        showMessage('Failed to start service: ' + err.message, 'error');\n" +
-            "    }\n" +
-            "}\n" +
-            "\n" +
-            "async function stopService() {\n" +
-            "    try {\n" +
-            "        const res = await fetch('/' + SERVICE_NAME + '/service/api/stop', {\n" +
-            "            method: 'POST',\n" +
-            "            headers: { 'Content-Type': 'application/json' },\n" +
-            "            body: JSON.stringify({ uuid: currentUuid })\n" +
-            "        });\n" +
-            "        const data = await res.json();\n" +
-            "        if (data.success) {\n" +
-            "            showMessage('Service stopped successfully!', 'success');\n" +
-            "            loadStatus();\n" +
-            "        } else {\n" +
-            "            showMessage('Failed to stop: ' + (data.error || 'Unknown error'), 'error');\n" +
-            "        }\n" +
-            "    } catch (err) {\n" +
-            "        showMessage('Failed to stop service: ' + err.message, 'error');\n" +
-            "    }\n" +
-            "}\n" +
-            "\n" +
-            "function openService() {\n" +
-            "    window.open('/' + SERVICE_NAME + '/main', '_blank');\n" +
-            "}\n" +
-            "\n" +
-            "function showMessage(text, type) {\n" +
-            "    const msg = document.getElementById('message');\n" +
-            "    msg.textContent = text;\n" +
-            "    msg.className = 'message ' + type;\n" +
-            "    setTimeout(() => { msg.className = 'message'; }, 5000);\n" +
-            "}\n" +
-            "\n" +
-            "// Load status on page load and refresh periodically\n" +
-            "loadStatus();\n" +
-            "setInterval(loadStatus, 5000);\n" +
-            "    </script>\n" +
-            "</body>\n" +
-            "</html>";
+        return service.getFileContent(path);
+    }
+    
+    /**
+     * Get list of all endpoints for a service.
+     */
+    public List<ServiceManifest.Endpoint> getServiceEndpoints(String serviceName) {
+        InstalledService service = marketplaceService.getInstalledService(serviceName);
+        if (service == null || service.getManifest() == null) {
+            return new ArrayList<>();
+        }
+        return service.getManifest().getEndpoints();
+    }
+    
+    /**
+     * Get the libwstun.js library content.
+     */
+    public String getLibWstunJs() {
+        return libwstunJs;
     }
     
     private String getServiceDisabledHtml(String serviceName) {
-        String displayName = "fileshare".equals(serviceName) ? "FileShare" : "Chat";
+        InstalledService service = marketplaceService.getInstalledService(serviceName);
+        String displayName = service != null ? service.getDisplayName() : serviceName;
+        
         return "<!DOCTYPE html>\n" +
             "<html>\n" +
             "<head>\n" +
@@ -407,19 +394,40 @@ public class LocalServiceManager {
             "    <div class=\"card\">\n" +
             "        <h1>Service Disabled</h1>\n" +
             "        <p>The " + displayName + " service is not enabled on this server.</p>\n" +
-            "        <p>Enable it in the WSTun app configuration.</p>\n" +
+            "        <p>Enable it in the WSTun app service management.</p>\n" +
             "    </div>\n" +
             "</body>\n" +
             "</html>";
     }
     
-    // Fallback embedded HTML for FileShare
-    private String getEmbeddedFileshareHtml() {
-        return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>FileShare</title></head><body><h1>FileShare Service</h1><p>Service HTML not loaded.</p></body></html>";
+    /**
+     * Get all installed services as JSON array.
+     */
+    public JsonArray getInstalledServicesJson() {
+        JsonArray arr = new JsonArray();
+        for (Map.Entry<String, InstalledService> entry : marketplaceService.getInstalledServices().entrySet()) {
+            JsonObject obj = entry.getValue().toJson();
+            obj.addProperty("name", entry.getKey());
+            
+            // Add running status
+            ServiceStatus status = serviceStatuses.get(entry.getKey());
+            if (status != null) {
+                obj.addProperty("running", status.isRunning());
+                if (status.getUuid() != null) {
+                    obj.addProperty("uuid", status.getUuid());
+                }
+            }
+            arr.add(obj);
+        }
+        return arr;
     }
     
-    // Fallback embedded HTML for Chat
-    private String getEmbeddedChatHtml() {
-        return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Chat</title></head><body><h1>Chat Service</h1><p>Service HTML not loaded.</p></body></html>";
+    /**
+     * Shutdown resources.
+     */
+    public void shutdown() {
+        if (marketplaceService != null) {
+            marketplaceService.shutdown();
+        }
     }
 }

@@ -16,26 +16,173 @@ import seven.lab.wstun.protocol.Message;
 import seven.lab.wstun.protocol.ServiceRegistration;
 
 /**
- * Manages registered services and their WebSocket connections.
+ * Manages registered services, instances, and their WebSocket connections.
+ * 
+ * Architecture:
+ * - Service: A type of service (e.g., fileshare, chat)
+ * - ServiceInstance: A specific room/session with UUID, name, and optional token
+ * - User: Connected to a specific instance
  */
 public class ServiceManager {
     
     private static final String TAG = "ServiceManager";
 
-    // Service name -> ServiceEntry
+    // Service name -> ServiceEntry (the service provider)
     private final Map<String, ServiceEntry> services = new ConcurrentHashMap<>();
+    
+    // Instance UUID -> ServiceInstance
+    private final Map<String, ServiceInstance> instances = new ConcurrentHashMap<>();
+    
+    // Service name -> List of instance UUIDs
+    private final Map<String, List<String>> serviceInstances = new ConcurrentHashMap<>();
     
     // Channel -> Service name (for cleanup on disconnect)
     private final Map<Channel, String> channelToService = new ConcurrentHashMap<>();
+    
+    // Channel -> Instance UUID (for instance owner cleanup)
+    private final Map<Channel, String> channelToInstance = new ConcurrentHashMap<>();
 
     // File registry: fileId -> FileInfo (for relay file sharing)
     private final Map<String, FileInfo> fileRegistry = new ConcurrentHashMap<>();
     
     // Channel -> List of file IDs owned by that channel
     private final Map<Channel, List<String>> channelToFiles = new ConcurrentHashMap<>();
+    
+    // Client registry: userId -> ClientInfo (for user clients)
+    private final Map<String, ClientInfo> clients = new ConcurrentHashMap<>();
+    
+    // Channel -> userId (for client cleanup on disconnect)
+    private final Map<Channel, String> channelToClient = new ConcurrentHashMap<>();
+    
+    // Chat users: userId -> ChatUser
+    private final Map<String, ChatUser> chatUsers = new ConcurrentHashMap<>();
 
     private ServiceChangeListener listener;
     private RequestManager requestManager;
+    
+    /**
+     * Represents a service instance (room/session).
+     */
+    public static class ServiceInstance {
+        private final String uuid;
+        private final String serviceName;
+        private final String name;
+        private final String token;
+        private final Channel ownerChannel;
+        private final long createdAt;
+        private final List<String> userIds = new ArrayList<>();
+        
+        public ServiceInstance(String uuid, String serviceName, String name, String token, Channel ownerChannel) {
+            this.uuid = uuid;
+            this.serviceName = serviceName;
+            this.name = name;
+            this.token = token;
+            this.ownerChannel = ownerChannel;
+            this.createdAt = System.currentTimeMillis();
+        }
+        
+        public String getUuid() { return uuid; }
+        public String getServiceName() { return serviceName; }
+        public String getName() { return name; }
+        public String getToken() { return token; }
+        public Channel getOwnerChannel() { return ownerChannel; }
+        public long getCreatedAt() { return createdAt; }
+        public List<String> getUserIds() { return userIds; }
+        
+        public boolean hasToken() {
+            return token != null && !token.isEmpty();
+        }
+        
+        public boolean validateToken(String inputToken) {
+            if (!hasToken()) return true;
+            return token.equals(inputToken);
+        }
+        
+        public void addUser(String userId) {
+            if (!userIds.contains(userId)) {
+                userIds.add(userId);
+            }
+        }
+        
+        public void removeUser(String userId) {
+            userIds.remove(userId);
+        }
+        
+        public boolean isOwnerConnected() {
+            return ownerChannel != null && ownerChannel.isActive();
+        }
+        
+        public int getUserCount() {
+            return userIds.size();
+        }
+        
+        public JsonObject toJson() {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("uuid", uuid);
+            obj.addProperty("service", serviceName);
+            obj.addProperty("name", name);
+            obj.addProperty("hasToken", hasToken());
+            obj.addProperty("createdAt", createdAt);
+            obj.addProperty("userCount", userIds.size());
+            return obj;
+        }
+    }
+
+    /**
+     * Represents a connected client (user, not service).
+     */
+    public static class ClientInfo {
+        private final String userId;
+        private final String clientType;
+        private final String instanceUuid;
+        private final Channel channel;
+        private final long connectedAt;
+
+        public ClientInfo(String userId, String clientType, String instanceUuid, Channel channel) {
+            this.userId = userId;
+            this.clientType = clientType;
+            this.instanceUuid = instanceUuid;
+            this.channel = channel;
+            this.connectedAt = System.currentTimeMillis();
+        }
+
+        public String getUserId() { return userId; }
+        public String getClientType() { return clientType; }
+        public String getInstanceUuid() { return instanceUuid; }
+        public Channel getChannel() { return channel; }
+        public long getConnectedAt() { return connectedAt; }
+    }
+    
+    /**
+     * Represents a chat user.
+     */
+    public static class ChatUser {
+        private final String userId;
+        private String name;
+        private final Channel channel;
+        private final long joinedAt;
+
+        public ChatUser(String userId, String name, Channel channel) {
+            this.userId = userId;
+            this.name = name;
+            this.channel = channel;
+            this.joinedAt = System.currentTimeMillis();
+        }
+
+        public String getUserId() { return userId; }
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public Channel getChannel() { return channel; }
+        public long getJoinedAt() { return joinedAt; }
+
+        public JsonObject toJson() {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("id", userId);
+            obj.addProperty("name", name);
+            obj.addProperty("joinedAt", joinedAt);
+            return obj;
+        }
+    }
 
     /**
      * Represents a file registered for relay sharing.
@@ -91,6 +238,7 @@ public class ServiceManager {
         private final Channel channel;
         private final ServiceRegistration registration;
         private final long registeredAt;
+        private final String authToken;
 
         public ServiceEntry(ServiceRegistration registration, Channel channel) {
             this.name = registration.getName();
@@ -99,6 +247,7 @@ public class ServiceManager {
             this.channel = channel;
             this.registration = registration;
             this.registeredAt = System.currentTimeMillis();
+            this.authToken = registration.getAuthToken();
         }
 
         public String getName() {
@@ -128,6 +277,25 @@ public class ServiceManager {
         public boolean isConnected() {
             return channel != null && channel.isActive();
         }
+        
+        public String getAuthToken() {
+            return authToken;
+        }
+        
+        public boolean hasAuth() {
+            return authToken != null && !authToken.isEmpty();
+        }
+        
+        /**
+         * Validate client auth token for this service.
+         * Returns true if no auth required or token matches.
+         */
+        public boolean validateClientAuth(String token) {
+            if (!hasAuth()) {
+                return true;
+            }
+            return authToken.equals(token);
+        }
     }
 
     public void setListener(ServiceChangeListener listener) {
@@ -138,6 +306,23 @@ public class ServiceManager {
         this.requestManager = requestManager;
     }
 
+    // Reserved service names that cannot be used
+    private static final java.util.Set<String> RESERVED_NAMES = new java.util.HashSet<>(
+        java.util.Arrays.asList(
+            "debug", "admin", "_api", "ws", "websocket", 
+            "api", "system", "config", "static", "assets",
+            "libwstun.js"
+        )
+    );
+    
+    /**
+     * Check if a service name is reserved.
+     */
+    public static boolean isReservedName(String name) {
+        if (name == null) return true;
+        return RESERVED_NAMES.contains(name.toLowerCase());
+    }
+    
     /**
      * Register a new service.
      */
@@ -146,6 +331,12 @@ public class ServiceManager {
         
         if (name == null || name.isEmpty()) {
             Log.w(TAG, "Service registration failed: no name provided");
+            return false;
+        }
+        
+        // Check for reserved names
+        if (isReservedName(name)) {
+            Log.w(TAG, "Service registration failed: reserved name: " + name);
             return false;
         }
 
@@ -184,11 +375,168 @@ public class ServiceManager {
     }
 
     /**
+     * Create a new service instance (room/session).
+     */
+    public ServiceInstance createInstance(String serviceName, String name, String token, Channel ownerChannel) {
+        String uuid = java.util.UUID.randomUUID().toString().substring(0, 8);
+        
+        ServiceInstance instance = new ServiceInstance(uuid, serviceName, name, token, ownerChannel);
+        instances.put(uuid, instance);
+        channelToInstance.put(ownerChannel, uuid);
+        
+        // Track instances per service
+        serviceInstances.computeIfAbsent(serviceName, k -> new ArrayList<>()).add(uuid);
+        
+        Log.i(TAG, "Instance created: " + uuid + " (" + name + ") for service " + serviceName);
+        return instance;
+    }
+    
+    /**
+     * Get an instance by UUID.
+     */
+    public ServiceInstance getInstance(String uuid) {
+        return instances.get(uuid);
+    }
+    
+    /**
+     * Get all instances for a service.
+     */
+    public List<ServiceInstance> getInstancesForService(String serviceName) {
+        List<String> uuids = serviceInstances.get(serviceName);
+        if (uuids == null) return new ArrayList<>();
+        
+        List<ServiceInstance> result = new ArrayList<>();
+        for (String uuid : uuids) {
+            ServiceInstance inst = instances.get(uuid);
+            if (inst != null && inst.isOwnerConnected()) {
+                result.add(inst);
+            }
+        }
+        return result;
+    }
+    
+    /**
+     * Remove an instance.
+     */
+    public void removeInstance(String uuid) {
+        ServiceInstance instance = instances.remove(uuid);
+        if (instance != null) {
+            channelToInstance.remove(instance.getOwnerChannel());
+            List<String> uuids = serviceInstances.get(instance.getServiceName());
+            if (uuids != null) {
+                uuids.remove(uuid);
+            }
+            Log.i(TAG, "Instance removed: " + uuid);
+        }
+    }
+    
+    /**
+     * Destroy an instance (kick all users and close owner connection).
+     */
+    public void destroyInstance(String uuid) {
+        ServiceInstance instance = instances.get(uuid);
+        if (instance == null) {
+            return;
+        }
+        
+        // Kick all users in the instance
+        for (String userId : new ArrayList<>(instance.getUserIds())) {
+            kickClient(userId);
+        }
+        
+        // Close owner connection
+        Channel ownerChannel = instance.getOwnerChannel();
+        if (ownerChannel != null && ownerChannel.isActive()) {
+            Message msg = new Message("instance_destroyed");
+            JsonObject payload = new JsonObject();
+            payload.addProperty("uuid", uuid);
+            payload.addProperty("reason", "Instance destroyed by administrator");
+            msg.setPayload(payload);
+            ownerChannel.writeAndFlush(new TextWebSocketFrame(msg.toJson()));
+            ownerChannel.close();
+        }
+        
+        // Remove instance
+        removeInstance(uuid);
+        Log.i(TAG, "Instance destroyed: " + uuid);
+    }
+    
+    /**
+     * Close all instances for a service (when disabling/uninstalling).
+     */
+    public void closeInstancesForService(String serviceName) {
+        List<String> uuids = serviceInstances.get(serviceName);
+        if (uuids == null || uuids.isEmpty()) {
+            return;
+        }
+        
+        // Make a copy to avoid concurrent modification
+        List<String> toRemove = new ArrayList<>(uuids);
+        
+        for (String uuid : toRemove) {
+            ServiceInstance instance = instances.get(uuid);
+            if (instance != null) {
+                // Kick all users in the instance
+                for (String userId : new ArrayList<>(instance.getUserIds())) {
+                    kickClient(userId);
+                }
+                
+                // Close owner connection
+                Channel ownerChannel = instance.getOwnerChannel();
+                if (ownerChannel != null && ownerChannel.isActive()) {
+                    Message msg = new Message("service_disabled");
+                    JsonObject payload = new JsonObject();
+                    payload.addProperty("serviceName", serviceName);
+                    payload.addProperty("reason", "Service disabled");
+                    msg.setPayload(payload);
+                    ownerChannel.writeAndFlush(new TextWebSocketFrame(msg.toJson()));
+                    ownerChannel.close();
+                }
+                
+                // Remove instance
+                removeInstance(uuid);
+            }
+        }
+        
+        Log.i(TAG, "Closed all instances for service: " + serviceName);
+    }
+    
+    /**
+     * Get count of running instances for a service.
+     */
+    public int getInstanceCountForService(String serviceName) {
+        return getInstancesForService(serviceName).size();
+    }
+    
+    /**
+     * Clean up instance for a disconnected channel.
+     */
+    private void cleanupInstanceForChannel(Channel channel) {
+        String uuid = channelToInstance.remove(channel);
+        if (uuid != null) {
+            ServiceInstance instance = instances.remove(uuid);
+            if (instance != null) {
+                List<String> uuids = serviceInstances.get(instance.getServiceName());
+                if (uuids != null) {
+                    uuids.remove(uuid);
+                }
+                Log.i(TAG, "Instance cleaned up for disconnected channel: " + uuid);
+            }
+        }
+    }
+
+    /**
      * Handle channel disconnect - unregister associated service and clean up files.
      */
     public void onChannelDisconnect(Channel channel) {
         // Clean up files owned by this channel
         cleanupFilesForChannel(channel);
+        
+        // Clean up client if any
+        cleanupClientForChannel(channel);
+        
+        // Clean up instance if any
+        cleanupInstanceForChannel(channel);
         
         String serviceName = channelToService.remove(channel);
         if (serviceName != null) {
@@ -341,10 +689,11 @@ public class ServiceManager {
 
         String json = message.toJson();
 
-        // Send to all fileshare service channels
-        ServiceEntry fileshare = services.get("fileshare");
-        if (fileshare != null && fileshare.isConnected()) {
-            fileshare.getChannel().writeAndFlush(new TextWebSocketFrame(json));
+        // Send to all fileshare clients
+        for (ClientInfo client : clients.values()) {
+            if ("fileshare".equals(client.getClientType()) && client.getChannel().isActive()) {
+                client.getChannel().writeAndFlush(new TextWebSocketFrame(json));
+            }
         }
 
         // Also send to any other channels that have registered files
@@ -352,6 +701,295 @@ public class ServiceManager {
             if (channel.isActive()) {
                 channel.writeAndFlush(new TextWebSocketFrame(json));
             }
+        }
+    }
+    
+    // ==================== Client Registry Methods ====================
+    
+    /**
+     * Register a user client (not a service).
+     */
+    public void registerClient(String userId, String clientType, Channel channel) {
+        registerClient(userId, clientType, null, channel);
+    }
+    
+    /**
+     * Register a user client to a specific instance.
+     */
+    public void registerClient(String userId, String clientType, String instanceUuid, Channel channel) {
+        ClientInfo info = new ClientInfo(userId, clientType, instanceUuid, channel);
+        clients.put(userId, info);
+        channelToClient.put(channel, userId);
+        
+        // Add user to instance if specified
+        if (instanceUuid != null) {
+            ServiceInstance instance = instances.get(instanceUuid);
+            if (instance != null) {
+                instance.addUser(userId);
+            }
+        }
+        
+        Log.i(TAG, "Client registered: " + userId + " (type: " + clientType + 
+            (instanceUuid != null ? ", instance: " + instanceUuid : "") + ")");
+        
+        // Notify the instance owner that a client connected
+        notifyInstanceOwner(instanceUuid, clientType, "client_connected", userId);
+    }
+    
+    /**
+     * Unregister a client.
+     */
+    public void unregisterClient(String userId) {
+        ClientInfo info = clients.remove(userId);
+        if (info != null) {
+            channelToClient.remove(info.getChannel());
+            Log.i(TAG, "Client unregistered: " + userId);
+        }
+    }
+    
+    /**
+     * Get a client by userId.
+     */
+    public ClientInfo getClient(String userId) {
+        return clients.get(userId);
+    }
+    
+    /**
+     * Get all clients of a specific type.
+     */
+    public List<ClientInfo> getClientsByType(String clientType) {
+        List<ClientInfo> result = new ArrayList<>();
+        for (ClientInfo client : clients.values()) {
+            if (clientType.equals(client.getClientType())) {
+                result.add(client);
+            }
+        }
+        return result;
+    }
+    
+    /**
+     * Kick a client by userId.
+     * @return true if client was found and kicked
+     */
+    public boolean kickClient(String userId) {
+        ClientInfo client = clients.get(userId);
+        if (client == null) {
+            return false;
+        }
+        
+        // Send kick message to client
+        Message kickMsg = new Message("kick");
+        JsonObject payload = new JsonObject();
+        payload.addProperty("reason", "Kicked by administrator");
+        kickMsg.setPayload(payload);
+        
+        if (client.getChannel() != null && client.getChannel().isActive()) {
+            client.getChannel().writeAndFlush(new TextWebSocketFrame(kickMsg.toJson()));
+            client.getChannel().close();
+        }
+        
+        // Clean up
+        clients.remove(userId);
+        channelToClient.remove(client.getChannel());
+        
+        // Also remove from chat users if applicable
+        ChatUser chatUser = chatUsers.remove(userId);
+        if (chatUser != null) {
+            broadcastChatLeave(userId, chatUser.getName());
+            broadcastChatUserList();
+        }
+        
+        Log.i(TAG, "Kicked client: " + userId);
+        return true;
+    }
+    
+    /**
+     * Clean up clients for a disconnected channel.
+     */
+    private void cleanupClientForChannel(Channel channel) {
+        String userId = channelToClient.remove(channel);
+        if (userId != null) {
+            ClientInfo client = clients.remove(userId);
+            Log.i(TAG, "Cleaned up client for disconnected channel: " + userId);
+            
+            // Remove from instance
+            if (client != null && client.getInstanceUuid() != null) {
+                ServiceInstance instance = instances.get(client.getInstanceUuid());
+                if (instance != null) {
+                    instance.removeUser(userId);
+                }
+                notifyInstanceOwner(client.getInstanceUuid(), client.getClientType(), "client_disconnected", userId);
+            }
+            
+            // Also clean up chat user if any
+            ChatUser chatUser = chatUsers.remove(userId);
+            if (chatUser != null) {
+                broadcastChatLeave(userId, chatUser.getName());
+                broadcastChatUserList();
+            }
+        }
+    }
+    
+    /**
+     * Notify an instance owner when a client connects or disconnects.
+     */
+    private void notifyInstanceOwner(String instanceUuid, String serviceName, String eventType, String userId) {
+        ServiceInstance instance = instanceUuid != null ? instances.get(instanceUuid) : null;
+        Channel ownerChannel = instance != null ? instance.getOwnerChannel() : null;
+        
+        // If no instance, fall back to service channel
+        if (ownerChannel == null) {
+            ServiceEntry service = services.get(serviceName);
+            if (service != null && service.isConnected()) {
+                ownerChannel = service.getChannel();
+            }
+        }
+        
+        if (ownerChannel != null && ownerChannel.isActive()) {
+            Message message = new Message(eventType);
+            message.setService(serviceName);
+            JsonObject payload = new JsonObject();
+            payload.addProperty("userId", userId);
+            if (instanceUuid != null) {
+                payload.addProperty("instanceUuid", instanceUuid);
+            }
+            message.setPayload(payload);
+            ownerChannel.writeAndFlush(new TextWebSocketFrame(message.toJson()));
+        }
+    }
+    
+    // ==================== Chat User Methods ====================
+    
+    /**
+     * Register a chat user.
+     */
+    public void registerChatUser(String userId, String name, Channel channel) {
+        ChatUser user = new ChatUser(userId, name, channel);
+        chatUsers.put(userId, user);
+        Log.i(TAG, "Chat user registered: " + name + " (" + userId + ")");
+    }
+    
+    /**
+     * Unregister a chat user.
+     */
+    public void unregisterChatUser(String userId) {
+        chatUsers.remove(userId);
+        Log.i(TAG, "Chat user unregistered: " + userId);
+    }
+    
+    /**
+     * Get chat user name.
+     */
+    public String getChatUserName(String userId) {
+        ChatUser user = chatUsers.get(userId);
+        return user != null ? user.getName() : null;
+    }
+    
+    /**
+     * Broadcast chat user list to all chat clients.
+     */
+    public void broadcastChatUserList() {
+        JsonArray usersArray = new JsonArray();
+        for (ChatUser user : chatUsers.values()) {
+            usersArray.add(user.toJson());
+        }
+
+        Message message = new Message(Message.TYPE_CHAT_USER_LIST);
+        JsonObject payload = new JsonObject();
+        payload.add("users", usersArray);
+        message.setPayload(payload);
+
+        String json = message.toJson();
+
+        // Send to all chat clients
+        for (ClientInfo client : clients.values()) {
+            if ("chat".equals(client.getClientType()) && client.getChannel().isActive()) {
+                client.getChannel().writeAndFlush(new TextWebSocketFrame(json));
+            }
+        }
+    }
+    
+    /**
+     * Broadcast chat join notification.
+     */
+    public void broadcastChatJoin(String userId, String name) {
+        Message message = new Message(Message.TYPE_CHAT_JOIN);
+        JsonObject payload = new JsonObject();
+        payload.addProperty("userId", userId);
+        payload.addProperty("name", name);
+        message.setPayload(payload);
+
+        String json = message.toJson();
+
+        // Send to all chat clients
+        for (ClientInfo client : clients.values()) {
+            if ("chat".equals(client.getClientType()) && client.getChannel().isActive()) {
+                client.getChannel().writeAndFlush(new TextWebSocketFrame(json));
+            }
+        }
+    }
+    
+    /**
+     * Broadcast chat leave notification.
+     */
+    public void broadcastChatLeave(String userId, String name) {
+        Message message = new Message(Message.TYPE_CHAT_LEAVE);
+        JsonObject payload = new JsonObject();
+        payload.addProperty("userId", userId);
+        payload.addProperty("name", name);
+        message.setPayload(payload);
+
+        String json = message.toJson();
+
+        // Send to all chat clients
+        for (ClientInfo client : clients.values()) {
+            if ("chat".equals(client.getClientType()) && client.getChannel().isActive()) {
+                client.getChannel().writeAndFlush(new TextWebSocketFrame(json));
+            }
+        }
+    }
+    
+    /**
+     * Broadcast chat message to all chat clients.
+     */
+    public void broadcastChatMessage(JsonObject msgPayload, Channel senderChannel) {
+        Message message = new Message(Message.TYPE_CHAT_MESSAGE);
+        message.setPayload(msgPayload);
+
+        String json = message.toJson();
+        
+        // Check if there are specific recipients
+        JsonArray recipients = null;
+        if (msgPayload.has("recipients") && !msgPayload.get("recipients").isJsonNull()) {
+            recipients = msgPayload.getAsJsonArray("recipients");
+        }
+
+        // Send to all chat clients (or specific recipients)
+        for (ClientInfo client : clients.values()) {
+            if (!"chat".equals(client.getClientType()) || !client.getChannel().isActive()) {
+                continue;
+            }
+            
+            // Don't send back to sender
+            if (client.getChannel() == senderChannel) {
+                continue;
+            }
+            
+            // If recipients specified, only send to them
+            if (recipients != null) {
+                boolean isRecipient = false;
+                for (int i = 0; i < recipients.size(); i++) {
+                    if (client.getUserId().equals(recipients.get(i).getAsString())) {
+                        isRecipient = true;
+                        break;
+                    }
+                }
+                if (!isRecipient) {
+                    continue;
+                }
+            }
+            
+            client.getChannel().writeAndFlush(new TextWebSocketFrame(json));
         }
     }
 }

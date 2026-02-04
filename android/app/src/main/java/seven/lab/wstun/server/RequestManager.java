@@ -21,7 +21,7 @@ import io.netty.handler.codec.http.HttpVersion;
 public class RequestManager {
     
     private static final String TAG = "RequestManager";
-    private static final long REQUEST_TIMEOUT_MS = 30000; // 30 seconds
+    private static final long REQUEST_TIMEOUT_MS = 10000; // 10 seconds - shorter timeout for better responsiveness
 
     private final Map<String, PendingRequest> pendingRequests = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler;
@@ -72,16 +72,20 @@ public class RequestManager {
                 iterator.remove();
                 count++;
                 
-                // Send error response
+                // Send error response on the correct event loop
                 if (request.getCtx().channel().isActive()) {
-                    DefaultFullHttpResponse response = new DefaultFullHttpResponse(
-                        HttpVersion.HTTP_1_1,
-                        HttpResponseStatus.SERVICE_UNAVAILABLE,
-                        Unpooled.copiedBuffer("Service disconnected".getBytes())
-                    );
-                    response.headers().set("Content-Type", "text/plain");
-                    response.headers().setInt("Content-Length", 20);
-                    request.getCtx().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+                    request.getCtx().executor().execute(() -> {
+                        if (request.getCtx().channel().isActive()) {
+                            DefaultFullHttpResponse response = new DefaultFullHttpResponse(
+                                HttpVersion.HTTP_1_1,
+                                HttpResponseStatus.SERVICE_UNAVAILABLE,
+                                Unpooled.copiedBuffer("Service disconnected".getBytes())
+                            );
+                            response.headers().set("Content-Type", "text/plain");
+                            response.headers().setInt("Content-Length", 20);
+                            request.getCtx().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+                        }
+                    });
                 }
             }
         }
@@ -105,14 +109,18 @@ public class RequestManager {
                 iterator.remove();
                 Log.w(TAG, "Request timed out: " + request.getRequestId());
                 
-                // Send timeout response
+                // Send timeout response on the correct event loop
                 if (request.getCtx().channel().isActive()) {
-                    DefaultFullHttpResponse response = new DefaultFullHttpResponse(
-                        HttpVersion.HTTP_1_1,
-                        HttpResponseStatus.GATEWAY_TIMEOUT,
-                        Unpooled.copiedBuffer("Request timed out".getBytes())
-                    );
-                    request.getCtx().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+                    request.getCtx().executor().execute(() -> {
+                        if (request.getCtx().channel().isActive()) {
+                            DefaultFullHttpResponse response = new DefaultFullHttpResponse(
+                                HttpVersion.HTTP_1_1,
+                                HttpResponseStatus.GATEWAY_TIMEOUT,
+                                Unpooled.copiedBuffer("Request timed out".getBytes())
+                            );
+                            request.getCtx().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+                        }
+                    });
                 }
             }
         }
@@ -124,15 +132,19 @@ public class RequestManager {
     public void shutdown() {
         scheduler.shutdown();
         
-        // Send error response to all pending requests
+        // Send error response to all pending requests on the correct event loop
         for (PendingRequest request : pendingRequests.values()) {
             if (request.getCtx().channel().isActive()) {
-                DefaultFullHttpResponse response = new DefaultFullHttpResponse(
-                    HttpVersion.HTTP_1_1,
-                    HttpResponseStatus.SERVICE_UNAVAILABLE,
-                    Unpooled.copiedBuffer("Server shutting down".getBytes())
-                );
-                request.getCtx().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+                request.getCtx().executor().execute(() -> {
+                    if (request.getCtx().channel().isActive()) {
+                        DefaultFullHttpResponse response = new DefaultFullHttpResponse(
+                            HttpVersion.HTTP_1_1,
+                            HttpResponseStatus.SERVICE_UNAVAILABLE,
+                            Unpooled.copiedBuffer("Server shutting down".getBytes())
+                        );
+                        request.getCtx().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+                    }
+                });
             }
         }
         pendingRequests.clear();

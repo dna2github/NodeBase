@@ -12,8 +12,11 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
+
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -25,7 +28,10 @@ import seven.lab.wstun.server.ServiceManager;
 import seven.lab.wstun.service.WSTunService;
 
 /**
- * Fragment showing server status and registered services.
+ * Fragment showing server status with nested tabs for:
+ * - Running Instances
+ * - Installed Services
+ * - Marketplace
  */
 public class StatusFragment extends Fragment implements WSTunService.ServiceListener {
 
@@ -34,10 +40,15 @@ public class StatusFragment extends Fragment implements WSTunService.ServiceList
     private TextView statusText;
     private TextView addressText;
     private Button toggleButton;
-    private RecyclerView servicesRecyclerView;
-    private TextView emptyText;
-
-    private ServiceAdapter adapter;
+    
+    // Nested tabs
+    private TabLayout innerTabLayout;
+    private ViewPager2 innerViewPager;
+    
+    // Child fragments
+    private RunningInstancesFragment runningInstancesFragment;
+    private InstalledServicesFragment installedServicesFragment;
+    private MarketplaceFragment marketplaceFragment;
 
     @Nullable
     @Override
@@ -53,26 +64,87 @@ public class StatusFragment extends Fragment implements WSTunService.ServiceList
         statusText = view.findViewById(R.id.statusText);
         addressText = view.findViewById(R.id.addressText);
         toggleButton = view.findViewById(R.id.toggleButton);
-        servicesRecyclerView = view.findViewById(R.id.servicesRecyclerView);
-        emptyText = view.findViewById(R.id.emptyText);
+        innerTabLayout = view.findViewById(R.id.innerTabLayout);
+        innerViewPager = view.findViewById(R.id.innerViewPager);
 
-        servicesRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new ServiceAdapter(service -> {
-            if (this.service != null) {
-                this.service.kickService(service.getName());
-            }
-        });
-        servicesRecyclerView.setAdapter(adapter);
+        // Set up nested tabs
+        setupInnerTabs();
 
         toggleButton.setOnClickListener(v -> toggleServer());
 
         updateUI();
+    }
+    
+    private void setupInnerTabs() {
+        runningInstancesFragment = new RunningInstancesFragment();
+        installedServicesFragment = new InstalledServicesFragment();
+        marketplaceFragment = new MarketplaceFragment();
+        
+        innerViewPager.setAdapter(new FragmentStateAdapter(this) {
+            @NonNull
+            @Override
+            public Fragment createFragment(int position) {
+                switch (position) {
+                    case 0:
+                        return runningInstancesFragment;
+                    case 1:
+                        return installedServicesFragment;
+                    case 2:
+                        return marketplaceFragment;
+                    default:
+                        return runningInstancesFragment;
+                }
+            }
+
+            @Override
+            public int getItemCount() {
+                return 3;
+            }
+        });
+
+        new TabLayoutMediator(innerTabLayout, innerViewPager, (tab, position) -> {
+            switch (position) {
+                case 0:
+                    tab.setText(R.string.tab_instances);
+                    break;
+                case 1:
+                    tab.setText(R.string.tab_services);
+                    break;
+                case 2:
+                    tab.setText(R.string.tab_marketplace);
+                    break;
+            }
+        }).attach();
     }
 
     public void onServiceConnected(WSTunService service) {
         this.service = service;
         service.setListener(this);
         updateUI();
+        
+        // Pass service to child fragments
+        if (runningInstancesFragment != null) {
+            runningInstancesFragment.onServiceConnected(service);
+        }
+        if (installedServicesFragment != null) {
+            installedServicesFragment.onServiceConnected(service);
+        }
+        if (marketplaceFragment != null) {
+            marketplaceFragment.onServiceConnected(service);
+        }
+    }
+    
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateUI();
+        // Refresh all child fragments when returning to the app
+        if (runningInstancesFragment != null) {
+            runningInstancesFragment.updateInstanceList();
+        }
+        if (installedServicesFragment != null) {
+            installedServicesFragment.onResume();
+        }
     }
 
     private void toggleServer() {
@@ -93,7 +165,9 @@ public class StatusFragment extends Fragment implements WSTunService.ServiceList
         if (getActivity() == null || !isAdded()) return;
 
         requireActivity().runOnUiThread(() -> {
-            if (service != null && service.isServerRunning()) {
+            boolean running = service != null && service.isServerRunning();
+            
+            if (running) {
                 statusText.setText(R.string.server_running);
                 statusText.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
                 toggleButton.setText(R.string.stop_server);
@@ -103,34 +177,13 @@ public class StatusFragment extends Fragment implements WSTunService.ServiceList
                 String address = protocol + "://" + ip + ":" + service.getPort();
                 addressText.setText(address);
                 addressText.setVisibility(View.VISIBLE);
-
-                updateServiceList();
             } else {
                 statusText.setText(R.string.server_stopped);
                 statusText.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
                 toggleButton.setText(R.string.start_server);
                 addressText.setVisibility(View.GONE);
-                
-                adapter.setServices(Collections.emptyList());
-                emptyText.setVisibility(View.VISIBLE);
-                servicesRecyclerView.setVisibility(View.GONE);
             }
         });
-    }
-
-    private void updateServiceList() {
-        if (service == null || service.getServiceManager() == null) return;
-
-        List<ServiceManager.ServiceEntry> services = service.getServiceManager().getAllServices();
-        adapter.setServices(services);
-
-        if (services.isEmpty()) {
-            emptyText.setVisibility(View.VISIBLE);
-            servicesRecyclerView.setVisibility(View.GONE);
-        } else {
-            emptyText.setVisibility(View.GONE);
-            servicesRecyclerView.setVisibility(View.VISIBLE);
-        }
     }
 
     private String getLocalIpAddress() {
@@ -156,17 +209,30 @@ public class StatusFragment extends Fragment implements WSTunService.ServiceList
     @Override
     public void onServerStarted() {
         updateUI();
+        // Pass service to child fragments now that server is ready
+        if (runningInstancesFragment != null) {
+            runningInstancesFragment.onServiceConnected(service);
+        }
+        if (installedServicesFragment != null) {
+            installedServicesFragment.onServiceConnected(service);
+        }
+        if (marketplaceFragment != null) {
+            marketplaceFragment.onServiceConnected(service);
+        }
     }
 
     @Override
     public void onServerStopped() {
         updateUI();
+        if (runningInstancesFragment != null) {
+            runningInstancesFragment.updateServiceList();
+        }
     }
 
     @Override
     public void onServiceChanged() {
-        if (getActivity() != null) {
-            requireActivity().runOnUiThread(this::updateServiceList);
+        if (getActivity() != null && runningInstancesFragment != null) {
+            requireActivity().runOnUiThread(() -> runningInstancesFragment.updateServiceList());
         }
     }
 

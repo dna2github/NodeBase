@@ -1,10 +1,13 @@
 package seven.lab.wstun.server;
 
 import android.content.Context;
+import android.os.PowerManager;
 import android.util.Log;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -20,10 +23,13 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import seven.lab.wstun.config.ServerConfig;
 
 /**
  * Netty-based HTTP/WebSocket server with optional HTTPS support.
+ * Uses dedicated threads with high priority to ensure responsiveness
+ * even when the Android app is in the background.
  */
 public class NettyServer {
     
@@ -39,6 +45,7 @@ public class NettyServer {
     private EventLoopGroup workerGroup;
     private Channel serverChannel;
     private boolean running = false;
+    private PowerManager.WakeLock wakeLock;
 
     public NettyServer(Context context, ServerConfig config, ServiceManager serviceManager) {
         this.context = context;
@@ -60,6 +67,22 @@ public class NettyServer {
             return;
         }
 
+        // Acquire a partial wake lock to keep the CPU running for network I/O
+        // This is essential for the server to respond when the app is in the background
+        try {
+            PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            if (powerManager != null) {
+                wakeLock = powerManager.newWakeLock(
+                    PowerManager.PARTIAL_WAKE_LOCK,
+                    "WSTun:NettyServer"
+                );
+                wakeLock.acquire();
+                Log.i(TAG, "Acquired wake lock for background operation");
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to acquire wake lock: " + e.getMessage());
+        }
+
         int port = config.getPort();
         boolean ssl = config.isHttpsEnabled();
 
@@ -74,14 +97,20 @@ public class NettyServer {
         final LocalServiceManager localSvcMgr = localServiceManager;
         final ServerConfig serverConfig = config;
 
-        bossGroup = new NioEventLoopGroup(1);
+        // Use custom thread factory to create high-priority daemon threads
+        // This ensures Netty threads keep running even when app is backgrounded
+        DefaultThreadFactory bossThreadFactory = new DefaultThreadFactory("wstun-boss", true, Thread.MAX_PRIORITY);
+        DefaultThreadFactory workerThreadFactory = new DefaultThreadFactory("wstun-worker", true, Thread.MAX_PRIORITY);
+        
+        bossGroup = new NioEventLoopGroup(1, bossThreadFactory);
         // Use more worker threads to handle concurrent HTTP and WebSocket connections
-        workerGroup = new NioEventLoopGroup(Math.max(4, Runtime.getRuntime().availableProcessors() * 2));
+        workerGroup = new NioEventLoopGroup(Math.max(4, Runtime.getRuntime().availableProcessors() * 2), workerThreadFactory);
 
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workerGroup)
             .channel(NioServerSocketChannel.class)
             .option(ChannelOption.SO_BACKLOG, 1024)
+            .option(ChannelOption.SO_REUSEADDR, true)
             .childOption(ChannelOption.SO_KEEPALIVE, true)
             .childOption(ChannelOption.TCP_NODELAY, true)
             .childHandler(new ChannelInitializer<SocketChannel>() {
@@ -142,12 +171,23 @@ public class NettyServer {
             }
         }
 
-        // Shutdown event loops
+        // Shutdown event loops with timeout
         if (workerGroup != null) {
-            workerGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully(0, 5, TimeUnit.SECONDS);
         }
         if (bossGroup != null) {
-            bossGroup.shutdownGracefully();
+            bossGroup.shutdownGracefully(0, 5, TimeUnit.SECONDS);
+        }
+
+        // Release wake lock
+        if (wakeLock != null && wakeLock.isHeld()) {
+            try {
+                wakeLock.release();
+                Log.i(TAG, "Released wake lock");
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to release wake lock: " + e.getMessage());
+            }
+            wakeLock = null;
         }
 
         Log.i(TAG, "Server stopped");

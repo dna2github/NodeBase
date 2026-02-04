@@ -67,29 +67,54 @@ class BaseClient {
  * @param {string} options.name - Instance name (room name)
  * @param {string} [options.serverToken] - Server auth token
  * @param {string} [options.instanceToken] - Token users need to join
+ * @param {string} [options.reclaimUuid] - UUID of instance to reclaim (for reconnection)
  * @param {function} [options.onInstanceCreated] - Called when instance is created
+ * @param {function} [options.onInstanceReclaimed] - Called when instance is reclaimed
  */
 class InstanceHost extends BaseClient {
     constructor(options) {
         super(options);
         this.instanceName = options.name || 'Room';
         this.instanceToken = options.instanceToken || null;
+        this.reclaimUuid = options.reclaimUuid || null;
         this.onInstanceCreated = options.onInstanceCreated || (() => {});
+        this.onInstanceReclaimed = options.onInstanceReclaimed || options.onInstanceCreated || (() => {});
         this.instanceUuid = null;
     }
     
     _onConnected() {
-        this.send('create_instance', {
-            name: this.instanceName,
-            token: this.instanceToken,
-            server_token: this.serverToken
-        });
+        if (this.reclaimUuid) {
+            // Try to reclaim an existing instance
+            this.send('reclaim_instance', {
+                uuid: this.reclaimUuid,
+                token: this.instanceToken,
+                server_token: this.serverToken
+            });
+        } else {
+            // Create new instance
+            this.send('create_instance', {
+                name: this.instanceName,
+                token: this.instanceToken,
+                server_token: this.serverToken
+            });
+        }
     }
     
     _handleMessage(msg) {
         if (msg.type === 'instance_created' && msg.payload?.success) {
             this.instanceUuid = msg.payload.uuid;
             this.onInstanceCreated(msg.payload);
+        } else if (msg.type === 'instance_reclaimed' && msg.payload?.success) {
+            this.instanceUuid = msg.payload.uuid;
+            this.onInstanceReclaimed(msg.payload);
+        } else if (msg.type === 'instance_reclaimed' && !msg.payload?.success) {
+            // Reclaim failed, create new instance instead
+            this.reclaimUuid = null;
+            this.send('create_instance', {
+                name: this.instanceName,
+                token: this.instanceToken,
+                server_token: this.serverToken
+            });
         } else if (msg.type === 'error') {
             this.onError(new Error(msg.payload?.message || 'Unknown error'));
         } else {

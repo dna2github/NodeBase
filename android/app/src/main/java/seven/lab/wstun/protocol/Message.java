@@ -54,6 +54,16 @@ public class Message {
     public static final String TYPE_LIST_INSTANCES = "list_instances";
     public static final String TYPE_INSTANCE_LIST = "instance_list";
     public static final String TYPE_INSTANCE_CREATED = "instance_created";
+    public static final String TYPE_RECLAIM_INSTANCE = "reclaim_instance";
+    public static final String TYPE_INSTANCE_RECLAIMED = "instance_reclaimed";
+    
+    // Instance-scoped messages (for fileshare/chat within a room)
+    public static final String TYPE_USER_JOIN = "user_join";
+    public static final String TYPE_USER_LEAVE = "user_leave";
+    public static final String TYPE_FILE_ADD = "file_add";
+    public static final String TYPE_FILE_REMOVE = "file_remove";
+    public static final String TYPE_REQUEST_STATE = "request_state";
+    public static final String TYPE_STATE_RESPONSE = "state_response";
 
     @SerializedName("type")
     private String type;

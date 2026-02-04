@@ -71,8 +71,110 @@ h2 { color: #333; margin-bottom: 16px; font-size: 18px; }
     <script>
 const SERVICE = 'fileshare';
 const serverToken = document.getElementById('serverToken');
+let activeHost = null;
+let activeInstanceUuid = null;
+let activeInstanceToken = null;
+
+// Session storage keys for reconnection
+const STORAGE_KEY_UUID = 'fileshare_instance_uuid';
+const STORAGE_KEY_TOKEN = 'fileshare_instance_token';
+const STORAGE_KEY_NAME = 'fileshare_instance_name';
+
+// Try to restore session on page load
+function tryRestoreSession() {
+    const savedUuid = sessionStorage.getItem(STORAGE_KEY_UUID);
+    const savedToken = sessionStorage.getItem(STORAGE_KEY_TOKEN);
+    const savedName = sessionStorage.getItem(STORAGE_KEY_NAME);
+    
+    if (savedUuid) {
+        console.log('Attempting to reclaim instance:', savedUuid);
+        reclaimInstance(savedUuid, savedToken, savedName);
+        return true;
+    }
+    return false;
+}
+
+function reclaimInstance(uuid, token, name) {
+    const sToken = serverToken.value.trim() || null;
+    
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('result').innerHTML = '<div style="color:#666;padding:12px;">Reconnecting to room...</div>';
+    
+    activeHost = WSTun.createInstanceHost({
+        service: SERVICE,
+        name: name || 'FileShare Room',
+        serverToken: sToken,
+        instanceToken: token,
+        reclaimUuid: uuid,
+        onOpen: () => {
+            console.log('WebSocket connected for reclaim');
+        },
+        onInstanceReclaimed: (payload) => {
+            activeInstanceUuid = payload.uuid;
+            activeInstanceToken = token;
+            
+            const joinUrl = location.origin + '/fileshare/main#instance=' + payload.uuid + 
+                (token ? '&token=' + encodeURIComponent(token) : '') +
+                (sToken ? '&server_token=' + encodeURIComponent(sToken) : '');
+            
+            document.getElementById('result').innerHTML = `
+                <div class="success">Reconnected to room!</div>
+                <div class="info-box">
+                    <p><strong>Room UUID:</strong> <code>${payload.uuid}</code></p>
+                    <p><strong>Users:</strong> ${payload.userCount || 0}</p>
+                    <p><strong>Join URL:</strong></p>
+                    <p><a href="${joinUrl}" class="link" target="_blank">${joinUrl}</a></p>
+                </div>
+            `;
+            
+            loadInstances();
+        },
+        onInstanceCreated: (payload) => {
+            // Reclaim failed, new instance created
+            activeInstanceUuid = payload.uuid;
+            activeInstanceToken = token;
+            sessionStorage.setItem(STORAGE_KEY_UUID, payload.uuid);
+            if (token) sessionStorage.setItem(STORAGE_KEY_TOKEN, token);
+            sessionStorage.setItem(STORAGE_KEY_NAME, name || 'FileShare Room');
+            
+            const joinUrl = location.origin + '/fileshare/main#instance=' + payload.uuid + 
+                (token ? '&token=' + encodeURIComponent(token) : '') +
+                (sToken ? '&server_token=' + encodeURIComponent(sToken) : '');
+            
+            document.getElementById('result').innerHTML = `
+                <div class="success">Room created (previous session expired)!</div>
+                <div class="info-box">
+                    <p><strong>Room UUID:</strong> <code>${payload.uuid}</code></p>
+                    <p><strong>Join URL:</strong></p>
+                    <p><a href="${joinUrl}" class="link" target="_blank">${joinUrl}</a></p>
+                </div>
+            `;
+            
+            loadInstances();
+        },
+        onError: (err) => {
+            const msg = err && err.message ? err.message : (typeof err === 'string' ? err : 'Failed to reconnect');
+            document.getElementById('result').innerHTML = `<div style="background:#ffebee;color:#c62828;padding:12px;border-radius:6px;">Error: ${msg}</div>`;
+            // Clear saved session
+            sessionStorage.removeItem(STORAGE_KEY_UUID);
+            sessionStorage.removeItem(STORAGE_KEY_TOKEN);
+            sessionStorage.removeItem(STORAGE_KEY_NAME);
+        },
+        onClose: () => {
+            console.log('Instance host connection closed');
+        }
+    });
+    
+    activeHost.connect();
+}
 
 async function createInstance() {
+    // Clean up old connection if any
+    if (activeHost) {
+        activeHost.disconnect();
+        activeHost = null;
+    }
+    
     const name = document.getElementById('roomName').value.trim() || 'FileShare Room';
     const token = document.getElementById('roomToken').value.trim() || null;
     const sToken = serverToken.value.trim() || null;
@@ -80,8 +182,7 @@ async function createInstance() {
     document.getElementById('result').style.display = 'block';
     document.getElementById('result').innerHTML = '<div style="color:#666;padding:12px;">Creating room...</div>';
     
-    // Use temporary host just to create instance
-    const host = WSTun.createInstanceHost({
+    activeHost = WSTun.createInstanceHost({
         service: SERVICE,
         name: name,
         serverToken: sToken,
@@ -90,6 +191,14 @@ async function createInstance() {
             console.log('WebSocket connected for instance creation');
         },
         onInstanceCreated: (payload) => {
+            activeInstanceUuid = payload.uuid;
+            activeInstanceToken = token;
+            
+            // Save to session storage for reconnection on refresh
+            sessionStorage.setItem(STORAGE_KEY_UUID, payload.uuid);
+            if (token) sessionStorage.setItem(STORAGE_KEY_TOKEN, token);
+            sessionStorage.setItem(STORAGE_KEY_NAME, name);
+            
             const joinUrl = location.origin + '/fileshare/main#instance=' + payload.uuid + 
                 (token ? '&token=' + encodeURIComponent(token) : '') +
                 (sToken ? '&server_token=' + encodeURIComponent(sToken) : '');
@@ -103,10 +212,6 @@ async function createInstance() {
                 </div>
             `;
             
-            // Don't disconnect - keep instance alive
-            // The instance will stay alive as long as this page is open
-            // Users can join via the main.html page
-            
             loadInstances();
         },
         onError: (err) => {
@@ -118,7 +223,7 @@ async function createInstance() {
         }
     });
     
-    host.connect();
+    activeHost.connect();
 }
 
 async function loadInstances() {
@@ -144,11 +249,12 @@ function renderInstances(instances) {
     el.innerHTML = instances.map(inst => {
         const url = '/fileshare/main#instance=' + inst.uuid + 
             (sToken ? '&server_token=' + encodeURIComponent(sToken) : '');
+        const isOwner = inst.uuid === activeInstanceUuid;
         return `
         <div class="instance-item">
             <div class="instance-info">
-                <div class="instance-name">${esc(inst.name)}</div>
-                <div class="instance-meta">UUID: ${inst.uuid} | Users: ${inst.userCount}${inst.hasToken ? ' | Private' : ''}</div>
+                <div class="instance-name">${esc(inst.name)}${isOwner ? ' (yours)' : ''}</div>
+                <div class="instance-meta">UUID: ${inst.uuid} | Users: ${inst.userCount}${inst.hasToken ? ' | Private' : ''}${!inst.ownerConnected ? ' | Owner disconnected' : ''}</div>
             </div>
             <a href="${url}" class="btn btn-primary" target="_blank">Open</a>
         </div>`;
@@ -159,8 +265,12 @@ function esc(s) {
     return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
 }
 
-// Load instances on page load
-loadInstances();
+// Try to restore session first, then load instances
+if (!tryRestoreSession()) {
+    loadInstances();
+} else {
+    loadInstances();
+}
     </script>
 </body>
 </html>

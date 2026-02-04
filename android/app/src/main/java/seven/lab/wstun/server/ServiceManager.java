@@ -68,9 +68,12 @@ public class ServiceManager {
         private final String serviceName;
         private final String name;
         private final String token;
-        private final Channel ownerChannel;
+        private Channel ownerChannel;
         private final long createdAt;
         private final List<String> userIds = new ArrayList<>();
+        // Grace period for reconnection (10 seconds)
+        private static final long OWNER_GRACE_PERIOD_MS = 10000;
+        private long ownerDisconnectedAt = 0;
         
         public ServiceInstance(String uuid, String serviceName, String name, String token, Channel ownerChannel) {
             this.uuid = uuid;
@@ -112,6 +115,44 @@ public class ServiceManager {
             return ownerChannel != null && ownerChannel.isActive();
         }
         
+        /**
+         * Check if instance is still valid (owner connected or within grace period).
+         */
+        public boolean isValid() {
+            if (isOwnerConnected()) {
+                return true;
+            }
+            // Allow grace period for owner to reconnect
+            if (ownerDisconnectedAt > 0) {
+                return (System.currentTimeMillis() - ownerDisconnectedAt) < OWNER_GRACE_PERIOD_MS;
+            }
+            return false;
+        }
+        
+        /**
+         * Mark owner as disconnected but keep instance alive for grace period.
+         */
+        public void markOwnerDisconnected() {
+            this.ownerChannel = null;
+            this.ownerDisconnectedAt = System.currentTimeMillis();
+        }
+        
+        /**
+         * Reconnect owner to this instance.
+         */
+        public void reconnectOwner(Channel newOwnerChannel) {
+            this.ownerChannel = newOwnerChannel;
+            this.ownerDisconnectedAt = 0;
+        }
+        
+        /**
+         * Check if owner can be reclaimed (within grace period).
+         */
+        public boolean canReclaim() {
+            return !isOwnerConnected() && ownerDisconnectedAt > 0 &&
+                   (System.currentTimeMillis() - ownerDisconnectedAt) < OWNER_GRACE_PERIOD_MS;
+        }
+        
         public int getUserCount() {
             return userIds.size();
         }
@@ -124,6 +165,7 @@ public class ServiceManager {
             obj.addProperty("hasToken", hasToken());
             obj.addProperty("createdAt", createdAt);
             obj.addProperty("userCount", userIds.size());
+            obj.addProperty("ownerConnected", isOwnerConnected());
             return obj;
         }
     }
@@ -400,6 +442,7 @@ public class ServiceManager {
     
     /**
      * Get all instances for a service.
+     * Returns instances where owner is connected OR within grace period.
      */
     public List<ServiceInstance> getInstancesForService(String serviceName) {
         List<String> uuids = serviceInstances.get(serviceName);
@@ -408,7 +451,7 @@ public class ServiceManager {
         List<ServiceInstance> result = new ArrayList<>();
         for (String uuid : uuids) {
             ServiceInstance inst = instances.get(uuid);
-            if (inst != null && inst.isOwnerConnected()) {
+            if (inst != null && inst.isValid()) {
                 result.add(inst);
             }
         }
@@ -510,19 +553,57 @@ public class ServiceManager {
     
     /**
      * Clean up instance for a disconnected channel.
+     * Uses grace period to allow owner to reconnect.
      */
     private void cleanupInstanceForChannel(Channel channel) {
         String uuid = channelToInstance.remove(channel);
         if (uuid != null) {
-            ServiceInstance instance = instances.remove(uuid);
+            ServiceInstance instance = instances.get(uuid);
             if (instance != null) {
-                List<String> uuids = serviceInstances.get(instance.getServiceName());
-                if (uuids != null) {
-                    uuids.remove(uuid);
-                }
-                Log.i(TAG, "Instance cleaned up for disconnected channel: " + uuid);
+                // Mark owner as disconnected but keep instance for grace period
+                instance.markOwnerDisconnected();
+                Log.i(TAG, "Instance owner disconnected, grace period started: " + uuid);
+                
+                // Schedule cleanup after grace period
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(ServiceInstance.OWNER_GRACE_PERIOD_MS + 1000);
+                    } catch (InterruptedException e) {
+                        return;
+                    }
+                    // Check if instance still needs cleanup (owner didn't reconnect)
+                    ServiceInstance inst = instances.get(uuid);
+                    if (inst != null && !inst.isOwnerConnected()) {
+                        instances.remove(uuid);
+                        List<String> uuids = serviceInstances.get(inst.getServiceName());
+                        if (uuids != null) {
+                            uuids.remove(uuid);
+                        }
+                        Log.i(TAG, "Instance cleaned up after grace period: " + uuid);
+                    }
+                }).start();
             }
         }
+    }
+    
+    /**
+     * Reclaim an instance that lost its owner (within grace period).
+     * @return true if reclaim successful, false otherwise
+     */
+    public boolean reclaimInstance(String uuid, Channel newOwnerChannel) {
+        ServiceInstance instance = instances.get(uuid);
+        if (instance == null) {
+            return false;
+        }
+        
+        if (!instance.canReclaim()) {
+            return false;
+        }
+        
+        instance.reconnectOwner(newOwnerChannel);
+        channelToInstance.put(newOwnerChannel, uuid);
+        Log.i(TAG, "Instance reclaimed by new owner: " + uuid);
+        return true;
     }
 
     /**
@@ -761,6 +842,36 @@ public class ServiceManager {
         List<ClientInfo> result = new ArrayList<>();
         for (ClientInfo client : clients.values()) {
             if (clientType.equals(client.getClientType())) {
+                result.add(client);
+            }
+        }
+        return result;
+    }
+    
+    /**
+     * Get a client by their channel.
+     */
+    public ClientInfo getClientByChannel(Channel channel) {
+        String userId = channelToClient.get(channel);
+        if (userId != null) {
+            return clients.get(userId);
+        }
+        return null;
+    }
+    
+    /**
+     * Get all clients in a specific instance.
+     */
+    public List<ClientInfo> getClientsInInstance(String instanceUuid) {
+        List<ClientInfo> result = new ArrayList<>();
+        ServiceInstance instance = instances.get(instanceUuid);
+        if (instance == null) {
+            return result;
+        }
+        
+        for (String userId : instance.getUserIds()) {
+            ClientInfo client = clients.get(userId);
+            if (client != null) {
                 result.add(client);
             }
         }

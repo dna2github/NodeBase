@@ -281,8 +281,9 @@ function handleMessage(msg) {
 }
 
 function sendMyState() {
-    const myFileList = Array.from(myFiles.entries()).map(([id, f]) => ({
-        id, filename: f.filename, size: f.size, mimeType: f.mimeType, ownerId: myUserId
+    const myFileList = Array.from(myFiles.entries()).map(([localId, f]) => ({
+        id: myUserId + '/' + localId, localId: localId,
+        filename: f.filename, size: f.size, mimeType: f.mimeType, ownerId: myUserId
     }));
     client.send('state_response', { userId: myUserId, files: myFileList });
 }
@@ -295,22 +296,29 @@ function setStatus(text, connected) {
 
 function handleFile(file) {
     if (!file || !client) return;
-    const fileId = 'f' + WSTun.generateId();
+    // Local file ID (unique within this user's session)
+    const localFileId = 'f' + WSTun.generateId();
+    // Global file ID includes owner ID so server can route without storing state
+    const globalFileId = myUserId + '/' + localFileId;
+    
     const info = {
         file, filename: file.name, size: file.size,
-        mimeType: file.type || 'application/octet-stream'
+        mimeType: file.type || 'application/octet-stream',
+        localFileId: localFileId
     };
-    myFiles.set(fileId, info);
+    myFiles.set(localFileId, info);
     
-    // Add to allFiles
-    allFiles.set(fileId, {
-        id: fileId, filename: file.name, size: file.size,
+    // Add to allFiles (show owner ID prefix for clarity)
+    allFiles.set(globalFileId, {
+        id: globalFileId, localId: localFileId, filename: file.name, size: file.size,
         mimeType: info.mimeType, ownerId: myUserId
     });
     
-    // Broadcast to others
+    // No need to register with server - the globalFileId contains routing info
+    
+    // Broadcast to other users in the instance
     client.send('file_add', {
-        id: fileId, filename: file.name, size: file.size,
+        id: globalFileId, localId: localFileId, filename: file.name, size: file.size,
         mimeType: info.mimeType, ownerId: myUserId
     });
     
@@ -318,17 +326,29 @@ function handleFile(file) {
     updateAllFiles();
 }
 
-function removeFile(fileId) {
-    myFiles.delete(fileId);
-    allFiles.delete(fileId);
-    client.send('file_remove', { id: fileId });
+function removeFile(localFileId) {
+    const globalFileId = myUserId + '/' + localFileId;
+    myFiles.delete(localFileId);
+    allFiles.delete(globalFileId);
+    
+    // Notify other users
+    client.send('file_remove', { id: globalFileId });
+    
     updateMyFiles();
     updateAllFiles();
 }
 
 function streamFile(payload) {
     const { requestId, fileId } = payload;
-    const info = myFiles.get(fileId);
+    // fileId could be global (userId/localFileId) or local (localFileId)
+    let localFileId = fileId;
+    if (fileId && fileId.includes('/')) {
+        // Extract local file ID from global ID
+        const parts = fileId.split('/');
+        localFileId = parts[parts.length - 1];
+    }
+    
+    const info = myFiles.get(localFileId);
     if (!info) {
         client.send('http_response_chunk', { request_id: requestId, error: 'File not found', done: true });
         return;
@@ -372,8 +392,8 @@ function updateMyFiles() {
         el.innerHTML = '<li class="empty">No files shared yet</li>';
         return;
     }
-    el.innerHTML = Array.from(myFiles.entries()).map(([id, f]) =>
-        `<li class="file-item"><div class="file-info"><div class="file-name">${esc(f.filename)}</div><div class="file-meta">${formatSize(f.size)}</div></div><button class="btn btn-danger" onclick="removeFile('${id}')">&times;</button></li>`
+    el.innerHTML = Array.from(myFiles.entries()).map(([localId, f]) =>
+        `<li class="file-item"><div class="file-info"><div class="file-name">${esc(f.filename)}</div><div class="file-meta">${formatSize(f.size)}</div></div><button class="btn btn-danger" onclick="removeFile('${localId}')">&times;</button></li>`
     ).join('');
 }
 
@@ -383,12 +403,27 @@ function updateAllFiles() {
         el.innerHTML = '<li class="empty">No files available</li>';
         return;
     }
-    el.innerHTML = Array.from(allFiles.entries()).map(([id, f]) => {
-        const isOwn = myFiles.has(id);
-        const downloadUrl = '/fileshare/download/' + encodeURIComponent(id) + (serverToken ? '?token=' + encodeURIComponent(serverToken) : '');
+    
+    // Group files by filename to detect duplicates
+    const byName = new Map();
+    for (const [id, f] of allFiles.entries()) {
+        const key = f.filename;
+        if (!byName.has(key)) byName.set(key, []);
+        byName.get(key).push({ id, ...f });
+    }
+    
+    el.innerHTML = Array.from(allFiles.entries()).map(([globalId, f]) => {
+        // Check if it's our file (globalId starts with our userId)
+        const isOwn = globalId.startsWith(myUserId + '/');
+        // Download URL: /fileshare/download/{globalId} where globalId = userId/localFileId
+        const downloadUrl = '/fileshare/download/' + encodeURIComponent(globalId) + (serverToken ? '?token=' + encodeURIComponent(serverToken) : '');
+        // Add owner prefix to filename if there are duplicates
+        const hasDuplicates = byName.get(f.filename)?.length > 1;
+        const ownerShort = f.ownerId.substring(0, 6);
+        const displayName = hasDuplicates ? `[${ownerShort}] ${f.filename}` : f.filename;
         return `<li class="file-item">
             <div class="file-info">
-                <div class="file-name">${esc(f.filename)}</div>
+                <div class="file-name">${esc(displayName)}</div>
                 <div class="file-meta">${formatSize(f.size)} - ${isOwn ? 'you' : esc(f.ownerId)}</div>
             </div>
             <a href="${downloadUrl}" class="btn" target="_blank">Download</a>

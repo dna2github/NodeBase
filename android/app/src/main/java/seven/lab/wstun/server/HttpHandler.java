@@ -1373,32 +1373,63 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     
     /**
      * Handle file download request - streams file from owner client.
+     * URL format: /fileshare/download/{globalFileId}
+     * where globalFileId = userId/localFileId
+     * This allows stateless routing - the server doesn't need to store file info.
      */
     private void handleFileDownload(ChannelHandlerContext ctx, FullHttpRequest request, String[] pathParts) {
-        // Extract file ID from path: /fileshare/download/{fileId}
-        String fileId;
+        // Extract global file ID from path: /fileshare/download/{globalFileId}
+        String globalFileId;
         try {
-            fileId = java.net.URLDecoder.decode(pathParts[3], "UTF-8");
+            globalFileId = java.net.URLDecoder.decode(pathParts[3], "UTF-8");
         } catch (Exception e) {
-            fileId = pathParts[3];
+            globalFileId = pathParts[3];
         }
         
-        Log.d(TAG, "File download request: " + fileId);
+        Log.d(TAG, "File download request: " + globalFileId);
         
-        // Look up file in registry
-        ServiceManager.FileInfo file = serviceManager.getFile(fileId);
-        if (file == null) {
+        // Parse globalFileId to extract userId
+        // Format: userId/localFileId
+        String ownerId = null;
+        String localFileId = globalFileId;
+        
+        if (globalFileId.contains("/")) {
+            int slashIdx = globalFileId.indexOf('/');
+            ownerId = globalFileId.substring(0, slashIdx);
+            localFileId = globalFileId.substring(slashIdx + 1);
+        }
+        
+        if (ownerId == null || ownerId.isEmpty()) {
+            // Fallback: try the old registry-based lookup for backward compatibility
+            ServiceManager.FileInfo file = serviceManager.getFile(globalFileId);
+            if (file != null) {
+                ownerId = file.getOwnerId();
+                Channel ownerChannel = file.getOwnerChannel();
+                if (ownerChannel != null && ownerChannel.isActive()) {
+                    sendFileRequest(ctx, request, ownerChannel, globalFileId);
+                    return;
+                }
+            }
             sendNotFoundResponse(ctx);
             return;
         }
         
-        // Check if owner is connected
-        Channel ownerChannel = file.getOwnerChannel();
-        if (ownerChannel == null || !ownerChannel.isActive()) {
+        // Find the owner's channel by userId
+        ServiceManager.ClientInfo ownerClient = serviceManager.getClient(ownerId);
+        if (ownerClient == null || ownerClient.getChannel() == null || !ownerClient.getChannel().isActive()) {
+            Log.w(TAG, "File owner not connected: " + ownerId);
             sendServiceUnavailableResponse(ctx);
             return;
         }
         
+        sendFileRequest(ctx, request, ownerClient.getChannel(), globalFileId);
+    }
+    
+    /**
+     * Send a file request to the owner and set up pending request for streaming response.
+     */
+    private void sendFileRequest(ChannelHandlerContext ctx, FullHttpRequest request, 
+                                 Channel ownerChannel, String fileId) {
         // Create pending request for streaming response
         String requestId = String.valueOf(System.currentTimeMillis()) + "-" + (int)(Math.random() * 10000);
         PendingRequest pending = new PendingRequest(requestId, ctx, request, "fileshare");
@@ -1412,6 +1443,6 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
         message.setPayload(payload);
         
         ownerChannel.writeAndFlush(new TextWebSocketFrame(message.toJson()));
-        Log.d(TAG, "Sent file request to owner for: " + file.getFilename());
+        Log.d(TAG, "Sent file request to owner: " + fileId);
     }
 }

@@ -114,9 +114,6 @@ public class WebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame
             case Message.TYPE_CHAT_LEAVE:
                 handleChatLeave(ctx, message);
                 break;
-            case Message.TYPE_CHAT_MESSAGE:
-                handleChatMessage(ctx, message);
-                break;
             case Message.TYPE_DATA:
                 handleData(ctx, message);
                 break;
@@ -139,6 +136,19 @@ public class WebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame
                 break;
             case Message.TYPE_LIST_INSTANCES:
                 handleListInstances(ctx, message);
+                break;
+            case Message.TYPE_RECLAIM_INSTANCE:
+                handleReclaimInstance(ctx, message);
+                break;
+            // Instance-aware messages for fileshare/chat
+            case Message.TYPE_USER_JOIN:
+            case Message.TYPE_USER_LEAVE:
+            case Message.TYPE_FILE_ADD:
+            case Message.TYPE_FILE_REMOVE:
+            case Message.TYPE_REQUEST_STATE:
+            case Message.TYPE_STATE_RESPONSE:
+            case Message.TYPE_CHAT_MESSAGE:
+                handleInstanceMessage(ctx, message);
                 break;
             default:
                 Log.w(TAG, "Unknown message type: " + type);
@@ -561,6 +571,77 @@ public class WebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame
     }
     
     /**
+     * Handle reclaim instance request - allows owner to reconnect to their instance.
+     */
+    private void handleReclaimInstance(ChannelHandlerContext ctx, Message message) {
+        try {
+            JsonObject payload = message.getPayload();
+            if (payload == null) {
+                sendError(ctx, "Missing payload");
+                return;
+            }
+            
+            String serviceName = message.getService();
+            String uuid = getStringFromPayload(payload, "uuid", null);
+            String token = getStringFromPayload(payload, "token", null);
+            
+            if (uuid == null || uuid.isEmpty()) {
+                sendError(ctx, "Instance UUID is required");
+                return;
+            }
+            
+            // Validate server auth
+            ServerConfig config = HttpHandler.getServerConfig();
+            if (config != null && config.isAuthEnabled()) {
+                String authToken = getStringFromPayload(payload, "server_token", null);
+                if (!config.validateServerAuth(authToken)) {
+                    sendError(ctx, "Invalid server auth token");
+                    return;
+                }
+            }
+            
+            // Find the instance and validate token
+            ServiceManager.ServiceInstance instance = serviceManager.getInstance(uuid);
+            if (instance == null) {
+                sendError(ctx, "Instance not found");
+                return;
+            }
+            
+            // Validate instance token
+            if (!instance.validateToken(token)) {
+                sendError(ctx, "Invalid instance token");
+                return;
+            }
+            
+            // Try to reclaim
+            boolean success = serviceManager.reclaimInstance(uuid, ctx.channel());
+            
+            Message response = new Message(Message.TYPE_INSTANCE_RECLAIMED);
+            response.setService(serviceName);
+            JsonObject respPayload = new JsonObject();
+            respPayload.addProperty("success", success);
+            if (success) {
+                respPayload.addProperty("uuid", uuid);
+                respPayload.addProperty("name", instance.getName());
+                respPayload.addProperty("hasToken", instance.hasToken());
+                respPayload.addProperty("userCount", instance.getUserCount());
+            } else {
+                respPayload.addProperty("error", "Cannot reclaim instance (owner already connected or grace period expired)");
+            }
+            response.setPayload(respPayload);
+            
+            ctx.writeAndFlush(new TextWebSocketFrame(response.toJson()));
+            
+            if (success) {
+                Log.i(TAG, "Instance reclaimed: " + uuid);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to reclaim instance", e);
+            sendError(ctx, "Failed to reclaim instance: " + e.getMessage());
+        }
+    }
+    
+    /**
      * Handle broadcast messages from service to all clients.
      */
     private void handleBroadcast(ChannelHandlerContext ctx, Message message) {
@@ -611,6 +692,60 @@ public class WebSocketHandler extends SimpleChannelInboundHandler<WebSocketFrame
             Log.w(TAG, "File owner not found: " + ownerId);
         } catch (Exception e) {
             Log.e(TAG, "Failed to handle file request", e);
+        }
+    }
+    
+    /**
+     * Handle instance-specific messages (user_join, file_add, etc.)
+     * These messages are broadcast to all other users in the same instance.
+     */
+    private void handleInstanceMessage(ChannelHandlerContext ctx, Message message) {
+        try {
+            // Find which client/instance this message is from
+            ServiceManager.ClientInfo sender = serviceManager.getClientByChannel(ctx.channel());
+            if (sender == null) {
+                Log.w(TAG, "Instance message from unknown client");
+                return;
+            }
+            
+            String instanceUuid = sender.getInstanceUuid();
+            String senderUserId = sender.getUserId();
+            
+            // Broadcast to all other users in the same instance
+            String json = message.toJson();
+            List<ServiceManager.ClientInfo> instanceClients;
+            
+            if (instanceUuid != null) {
+                instanceClients = serviceManager.getClientsInInstance(instanceUuid);
+            } else {
+                // Fallback to service-based broadcasting for legacy clients
+                instanceClients = serviceManager.getClientsByType(sender.getClientType());
+            }
+            
+            for (ServiceManager.ClientInfo client : instanceClients) {
+                // Don't send back to sender
+                if (client.getUserId().equals(senderUserId)) {
+                    continue;
+                }
+                
+                if (client.getChannel() != null && client.getChannel().isActive()) {
+                    client.getChannel().writeAndFlush(new TextWebSocketFrame(json));
+                }
+            }
+            
+            // Also send to the instance owner if any
+            if (instanceUuid != null) {
+                ServiceManager.ServiceInstance instance = serviceManager.getInstance(instanceUuid);
+                if (instance != null && instance.getOwnerChannel() != null && 
+                    instance.getOwnerChannel().isActive() && 
+                    instance.getOwnerChannel() != ctx.channel()) {
+                    instance.getOwnerChannel().writeAndFlush(new TextWebSocketFrame(json));
+                }
+            }
+            
+            Log.d(TAG, "Broadcast instance message: " + message.getType() + " to " + instanceClients.size() + " clients");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to handle instance message", e);
         }
     }
 
